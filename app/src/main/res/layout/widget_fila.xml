@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/fila"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="44dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+    <TextView
+        android:id="@+id/marca"
+        android:layout_width="32dp"
+        android:layout_height="wrap_content"
+        android:textColor="#F2F2F2"
+        android:textSize="20sp" />
+    <TextView
+        android:id="@+id/texto"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="15sp"
+        android:maxLines="3" />
+</LinearLayout>
