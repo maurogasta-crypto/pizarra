@@ -25,7 +25,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-6
+// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-7
 //
 // pizarra-2 (5-oct-2026, «que la Pizarra sea la app de Tiempos»): arriba de
 // todo, 🎙 Dictar —con el reconocedor de Android, el mismo del teclado— y el
@@ -41,6 +41,7 @@ import kotlin.concurrent.thread
 
 const val EXTRA_DICTAR = "dictar"
 private const val PEDIDO_VOZ = 41
+private const val PEDIDO_CAPTURA = 43
 
 class MainActivity : Activity() {
     private lateinit var nube: Nube
@@ -77,6 +78,7 @@ class MainActivity : Activity() {
         Bitacora.anotar(this, "pantalla: abre (sesión ${if (nube.conSesion) "sí" else "no"})")
         pintar()
         if (intent?.getBooleanExtra(EXTRA_DICTAR, false) == true && nube.conSesion) dictar()
+        recibirCompartido(intent)
         mandarPendiente()
     }
 
@@ -115,6 +117,7 @@ class MainActivity : Activity() {
         super.onNewIntent(i)
         setIntent(i)
         if (i.getBooleanExtra(EXTRA_DICTAR, false) && nube.conSesion) dictar()
+        recibirCompartido(i)
     }
 
     private fun pintar() {
@@ -157,15 +160,15 @@ class MainActivity : Activity() {
         }
         dictado = caja
         raiz.addView(caja)
+        compartidoPendiente?.let { caja.setText(it); compartidoPendiente = null }
         val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         fila.addView(boton("🎙 Dictar") { dictar() })
-        fila.addView(boton("✨ Seguir en Tiempos") {
-            val t = caja.text.toString().trim()
-            if (t.isEmpty()) { decir("Dictá o escribí algo primero."); return@boton }
-            abrir(urlDictado(t))
-            caja.setText("")
-        })
+        fila.addView(boton("📷 Captura") { elegirCaptura() })
         raiz.addView(fila)
+        capturaVista = texto("", 12f, "#9AA0A6")
+        raiz.addView(capturaVista)
+        pintarCaptura()
+        raiz.addView(boton("✨ Seguir en Tiempos") { seguir() })
         // Los avisos de la pantalla van acá arriba, al lado del dictado.
         raiz.addView(aviso)
 
@@ -178,6 +181,74 @@ class MainActivity : Activity() {
         raiz.addView(alertasVista)
         permisos()
         cargarTiempos()
+    }
+
+    /* ── pizarra-7: Compartir desde otra app (Instagram, Facebook, TikTok…) ── */
+
+    private var captura: Uri? = null
+    private var capturaVista: TextView? = null
+    private var compartidoPendiente: String? = null
+
+    /** Lo que llegó por «Compartir»: el texto a la caja; una imagen, como captura. */
+    private fun recibirCompartido(i: Intent?) {
+        if (i?.action != Intent.ACTION_SEND) return
+        i.action = null                                   // que girar la pantalla no lo repita
+        val img = if (Build.VERSION.SDK_INT >= 33) i.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            else @Suppress("DEPRECATION") (i.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri)
+        if (img != null && (i.type ?: "").startsWith("image/")) guardarCaptura(img)
+        val t = textoCompartido(i.getStringExtra(Intent.EXTRA_SUBJECT), i.getStringExtra(Intent.EXTRA_TEXT))
+        Bitacora.anotar(this, "compartido: " + (if (img != null) "imagen " else "") + linksDe(t).map { redDe(it) })
+        if (t.isNotEmpty()) {
+            val caja = dictado
+            if (caja == null) compartidoPendiente = t else caja.setText(t)
+        }
+        if (!nube.conSesion) { decir("Entrá con tu cuenta y lo compartido queda en la caja del dictado."); return }
+        val links = linksDe(t)
+        decir(when {
+            links.isNotEmpty() && captura == null && links.any { redDe(it) != "la web" } ->
+                "${redDe(links[0])} no deja leer sus publicaciones desde afuera: agregá una 📷 Captura del reel o del flyer, y si querés dictá qué te interesa."
+            else -> "Corregí o agregá lo que quieras y tocá ✨ Seguir en Tiempos."
+        })
+    }
+
+    private fun elegirCaptura() {
+        val i = Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE)
+        try { @Suppress("DEPRECATION") startActivityForResult(Intent.createChooser(i, "Captura del reel o del flyer"), PEDIDO_CAPTURA) }
+        catch (e: ActivityNotFoundException) { decir("No hay dónde elegir una imagen en este teléfono.") }
+    }
+
+    /** Se copia ya: el permiso para leer lo compartido dura lo que dura esta pantalla. */
+    private fun guardarCaptura(u: Uri) {
+        try {
+            val f = java.io.File(cacheDir, "captura.img")
+            contentResolver.openInputStream(u)?.use { ent -> f.outputStream().use { ent.copyTo(it) } }
+            captura = Uri.fromFile(f)
+        } catch (e: Throwable) {
+            Bitacora.anotar(this, "captura: no se pudo copiar: ${e.message}")
+            decir("No pude leer esa imagen.")
+        }
+        pintarCaptura()
+    }
+
+    private fun pintarCaptura() {
+        val v = capturaVista ?: return
+        v.text = if (captura != null) "📷 Captura lista · se sube al tocar Seguir  (tocá acá para sacarla)" else ""
+        v.visibility = if (captura != null) View.VISIBLE else View.GONE
+        v.setOnClickListener { captura = null; pintarCaptura() }
+    }
+
+    private fun seguir() {
+        val caja = dictado ?: return
+        val t = caja.text.toString().trim().ifEmpty { if (captura != null) "Lo de la captura." else "" }
+        if (t.isEmpty()) { decir("Dictá, escribí o agregá una captura primero."); return }
+        val c = captura
+        if (c == null) { abrir(urlDictado(t)); caja.setText(""); return }
+        decir("Subiendo la captura…")
+        enSegundo({ Imagenes.subir(this, c) }) { url ->
+            Bitacora.anotar(this, "captura subida")
+            abrir(urlDictado(t, url))
+            caja.setText(""); captura = null; pintarCaptura(); decir("")
+        }
     }
 
     private fun dictar() {
@@ -199,6 +270,7 @@ class MainActivity : Activity() {
     override fun onActivityResult(pedido: Int, resultado: Int, datos: Intent?) {
         @Suppress("DEPRECATION")
         super.onActivityResult(pedido, resultado, datos)
+        if (pedido == PEDIDO_CAPTURA) { if (resultado == RESULT_OK) datos?.data?.let { guardarCaptura(it) }; return }
         if (pedido != PEDIDO_VOZ || resultado != RESULT_OK) return
         val dicho = datos?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
         val caja = dictado ?: return

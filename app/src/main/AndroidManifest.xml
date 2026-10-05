@@ -40,6 +40,18 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- pizarra-7: «Compartir → Tiempos» desde Instagram, Facebook, TikTok,
+                 WhatsApp o el navegador: un link, un texto o una captura. -->
+            <intent-filter android:label="Agendar en Tiempos">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter android:label="Agendar en Tiempos">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
         </activity>
 
         <receiver

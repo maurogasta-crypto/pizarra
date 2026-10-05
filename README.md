@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-6` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 25 casos (11 de la pizarra, 8 de Tiempos, 6 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-7` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 29 casos (11 de la pizarra, 11 de Tiempos, 7 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -49,6 +49,17 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
   (deseos-1). Se editan en Tiempos.
 
 No escribe nada nuevo en la base: alertas y deseos sólo se leen.
+
+## Compartir desde otra app (pizarra-7)
+
+«Compartir → Tiempos» aparece en Instagram, Facebook, TikTok, WhatsApp, el
+navegador o la galería. Un link llega a la caja del dictado limpio de la
+basura de seguimiento (`?igsh=`, `?utm_…`) y con su red; un texto, tal cual;
+una imagen, como captura. Como Instagram no deja leer sus publicaciones desde
+afuera, la app pide una **📷 Captura** del reel o del flyer. Al tocar **✨
+Seguir en Tiempos** la captura se sube (achicada a 1600 px) a la cuenta de
+Cloudinary del ecosistema, carpeta `tiempos`, y el sitio la recibe como
+`&imagen=` —sólo si es de esa cuenta—. La app nunca abre el link.
 
 ## Si falla en el teléfono (pizarra-3)
 
@@ -108,6 +119,7 @@ crear una tarea que alguien borró.
 | `PizarraWidget.kt` | el widget, la caché y las filas |
 | `MainActivity.kt` | entrar, dictar, «hoy se puede», las próximas alarmas y elegir qué va a la pizarra |
 | `Bitacora.kt` | la bitácora, el cierre y la trabada guardados, y la falla que se manda a Tiempos |
+| `Imagenes.kt` | achicar y subir la captura a Cloudinary (preset sin firma, como el sitio) |
 | `Sirena.kt` | la alarma sonando: servicio en primer plano, sonido de alarma en bucle, Apagar |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |

@@ -68,6 +68,9 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   lleva lo dictado ni títulos, y eso no se afloja.
 - **Un hilo nunca tira**: una excepción sin atajar en un `thread {}` cierra la
   app entera. Todo hilo ataja `Throwable` y lo anota.
+- **Compartir no abre el link** (pizarra-7): Instagram y compañía no se dejan
+  leer desde afuera, y saltarse su login va contra sus condiciones. Lo que se
+  lee es el texto compartido y la captura que sube la persona.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

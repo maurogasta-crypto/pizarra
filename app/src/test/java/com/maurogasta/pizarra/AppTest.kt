@@ -104,4 +104,22 @@ class AppTest {
         s.onStartCommand(android.content.Intent().setAction(ACCION_APAGAR), 0, 2)
         assertTrue(sh.isStoppedBySelf)
     }
+
+    // «Compartir → Tiempos» desde Instagram: abre con el link en la caja y
+    // pide la captura, sin cerrarse.
+    @Test fun compartirUnReel_abreConElLinkEnLaCaja() {
+        conSesion()
+        val i = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+            .putExtra(android.content.Intent.EXTRA_TEXT, "https://www.instagram.com/reel/ABC/?igsh=zzz")
+        val a = Robolectric.buildActivity(MainActivity::class.java, i).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        fun cajas(v: View): List<android.widget.EditText> = when (v) {
+            is android.widget.EditText -> listOf(v)
+            is ViewGroup -> (0 until v.childCount).flatMap { cajas(v.getChildAt(it)) }
+            else -> emptyList()
+        }
+        val texto = cajas(a.window.decorView).first().text.toString()
+        assertTrue(texto, texto.contains("Link (Instagram): https://www.instagram.com/reel/ABC/"))
+        assertTrue(botones(a.window.decorView).any { it.text.contains("Captura") })
+    }
 }

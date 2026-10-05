@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-6
+// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-7
 //
 // Traducir las tareas de Tiempos (Firestore REST) a la lista de la pizarra, y
 // armar lo que se le manda a la base al tachar o al fijar una tarea. No toca
@@ -293,5 +293,52 @@ fun posiblesDelDia(deseos: List<Deseo>, iso: String): List<Deseo> {
    lo precarga con su IA (app-14). La dirección no lleva nada más. */
 const val TIEMPOS_URL = "https://maurogasta-crypto.github.io/tiempos/"
 
-fun urlDictado(texto: String): String =
-    TIEMPOS_URL + "?dictar=" + java.net.URLEncoder.encode(texto.trim().take(2000), "UTF-8")
+fun urlDictado(texto: String, imagen: String = ""): String =
+    TIEMPOS_URL + "?dictar=" + java.net.URLEncoder.encode(texto.trim().take(2000), "UTF-8") +
+        (if (esImagenNuestra(imagen)) "&imagen=" + java.net.URLEncoder.encode(imagen, "UTF-8") else "")
+
+/* ── COMPARTIR DESDE OTRA APP (pizarra-7, 5-oct-2026) ──────────────────────
+   Mauro: «hacé lo de Compartir desde Instagram, o cualquier otro link de red
+   social». Instagram no se deja leer por un programa (pide login), así que la
+   app no abre el link: lo guarda con lo que vino escrito y pide una captura
+   del reel o del flyer, que la IA sí lee. */
+
+/** Una imagen sólo viaja si es de la cuenta de Cloudinary del ecosistema. */
+const val CLOUDINARY_CUENTA = "dnwfu8ffn"
+fun esImagenNuestra(u: String): Boolean = u.startsWith("https://res.cloudinary.com/$CLOUDINARY_CUENTA/")
+
+private val URL_RE = Regex("""https?://\S+""")
+
+/** Los links de un texto compartido, sin la basura de seguimiento de Instagram y compañía. */
+fun linksDe(texto: String): List<String> = URL_RE.findAll(texto).map { m ->
+    val u = m.value.trimEnd('.', ',', ')', ']', '»', '"')
+    // ?igsh=, ?utm_…, ?stkn=: identifican a quien compartió, no al evento.
+    if (Regex("""(instagram\.com|facebook\.com|fb\.watch|tiktok\.com|youtu)""").containsMatchIn(u)) u.substringBefore('?') else u
+}.distinct().toList()
+
+/** De dónde viene un link, para decírselo a la IA y a la persona. */
+fun redDe(u: String): String = when {
+    "instagram.com" in u -> "Instagram"
+    "facebook.com" in u || "fb.watch" in u || "fb.me" in u -> "Facebook"
+    "tiktok.com" in u -> "TikTok"
+    "youtu" in u -> "YouTube"
+    "wa.me" in u || "whatsapp" in u -> "WhatsApp"
+    else -> "la web"
+}
+
+/**
+ * Lo que llega por «Compartir», puesto como texto para el dictado: lo que la
+ * otra app mandó escrito (sin el link repetido) y los links aparte, cada uno
+ * con su red. Si no vino nada escrito, una línea que lo dice, para que la IA
+ * no invente a partir de una dirección.
+ */
+fun textoCompartido(asunto: String?, texto: String?): String {
+    val crudo = listOfNotNull(asunto?.trim(), texto?.trim()).filter { it.isNotEmpty() }.distinct().joinToString("\n")
+    val links = linksDe(crudo)
+    val resto = URL_RE.replace(crudo, "").lines().map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n")
+    val partes = mutableListOf<String>()
+    if (resto.isNotEmpty()) partes.add(resto.take(1500))
+    else if (links.isNotEmpty()) partes.add("Algo que vi en ${redDe(links[0])} y quiero agendar o guardar (sin texto: mirá la captura).")
+    links.take(3).forEach { partes.add("Link (${redDe(it)}): $it") }
+    return partes.joinToString("\n")
+}

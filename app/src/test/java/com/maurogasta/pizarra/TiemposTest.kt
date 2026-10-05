@@ -114,4 +114,25 @@ class TiemposTest {
             .getJSONObject("update").getJSONObject("fields").getJSONObject("texto").getString("stringValue").length)
         assertEquals(20, idNuevo().length)
     }
+
+    @Test fun compartirDeInstagram_soloLink_quedaElLinkLimpioYUnaLíneaQueLoDice() {
+        val t = textoCompartido(null, "https://www.instagram.com/reel/DeFp9ixx41BF/?igsh=MW5jeGU5NjkxNG5nbw==")
+        assertEquals("Algo que vi en Instagram y quiero agendar o guardar (sin texto: mirá la captura).\n" +
+            "Link (Instagram): https://www.instagram.com/reel/DeFp9ixx41BF/", t)
+    }
+
+    @Test fun compartirConTexto_vaElTextoYElLinkAparte() {
+        val t = textoCompartido("Feria de diseño", "Feria de diseño este sábado 15 h en el Mercado https://fb.me/e/abc?utm_source=x")
+        assertTrue(t.startsWith("Feria de diseño\nFeria de diseño este sábado 15 h en el Mercado"))
+        assertTrue(t.endsWith("Link (Facebook): https://fb.me/e/abc?utm_source=x") || t.contains("Link (Facebook)"))
+        assertEquals(listOf("https://www.tiktok.com/@x/video/1"), linksDe("mirá https://www.tiktok.com/@x/video/1?is_from_webapp=1."))
+        assertEquals("", textoCompartido(null, null))
+    }
+
+    @Test fun laCaptura_viajaSóloSiEsDeNuestraCuentaDeCloudinary() {
+        val nuestra = "https://res.cloudinary.com/$CLOUDINARY_CUENTA/image/upload/v1/tiempos/a.jpg"
+        assertTrue(urlDictado("x", nuestra).contains("&imagen=" + java.net.URLEncoder.encode(nuestra, "UTF-8")))
+        assertTrue(!urlDictado("x", "https://evil.example/a.jpg").contains("imagen="))
+        assertTrue(!urlDictado("x", "https://res.cloudinary.com/otra/image/upload/a.jpg").contains("imagen="))
+    }
 }
