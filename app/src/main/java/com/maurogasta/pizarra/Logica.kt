@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-7
+// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-8
 //
 // Traducir las tareas de Tiempos (Firestore REST) a la lista de la pizarra, y
 // armar lo que se le manda a la base al tachar o al fijar una tarea. No toca
@@ -342,3 +342,11 @@ fun textoCompartido(asunto: String?, texto: String?): String {
     links.take(3).forEach { partes.add("Link (${redDe(it)}): $it") }
     return partes.joinToString("\n")
 }
+
+/**
+ * Qué alarmas se desprograman al ponerse al día: SÓLO las que se borraron de
+ * la base (pizarra-8, tiempos:A13). Una cuya hora ya pasó sigue en la base
+ * hasta que alguien la saca, y no se toca: si Android la demoró unos segundos,
+ * cancelarla es que no suene nunca.
+ */
+fun aCancelar(programadas: Set<String>, enLaBase: Set<String>): Set<String> = programadas - enLaBase

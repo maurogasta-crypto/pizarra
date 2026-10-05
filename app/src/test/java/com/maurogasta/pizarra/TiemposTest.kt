@@ -135,4 +135,9 @@ class TiemposTest {
         assertTrue(!urlDictado("x", "https://evil.example/a.jpg").contains("imagen="))
         assertTrue(!urlDictado("x", "https://res.cloudinary.com/otra/image/upload/a.jpg").contains("imagen="))
     }
+
+    @Test fun alPonerseAlDía_sóloSeCancelaLoBorradoDeLaBase() {
+        assertEquals(setOf("borrada"), aCancelar(setOf("pasada", "borrada", "futura"), setOf("pasada", "futura")))
+        assertEquals(emptySet<String>(), aCancelar(setOf("a"), setOf("a", "b")))
+    }
 }

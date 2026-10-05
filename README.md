@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-7` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 29 casos (11 de la pizarra, 11 de Tiempos, 7 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-8` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 32 casos (11 de la pizarra, 12 de Tiempos, 9 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -124,6 +124,13 @@ informe de fallos de HyperOS se va a Xiaomi, no a nosotros. Desde pizarra-3:
   ese sonido aunque lleve FLAG_INSISTENT. Ahora suena un servicio en primer
   plano (`Sirena.kt`) con el volumen de ALARMA, en bucle y vibrando, hasta
   «Apagar» o 3 minutos. Si el reproductor falla, el tono del sistema.
+- **Una alarma que ya pasó de hora no se cancela** (pizarra-8, `tiempos:A13`).
+  La de las 7:26 del 5-oct no sonó: según la bitácora, a las 07:25 estaba
+  programada y a las 07:26:14 —al volver a la app— ya no. La puesta al día
+  desprogramaba lo que ya había pasado de hora, y si Android la demoraba unos
+  segundos, nunca sonaba. Ahora se desprograma sólo lo que se borró en
+  Tiempos (`aCancelar`), y cada alarma que llega queda anotada en el disco
+  («alerta RECIBIDA»), con si Android deja alarmas exactas.
 - **Las barras del sistema y el teclado**: desde Android 15 la app se dibuja
   debajo de ellas; ahora el contenido se corre para que nada quede tapado.
 

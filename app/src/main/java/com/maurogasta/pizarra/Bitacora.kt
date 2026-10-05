@@ -13,7 +13,7 @@ import java.util.Date
 import java.util.Locale
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bitacora.kt — Que la app diga sola qué le pasó. Sello: pizarra-7
+// Bitacora.kt — Que la app diga sola qué le pasó. Sello: pizarra-8
 //
 // 5-oct-2026: pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro
 // «se traba, no deja ningún botón». El informe de fallos que ofreció HyperOS
@@ -38,16 +38,20 @@ class App : Application() {
     }
 }
 
-const val SELLO = "pizarra-7"
+const val SELLO = "pizarra-8"
 
 object Bitacora {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("bitacora", Context.MODE_PRIVATE)
     private val hora = SimpleDateFormat("dd/MM HH:mm:ss", Locale.US)
 
-    fun anotar(c: Context, t: String) = synchronized(this) {
+    /** `ya`: escribir en el disco antes de seguir (commit), para lo que tiene
+     *  que quedar aunque el proceso se muera enseguida — una alarma que llega. */
+    fun anotar(c: Context, t: String, ya: Boolean = false): Unit = synchronized(this) {
         val p = prefs(c)
         val l = renglones(p.getString("anillo", null)) + (hora.format(Date()) + " " + t.take(300))
-        p.edit().putString("anillo", JSONArray(l.takeLast(80)).toString()).apply()
+        val e = p.edit().putString("anillo", JSONArray(l.takeLast(80)).toString())
+        if (ya) e.commit() else e.apply()
+        Unit
     }
 
     fun ultimos(c: Context, n: Int = 25): List<String> = renglones(prefs(c).getString("anillo", null)).takeLast(n)

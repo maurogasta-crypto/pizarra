@@ -25,7 +25,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-7
+// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-8
 //
 // pizarra-2 (5-oct-2026, «que la Pizarra sea la app de Tiempos»): arriba de
 // todo, 🎙 Dictar —con el reconocedor de Android, el mismo del teclado— y el

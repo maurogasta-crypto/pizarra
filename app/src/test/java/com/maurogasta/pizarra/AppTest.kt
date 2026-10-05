@@ -122,4 +122,32 @@ class AppTest {
         assertTrue(texto, texto.contains("Link (Instagram): https://www.instagram.com/reel/ABC/"))
         assertTrue(botones(a.window.decorView).any { it.text.contains("Captura") })
     }
+
+    // tiempos:A13 — la alarma de las 7:26 del 5-oct: Android la demoró, Mauro
+    // volvió a la app, la puesta al día vio que «ya pasó» y la CANCELÓ.
+    // Ahora sólo se cancela lo que se borró de la base.
+    @Test fun unaAlarmaQueYaPasóDeHora_noSeCancela_unaBorradaSí() {
+        val c = RuntimeEnvironment.getApplication()
+        val am = shadowOf(c.getSystemService(android.app.AlarmManager::class.java))
+        val f = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+        val luego = java.time.LocalDateTime.now().plusMinutes(10)
+        val antes = java.time.LocalDateTime.now().minusMinutes(10)
+        val a = Alerta("a1", "alarma", "Gimnasio", luego.toLocalDate().toString(), luego.format(f))
+        Alarmas.programar(c, listOf(a))
+        assertTrue(am.scheduledAlarms.size == 1)
+        // La misma alarma, ya pasada de hora (Android la demoró): sigue en la base.
+        Alarmas.programar(c, listOf(a.copy(dia = antes.toLocalDate().toString(), hora = antes.format(f))))
+        assertTrue("una alarma demorada no se cancela", am.scheduledAlarms.size == 1)
+        // Se borró en Tiempos: ahora sí.
+        Alarmas.programar(c, emptyList())
+        assertTrue("una alarma borrada se cancela", am.scheduledAlarms.isEmpty())
+    }
+
+    @Test fun unaAlarmaQueLlega_quedaAnotadaEnElDiscoYSuena() {
+        val c = RuntimeEnvironment.getApplication()
+        AlarmaReceptor().onReceive(c, android.content.Intent(ACCION_ALERTA)
+            .putExtra("id", "x").putExtra("tipo", "alarma").putExtra("texto", "Prueba").putExtra("hora", "07:26"))
+        assertTrue(Bitacora.ultimos(c).any { it.contains("alerta RECIBIDA: alarma 07:26") })
+        assertTrue(shadowOf(c).nextStartedService?.component?.className?.endsWith("SirenaServicio") == true)
+    }
 }

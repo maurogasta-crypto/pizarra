@@ -20,7 +20,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sirena.kt — La alarma que suena HASTA que se la apaga. Sello: pizarra-7
+// Sirena.kt — La alarma que suena HASTA que se la apaga. Sello: pizarra-8
 //
 // 5-oct-2026, 00:56: la primera alarma de verdad «sonó pero se cortó
 // enseguida». Sonaba la NOTIFICACIÓN, y aunque llevaba FLAG_INSISTENT, HyperOS

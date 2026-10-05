@@ -29,7 +29,7 @@ import java.time.ZoneId
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-7
+// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-8
 //
 // Pedido de Mauro, 5-oct-2026: «mañana tengo que ir antes al gimnasio… poner
 // una sirena un rato antes». El sitio guarda la alerta en `alertas/` (app-13)
@@ -94,10 +94,18 @@ object Alarmas {
         val lista = paraProgramar(alertas, System.currentTimeMillis(), ZoneId.systemDefault())
         val antes = prefs(c).getStringSet("programadas", emptySet()) ?: emptySet()
         val ahora = lista.map { it.first.id }.toSet()
-        for (id in antes - ahora) intencion(c, id, null, PendingIntent.FLAG_NO_CREATE)?.let { am.cancel(it); it.cancel() }
+        val enLaBase = alertas.map { it.id }.toSet()
+        // pizarra-8 (tiempos:A13): sólo se desprograma lo que se BORRÓ de la
+        // base. Antes se desprogramaba también lo que ya había pasado de hora,
+        // y una alarma que Android demoraba unos segundos se cancelaba si en
+        // ese momento uno volvía a la app — la de las 7:26 del 5-oct.
+        for (id in aCancelar(antes, enLaBase)) intencion(c, id, null, PendingIntent.FLAG_NO_CREATE)?.let { am.cancel(it); it.cancel() }
+        val exactas = Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()
+        lista.firstOrNull()?.let { (a, t) ->
+            Bitacora.anotar(c, "programar: ${lista.size}, la próxima ${a.dia} ${a.hora} (${a.tipo}) · exactas ${if (exactas) "sí" else "NO"}")
+        }
         for ((a, t) in lista) {
             val pi = intencion(c, a.id, a, PendingIntent.FLAG_UPDATE_CURRENT) ?: continue
-            val exactas = Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()
             try {
                 when {
                     // La alarma se ve en la barra como un despertador, y Android
@@ -111,7 +119,7 @@ object Alarmas {
                 am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, t, pi)
             }
         }
-        prefs(c).edit().putStringSet("programadas", ahora).apply()
+        prefs(c).edit().putStringSet("programadas", ahora + (antes intersect enLaBase)).apply()
         return lista.size
     }
 
@@ -198,8 +206,12 @@ class AlarmaReceptor : BroadcastReceiver() {
 
     private fun recibir(c: Context, i: Intent) {
         when (i.action) {
-            ACCION_ALERTA -> Alarmas.avisar(c, i.getStringExtra("id") ?: return, i.getStringExtra("tipo") ?: "recordatorio",
+            ACCION_ALERTA -> {
+                // Con commit: si después algo cierra la app, que quede que llegó.
+                Bitacora.anotar(c, "alerta RECIBIDA: ${i.getStringExtra("tipo")} ${i.getStringExtra("hora")}", ya = true)
+                Alarmas.avisar(c, i.getStringExtra("id") ?: return, i.getStringExtra("tipo") ?: "recordatorio",
                 i.getStringExtra("texto") ?: "", i.getStringExtra("hora") ?: "")
+            }
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 with(Alarmas) { programar(c, c.alertasGuardadas) }
                 Alarmas.asegurarTrabajo(c)
