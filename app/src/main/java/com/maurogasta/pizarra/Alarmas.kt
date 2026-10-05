@@ -29,7 +29,7 @@ import java.time.ZoneId
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-3
+// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-4
 //
 // Pedido de Mauro, 5-oct-2026: «mañana tengo que ir antes al gimnasio… poner
 // una sirena un rato antes». El sitio guarda la alerta en `alertas/` (app-13)
@@ -122,11 +122,13 @@ object Alarmas {
     fun asegurarTrabajo(c: Context) {
         val js = c.getSystemService(JobScheduler::class.java) ?: return
         if (js.getPendingJob(TRABAJO_SINCRO) != null) return
-        js.schedule(JobInfo.Builder(TRABAJO_SINCRO, ComponentName(c, SincroTrabajo::class.java))
+        // Un permiso que falte acá no puede cerrar la app: las alarmas se
+        // ponen al día igual al abrirla y con el widget (pizarra-4).
+        try { js.schedule(JobInfo.Builder(TRABAJO_SINCRO, ComponentName(c, SincroTrabajo::class.java))
             .setPeriodic(60 * 60 * 1000L)
             .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
             .setPersisted(true)
-            .build())
+            .build()) } catch (e: Throwable) { Bitacora.anotar(c, "trabajo de cada hora: " + (e.message ?: e.toString())) }
     }
 
     // Cada alerta tiene su intención, distinguida por la dirección: con el

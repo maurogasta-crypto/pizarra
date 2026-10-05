@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-3
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-4
 //
 // Por REST y sin el SDK de Firebase, igual que la app de la Hilux: la app no
 // baja nada que no venga con Android.

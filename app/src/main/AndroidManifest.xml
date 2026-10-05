@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Sin éste, programar el trabajo de cada hora «con red» CIERRA la app al
+         abrir (pizarra-3, en el teléfono de Mauro). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- pizarra-2: las alarmas y recordatorios de Tiempos (Alarmas.kt) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
