@@ -78,4 +78,15 @@ class AppTest {
         val js = a.getSystemService(android.app.job.JobScheduler::class.java)
         assertTrue(js.allPendingJobs.isNotEmpty())
     }
+
+    // Dictar abre el navegador; la alarma la guarda el sitio. Al volver a la
+    // app tiene que ponerse al día, o una alarma cercana no suena.
+    @Test fun alVolverALaApp_sePoneAlDía() {
+        conSesion()
+        val c = Robolectric.buildActivity(MainActivity::class.java).setup()
+        shadowOf(Looper.getMainLooper()).idle()
+        c.pause().stop().restart().start().resume()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertTrue(Bitacora.ultimos(c.get()).any { it.contains("vuelve a la app") })
+    }
 }

@@ -25,7 +25,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-4
+// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-5
 //
 // pizarra-2 (5-oct-2026, «que la Pizarra sea la app de Tiempos»): arriba de
 // todo, 🎙 Dictar —con el reconocedor de Android, el mismo del teclado— y el
@@ -99,6 +99,18 @@ class MainActivity : Activity() {
     }
 
     // El widget con la app ya abierta: singleTop entrega acá.
+    /* pizarra-5: al VOLVER a la app (del navegador, después de dictar) se pone
+       al día. Una alarma «para dentro de 2 minutos» la guarda el sitio, y la
+       app no se enteraba hasta la próxima media hora: no sonó (5-oct, 00:45). */
+    private var yaAbrio = false
+    override fun onResume() {
+        super.onResume()
+        if (!yaAbrio) { yaAbrio = true; return }      // la primera vez ya cargó onCreate
+        if (!nube.conSesion || alertasVista == null) return
+        Bitacora.anotar(this, "vuelve a la app: se pone al día")
+        cargarTiempos()
+    }
+
     override fun onNewIntent(i: Intent) {
         super.onNewIntent(i)
         setIntent(i)

@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-4` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 23 casos (11 de la pizarra, 8 de Tiempos, 4 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-5` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 24 casos (11 de la pizarra, 8 de Tiempos, 5 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -69,6 +69,9 @@ informe de fallos de HyperOS se va a Xiaomi, no a nosotros. Desde pizarra-3:
   «con red» exige `ACCESS_NETWORK_STATE`, que faltaba. Robolectric no lo
   exige, así que el banco ahora LEE el manifiesto y falla si el código usa
   algo cuyo permiso no está (pizarra-4).
+- **Al volver a la app se pone al día** (pizarra-5). Dictar abre el navegador
+  y la alarma la guarda el sitio: una «para dentro de 2 minutos» no sonaba
+  porque la app recién se enteraba en la próxima media hora.
 - **Las barras del sistema y el teclado**: desde Android 15 la app se dibuja
   debajo de ellas; ahora el contenido se corre para que nada quede tapado.
 
