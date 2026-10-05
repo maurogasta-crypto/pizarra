@@ -35,6 +35,12 @@ private const val REFERER = "https://maurogasta-crypto.github.io/tiempos/"
 class ErrorNube(mensaje: String, val sinSesion: Boolean = false) : Exception(mensaje)
 
 class Nube(contexto: Context) {
+    companion object {
+        /** El banco abre la app sin red: con una sesión inventada, la red de
+         *  verdad la rechaza y la app vuelve a «Entrar» (pasó en GitHub). */
+        @Volatile var sinRed = false
+    }
+
     private val prefs = contexto.getSharedPreferences("sesion", Context.MODE_PRIVATE)
 
     val uid: String? get() = prefs.getString("uid", null)
@@ -125,6 +131,7 @@ class Nube(contexto: Context) {
     }
 
     private fun pedir(url: String, cuerpo: String, tipo: String, bearer: String?): String {
+        if (sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.requestMethod = "POST"

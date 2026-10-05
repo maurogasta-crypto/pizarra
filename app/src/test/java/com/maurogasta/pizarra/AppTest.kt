@@ -20,6 +20,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class AppTest {
+    @org.junit.Before fun sinRed() { Nube.sinRed = true }
+
     private fun conSesion() {
         val c = RuntimeEnvironment.getApplication()
         c.getSharedPreferences("sesion", Context.MODE_PRIVATE).edit()
