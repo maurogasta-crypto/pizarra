@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-1
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-2
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -48,6 +48,8 @@ class PizarraWidget : AppWidgetProvider() {
     override fun onUpdate(contexto: Context, manager: AppWidgetManager, ids: IntArray) {
         dibujar(contexto)
         actualizarDesdeLaRed(contexto, null)
+        // pizarra-2: de paso, las alarmas de Tiempos (Alarmas.kt).
+        Alarmas.sincronizar(contexto)
     }
 
     override fun onReceive(contexto: Context, intent: Intent) {
@@ -57,6 +59,7 @@ class PizarraWidget : AppWidgetProvider() {
                 Cache(contexto).estado = "Actualizando…"
                 dibujar(contexto)
                 actualizarDesdeLaRed(contexto, goAsync())
+                Alarmas.sincronizar(contexto)
             }
             ACCION_TACHAR -> {
                 val id = intent.getStringExtra("id") ?: return
@@ -87,6 +90,11 @@ class PizarraWidget : AppWidgetProvider() {
                 v.setOnClickPendingIntent(R.id.actualizar, difusion(contexto, ACCION_ACTUALIZAR, 1))
                 v.setOnClickPendingIntent(R.id.editar, PendingIntent.getActivity(contexto, 2,
                     Intent(contexto, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
+                // pizarra-2: 🎙 abre la app directo en el dictado.
+                v.setOnClickPendingIntent(R.id.dictar, PendingIntent.getActivity(contexto, 4,
+                    Intent(contexto, MainActivity::class.java).putExtra(EXTRA_DICTAR, true)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 // La plantilla de cada fila: MUTABLE porque la fila le agrega
                 // qué tarea es y si se tacha o se destacha.
                 v.setPendingIntentTemplate(R.id.lista, PendingIntent.getBroadcast(contexto, 3,

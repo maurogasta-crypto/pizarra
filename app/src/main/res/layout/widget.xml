@@ -34,6 +34,14 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/dictar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="🎙"
+            android:textSize="18sp"
+            android:contentDescription="Dictar para Tiempos" />
+        <TextView
             android:id="@+id/actualizar"
             android:layout_width="40dp"
             android:layout_height="40dp"

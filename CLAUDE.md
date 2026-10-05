@@ -12,6 +12,12 @@ un widget de verdad exige una app nativa (se le ofreció a Mauro una página web
 con ícono y eligió el widget). Lo que devuelve el flujo del teléfono es el
 workflow: cada push a `main` corre el banco, compila y publica `pizarra.apk`.
 
+**Desde `pizarra-2` (5-oct-2026) es la app de Tiempos en el teléfono**
+(decisión de Mauro): dicta con el reconocedor de Android y le pasa el texto al
+sitio (`?dictar=`), programa las alarmas y recordatorios de `alertas/`, y
+muestra «⭐ Hoy se puede» de `deseos/`. Lee esas dos colecciones; no escribe en
+ellas.
+
 No tiene base propia: lee y escribe `tareas/` de **`tiempos-71d42`**, con la
 cuenta de la propia persona. El detalle, en `README.md`.
 
@@ -47,6 +53,13 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
 - **Sin dependencias en la app**, a propósito: HttpURLConnection y org.json.
 - **El widget no espera a la red para tachar**, y si la base dice que no, la
   fila vuelve. Nunca queda tachado algo que la base no tiene tachado.
+- **`posiblesDelDia` está dos veces**: en `Logica.kt` y en `nucleo.js` de
+  Tiempos. Si cambia allá (qué es un día, qué estados cuentan), cambia acá en
+  la misma tanda.
+- **El dictado viaja como texto y nada más**: `urlDictado` arma la dirección y
+  el banco lo comprueba. La IA es la del sitio; esta app no tiene claves.
+- **Una alarma que ya pasó no se programa** (sonar a destiempo enseña a no
+  hacerle caso), y apagarla no la borra en Tiempos.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

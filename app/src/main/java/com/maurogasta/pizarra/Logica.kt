@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-1
+// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-2
 //
 // Traducir las tareas de Tiempos (Firestore REST) a la lista de la pizarra, y
 // armar lo que se le manda a la base al tachar o al fijar una tarea. No toca
@@ -167,3 +167,131 @@ fun filasDeJson(texto: String?): List<Fila> = try {
 fun conTachada(filas: List<Fila>, id: String, hecho: Boolean): List<Fila> =
     filas.map { if (it.id == id) it.copy(hecho = hecho) else it }
         .sortedWith(compareBy<Fila>({ it.hecho }, { it.texto.lowercase() }))
+
+/* ── pizarra-2: la app de Tiempos en el teléfono (5-oct-2026) ──────────────
+   Mauro: «que la Pizarra sea la app de Tiempos». Lo que el sitio no puede
+   hacer con el teléfono bloqueado —sonar a una hora— y lo que el teléfono
+   hace mejor que el sitio —dictar— viven acá. Lo demás sigue en el sitio:
+   esta app le pasa el dictado y Tiempos arma el plan con su IA.
+
+   ── LAS ALERTAS ──────────────────────────────────────────────────────────
+   `alertas/` de Tiempos (reglas v9): cada una es de su dueño, con `tipo`
+   recordatorio o alarma, `texto`, `dia` (AAAA-MM-DD) y `hora` (HH:MM), en la
+   hora del teléfono. Un recordatorio es una notificación; una alarma suena
+   hasta que se la apaga. */
+
+data class Alerta(val id: String, val tipo: String, val texto: String, val dia: String, val hora: String)
+
+private val DIA_RE = Regex("""^\d{4}-\d{2}-\d{2}$""")
+private val HORA_RE = Regex("""^([01]\d|2[0-3]):[0-5]\d$""")
+
+fun alertaDe(doc: JSONObject): Alerta? {
+    val id = doc.optString("name", "").substringAfterLast('/', "")
+    val f = doc.optJSONObject("fields") ?: return null
+    val tipo = texto(f, "tipo") ?: return null
+    if (id.isEmpty() || (tipo != "recordatorio" && tipo != "alarma")) return null
+    val dia = texto(f, "dia").orEmpty()
+    if (!DIA_RE.matches(dia)) return null
+    val hora = texto(f, "hora").orEmpty().let { if (HORA_RE.matches(it)) it else "08:00" }
+    val t = texto(f, "texto")?.trim().orEmpty()
+    if (t.isEmpty()) return null
+    return Alerta(id, tipo, t.take(200), dia, hora)
+}
+
+fun alertasDeConsulta(respuesta: JSONArray): List<Alerta> =
+    (0 until respuesta.length()).mapNotNull { i ->
+        respuesta.optJSONObject(i)?.optJSONObject("document")?.let { alertaDe(it) }
+    }
+
+/** El instante de una alerta, en la zona del teléfono. Si no se entiende, null. */
+fun instanteDe(a: Alerta, zona: java.time.ZoneId): Long? = try {
+    java.time.LocalDateTime.of(java.time.LocalDate.parse(a.dia), java.time.LocalTime.parse(a.hora))
+        .atZone(zona).toInstant().toEpochMilli()
+} catch (e: Exception) {
+    null
+}
+
+/**
+ * Las que hay que dejar programadas: de ahora en adelante y hasta `dias`
+ * días, por hora. Una que ya pasó no se programa —Android la dispararía en
+ * el acto, y sonar a destiempo enseña a no hacerle caso—.
+ */
+fun paraProgramar(alertas: List<Alerta>, ahora: Long, zona: java.time.ZoneId, dias: Int = 14): List<Pair<Alerta, Long>> {
+    val hasta = ahora + dias * 24L * 3600 * 1000
+    return alertas.mapNotNull { a -> instanteDe(a, zona)?.let { a to it } }
+        .filter { (_, t) -> t > ahora && t <= hasta }
+        .sortedBy { it.second }
+}
+
+/** Mis alertas: la regla deja leer sólo las propias, y la consulta lo dice. */
+fun consultaAlertas(uid: String): JSONObject = JSONObject().put("structuredQuery", JSONObject()
+    .put("from", JSONArray().put(JSONObject().put("collectionId", "alertas")))
+    .put("where", filtro("uid", uid)))
+
+fun alertasAJson(a: List<Alerta>): String = JSONArray().apply {
+    a.forEach { put(JSONObject().put("id", it.id).put("tipo", it.tipo).put("texto", it.texto).put("dia", it.dia).put("hora", it.hora)) }
+}.toString()
+
+fun alertasDeJson(texto: String?): List<Alerta> = try {
+    val a = JSONArray(texto ?: "[]")
+    (0 until a.length()).mapNotNull { i ->
+        a.optJSONObject(i)?.let { o ->
+            val x = Alerta(o.optString("id"), o.optString("tipo"), o.optString("texto"), o.optString("dia"), o.optString("hora"))
+            if (x.id.isEmpty() || !DIA_RE.matches(x.dia) || !HORA_RE.matches(x.hora)) null else x
+        }
+    }
+} catch (e: Exception) {
+    emptyList()
+}
+
+/* ── LOS DESEOS: «qué se puede hacer hoy» ──────────────────────────────────
+   La misma cuenta que `posiblesDelDia` de nucleo.js de Tiempos (deseos-1): lo
+   semanal de ese día de la semana (`dias`, 0 = domingo) y lo de esa fecha,
+   sin los descartados, por hora. Si cambia allá, cambia acá. */
+
+data class Deseo(val id: String, val titulo: String, val lugar: String, val dias: List<Int>, val fecha: String,
+                 val hi: String, val hf: String, val estado: String)
+
+fun deseoDe(doc: JSONObject): Deseo? {
+    val id = doc.optString("name", "").substringAfterLast('/', "")
+    val f = doc.optJSONObject("fields") ?: return null
+    val titulo = texto(f, "titulo")?.trim().orEmpty()
+    if (id.isEmpty() || titulo.isEmpty()) return null
+    val vals = f.optJSONObject("dias")?.optJSONObject("arrayValue")?.optJSONArray("values") ?: JSONArray()
+    val dias = (0 until vals.length()).mapNotNull { i ->
+        val v = vals.optJSONObject(i) ?: return@mapNotNull null
+        (v.optString("integerValue", "").toIntOrNull() ?: if (v.has("doubleValue")) v.optDouble("doubleValue").toInt() else null)
+            ?.takeIf { it in 0..6 }
+    }.distinct().sorted()
+    return Deseo(id, titulo.take(120), texto(f, "lugar").orEmpty(), dias,
+        texto(f, "fecha").orEmpty().takeIf { DIA_RE.matches(it) }.orEmpty(),
+        texto(f, "hi").orEmpty().takeIf { HORA_RE.matches(it) }.orEmpty(),
+        texto(f, "hf").orEmpty().takeIf { HORA_RE.matches(it) }.orEmpty(),
+        texto(f, "estado") ?: "deseo")
+}
+
+fun deseosDeConsulta(respuesta: JSONArray): List<Deseo> =
+    (0 until respuesta.length()).mapNotNull { i ->
+        respuesta.optJSONObject(i)?.optJSONObject("document")?.let { deseoDe(it) }
+    }
+
+fun consultaDeseos(): JSONObject = JSONObject().put("structuredQuery", JSONObject()
+    .put("from", JSONArray().put(JSONObject().put("collectionId", "deseos"))))
+
+/** 0 = domingo, como Date.getDay() del sitio. */
+fun diaSemana(iso: String): Int = java.time.LocalDate.parse(iso).dayOfWeek.value % 7
+
+fun posiblesDelDia(deseos: List<Deseo>, iso: String): List<Deseo> {
+    val w = diaSemana(iso)
+    return deseos.filter { d -> d.estado != "descartado" && (if (d.fecha.isNotEmpty()) d.fecha == iso else w in d.dias) }
+        .sortedWith(compareBy<Deseo>({ it.hi.ifEmpty { "99" } }, { it.titulo }))
+}
+
+/* ── EL DICTADO ────────────────────────────────────────────────────────────
+   El reconocedor de Android —el mismo del micrófono del teclado, que a Mauro
+   le anda— escribe acá; lo corregido viaja a Tiempos como ?dictar=, y Tiempos
+   lo precarga con su IA (app-14). La dirección no lleva nada más. */
+const val TIEMPOS_URL = "https://maurogasta-crypto.github.io/tiempos/"
+
+fun urlDictado(texto: String): String =
+    TIEMPOS_URL + "?dictar=" + java.net.URLEncoder.encode(texto.trim().take(2000), "UTF-8")
