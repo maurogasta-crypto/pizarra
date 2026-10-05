@@ -29,7 +29,7 @@ import java.time.ZoneId
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-5
+// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-6
 //
 // Pedido de Mauro, 5-oct-2026: «mañana tengo que ir antes al gimnasio… poner
 // una sirena un rato antes». El sitio guarda la alerta en `alertas/` (app-13)
@@ -164,6 +164,12 @@ object Alarmas {
         val nm = c.getSystemService(NotificationManager::class.java) ?: return
         val numero = id.hashCode()
         val alarma = tipo == "alarma"
+        // pizarra-6: la alarma suena desde el servicio (Sirena.kt), no desde la
+        // notificación, que HyperOS corta a los pocos segundos. Si el servicio
+        // no puede arrancar, queda la notificación de antes.
+        if (alarma) try { SirenaServicio.arrancar(c, texto, hora); return } catch (e: Throwable) {
+            Bitacora.anotar(c, "sirena no arrancó, va la notificación: " + (e.message ?: e.toString()))
+        }
         val pantalla = PendingIntent.getActivity(c, numero,
             Intent(c, AlarmaPantalla::class.java).setData(Uri.parse("tiempos://alerta/$id"))
                 .putExtra("texto", texto).putExtra("hora", hora).putExtra("numero", numero)
@@ -236,6 +242,7 @@ class AlarmaPantalla : Activity() {
                 text = "Apagar"; textSize = 22f; isAllCaps = false
                 setOnClickListener {
                     getSystemService(NotificationManager::class.java)?.cancel(numero)
+                    SirenaServicio.apagar(context)
                     finish()
                 }
             })

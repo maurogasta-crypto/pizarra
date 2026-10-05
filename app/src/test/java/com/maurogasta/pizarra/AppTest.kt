@@ -66,6 +66,8 @@ class AppTest {
             "setFullScreenIntent" to "USE_FULL_SCREEN_INTENT",
             "POST_NOTIFICATIONS" to "POST_NOTIFICATIONS",
             "openConnection" to "INTERNET",
+            "startForeground" to "FOREGROUND_SERVICE",
+            "FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK" to "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         )
         for ((uso, permiso) in exige) if (codigo.contains(uso))
             assertTrue("$uso necesita $permiso en el manifiesto", m.contains("android.permission.$permiso\""))
@@ -88,5 +90,18 @@ class AppTest {
         c.pause().stop().restart().start().resume()
         shadowOf(Looper.getMainLooper()).idle()
         assertTrue(Bitacora.ultimos(c.get()).any { it.contains("vuelve a la app") })
+    }
+
+    // 00:56 del 5-oct: la alarma «sonó y se cortó». La sirena es un servicio
+    // que suena en bucle con el volumen de ALARMA hasta Apagar o 3 minutos.
+    @Test fun laSirena_quedaSonandoHastaApagar() {
+        val c = RuntimeEnvironment.getApplication()
+        val s = Robolectric.buildService(SirenaServicio::class.java,
+            android.content.Intent().putExtra("texto", "Dentista").putExtra("hora", "10:30")).create().startCommand(0, 1).get()
+        val sh = shadowOf(s)
+        assertTrue(Bitacora.ultimos(c).any { it.contains("sirena: suena") })
+        assertTrue(sh.lastForegroundNotification != null && !sh.isStoppedBySelf)
+        s.onStartCommand(android.content.Intent().setAction(ACCION_APAGAR), 0, 2)
+        assertTrue(sh.isStoppedBySelf)
     }
 }

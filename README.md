@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-5` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 24 casos (11 de la pizarra, 8 de Tiempos, 5 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-6` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 25 casos (11 de la pizarra, 8 de Tiempos, 6 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -72,6 +72,11 @@ informe de fallos de HyperOS se va a Xiaomi, no a nosotros. Desde pizarra-3:
 - **Al volver a la app se pone al día** (pizarra-5). Dictar abre el navegador
   y la alarma la guarda el sitio: una «para dentro de 2 minutos» no sonaba
   porque la app recién se enteraba en la próxima media hora.
+- **La alarma suena hasta que se la apaga** (pizarra-6). La primera de verdad
+  (5-oct, 00:56) «sonó y se cortó»: sonaba la notificación, y HyperOS corta
+  ese sonido aunque lleve FLAG_INSISTENT. Ahora suena un servicio en primer
+  plano (`Sirena.kt`) con el volumen de ALARMA, en bucle y vibrando, hasta
+  «Apagar» o 3 minutos. Si el reproductor falla, el tono del sistema.
 - **Las barras del sistema y el teclado**: desde Android 15 la app se dibuja
   debajo de ellas; ahora el contenido se corre para que nada quede tapado.
 
@@ -103,5 +108,6 @@ crear una tarea que alguien borró.
 | `PizarraWidget.kt` | el widget, la caché y las filas |
 | `MainActivity.kt` | entrar, dictar, «hoy se puede», las próximas alarmas y elegir qué va a la pizarra |
 | `Bitacora.kt` | la bitácora, el cierre y la trabada guardados, y la falla que se manda a Tiempos |
+| `Sirena.kt` | la alarma sonando: servicio en primer plano, sonido de alarma en bucle, Apagar |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |
