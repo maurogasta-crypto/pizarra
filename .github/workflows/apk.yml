@@ -47,9 +47,11 @@ jobs:
           done
 
       # ── LA FIRMA ─────────────────────────────────────────────────────────
-      # Los mismos cuatro secretos que la app de la Hilux (FIRMA_JKS,
-      # FIRMA_STORE_PASS, FIRMA_KEY_PASS, FIRMA_ALIAS), cargados por Mauro a
-      # mano en Settings → Secrets de ESTE repositorio. Sin ellos se firma con
+      # Los mismos cuatro NOMBRES que la app de la Hilux (FIRMA_JKS,
+      # FIRMA_STORE_PASS, FIRMA_KEY_PASS, FIRMA_ALIAS), con una clave PROPIA de
+      # la pizarra (decidido el 5-oct-2026: la de la Hilux no se puede leer de
+      # vuelta de GitHub, y no hace falta), cargados por Mauro a mano en
+      # Settings → Secrets de ESTE repositorio. Paso a paso: README «La firma». Sin ellos se firma con
       # la clave de depuración, que cambia en cada corrida, y se avisa.
       - name: Preparar la firma
         id: firma
@@ -66,13 +68,13 @@ jobs:
           fi
           printf '%s' "$FIRMA_JKS" | tr -d '[:space:]' | base64 -d > app/firma.jks
           if ! "$JAVA_HOME/bin/keytool" -list -keystore app/firma.jks -storepass "$FIRMA_STORE_PASS" > /dev/null 2>&1; then
-            echo "::error::El keystore de FIRMA_JKS no abre con FIRMA_STORE_PASS. Son los mismos secretos que en sitd-hilux: copialos tal cual."
+            echo "::error::El keystore de FIRMA_JKS no abre con FIRMA_STORE_PASS. Revisá que FIRMA_STORE_PASS sea la contraseña de pizarra.jks (README, «La firma»)."
             exit 1
           fi
           cat > key.properties <<PROPS
           storeFile=firma.jks
           storePassword=$FIRMA_STORE_PASS
-          keyAlias=${FIRMA_ALIAS:-sitd}
+          keyAlias=${FIRMA_ALIAS:-pizarra}
           keyPassword=${FIRMA_KEY_PASS:-$FIRMA_STORE_PASS}
           PROPS
           echo "propia=si" >> "$GITHUB_OUTPUT"

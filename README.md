@@ -61,6 +61,42 @@ Seguir en Tiempos** la captura se sube (achicada a 1600 px) a la cuenta de
 Cloudinary del ecosistema, carpeta `tiempos`, y el sitio la recibe como
 `&imagen=` —sólo si es de esa cuenta—. La app nunca abre el link.
 
+## La firma: dejar de desinstalar (desde el teléfono, en Termux)
+
+Hasta que estén los cuatro secretos, cada APK sale firmada con una clave de
+depuración nueva y hay que desinstalar para instalar la siguiente (se pierde
+sólo la sesión). La pizarra lleva **su propia clave**: la de la Hilux vive en
+los secretos de `sitd-hilux`, que GitHub no deja leer de vuelta a nadie.
+
+1. En Termux (`pkg install openjdk-17` si no está):
+
+   ```bash
+   keytool -genkeypair -v -keystore pizarra.jks -storetype JKS \
+     -keyalg RSA -keysize 4096 -validity 10000 \
+     -alias pizarra -dname "CN=Tiempos, O=Tiempos, C=UY"
+   ```
+
+   Pide una contraseña dos veces: **la misma las dos**. Guardala ya (gestor de
+   contraseñas, o «Guardar el valor» en `claves/` del panel).
+2. Pasarla a texto, por archivo y nunca con `cat`:
+
+   ```bash
+   base64 -w0 pizarra.jks > pizarra.jks.b64
+   wc -c < pizarra.jks.b64
+   cp pizarra.jks.b64 /sdcard/Download/firma-pizarra.txt
+   ```
+
+   Anotá el número de `wc -c`. Abrí el archivo con el navegador o un editor,
+   seleccionar todo, copiar.
+3. GitHub → `maurogasta-crypto/pizarra` → Settings → Secrets and variables →
+   Actions → New repository secret, cuatro veces: `FIRMA_JKS` (el chorro),
+   `FIRMA_STORE_PASS` y `FIRMA_KEY_PASS` (la contraseña), `FIRMA_ALIAS`
+   (`pizarra`). Después `rm /sdcard/Download/firma-pizarra.txt`.
+4. **Guardá `pizarra.jks` fuera del teléfono** (Drive, el gestor): sin él no se
+   puede firmar otra actualización. No va a un repositorio ni a un chat.
+5. La próxima corrida sale firmada con la clave propia: una última
+   desinstalación, y de ahí en adelante se instala encima.
+
 ## Si falla en el teléfono (pizarra-3)
 
 pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro se trababa. El
