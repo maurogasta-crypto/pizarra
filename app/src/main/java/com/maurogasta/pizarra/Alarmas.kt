@@ -29,7 +29,7 @@ import java.time.ZoneId
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-2
+// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-3
 //
 // Pedido de Mauro, 5-oct-2026: «mañana tengo que ir antes al gimnasio… poner
 // una sirena un rato antes». El sitio guarda la alerta en `alertas/` (app-13)
@@ -77,10 +77,11 @@ object Alarmas {
                     ctx.alertasGuardadas = a
                     "${programar(ctx, a)} programada(s)"
                 }
-            } catch (e: Exception) {
-                // Sin red: queda programado lo último que se supo.
-                programar(ctx, ctx.alertasGuardadas)
-                e.message ?: "no se pudo traer las alertas"
+            } catch (e: Throwable) {
+                // Sin red: queda programado lo último que se supo. Y si
+                // programar también falla, se anota: un hilo que tira cierra la app.
+                try { programar(ctx, ctx.alertasGuardadas); e.message ?: "no se pudo traer las alertas" }
+                catch (x: Throwable) { Bitacora.anotar(ctx, "programar falló: " + Bitacora.pila(x).take(300)); "no se pudieron programar" }
             }
             listo?.invoke(msg)
         }
@@ -183,7 +184,11 @@ object Alarmas {
 
 /** Suena la alerta; y al prender el teléfono o actualizar la app, reprograma. */
 class AlarmaReceptor : BroadcastReceiver() {
-    override fun onReceive(c: Context, i: Intent) {
+    override fun onReceive(c: Context, i: Intent) = try { recibir(c, i) } catch (e: Throwable) {
+        Bitacora.anotar(c, "receptor ${i.action}: " + Bitacora.pila(e).take(300))
+    }
+
+    private fun recibir(c: Context, i: Intent) {
         when (i.action) {
             ACCION_ALERTA -> Alarmas.avisar(c, i.getStringExtra("id") ?: return, i.getStringExtra("tipo") ?: "recordatorio",
                 i.getStringExtra("texto") ?: "", i.getStringExtra("hora") ?: "")

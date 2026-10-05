@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-2` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 18 casos (11 de la pizarra, 7 de Tiempos), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-3` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 21 casos (11 de la pizarra, 8 de Tiempos, 2 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -50,6 +50,24 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 
 No escribe nada nuevo en la base: alertas y deseos sólo se leen.
 
+## Si falla en el teléfono (pizarra-3)
+
+pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro se trababa. El
+informe de fallos de HyperOS se va a Xiaomi, no a nosotros. Desde pizarra-3:
+
+- **La app lleva una bitácora** (80 renglones: qué abrió, qué pidió, qué
+  error). Si se **cierra** o se **traba** (la pantalla 5 s sin contestar),
+  guarda qué estaba haciendo y la pila, y **la próxima vez que se abre lo
+  manda a `reportes/` de Tiempos** como una falla, con la sesión de la
+  persona —lo mismo que «Algo anda mal» del sitio—. No lleva lo dictado ni
+  títulos: el paso, el error y el modelo de teléfono.
+- **🩺 Mandar diagnóstico a Claude**, abajo en la app, manda la bitácora a mano.
+- **El banco abre la app** (Robolectric, sólo en las pruebas) con y sin
+  sesión, y toca cada botón. Robolectric baja su Android con Gradle y corre
+  sin red (`copiarAndroidRobolectric`).
+- **Las barras del sistema y el teclado**: desde Android 15 la app se dibuja
+  debajo de ellas; ahora el contenido se corre para que nada quede tapado.
+
 ## Qué escribe en la base
 
 | Acción | Campos de `tareas/{id}` | Igual que en Tiempos |
@@ -77,5 +95,6 @@ crear una tarea que alguien borró.
 | `Nube.kt` | entrar, renovar el token, leer y escribir por REST |
 | `PizarraWidget.kt` | el widget, la caché y las filas |
 | `MainActivity.kt` | entrar, dictar, «hoy se puede», las próximas alarmas y elegir qué va a la pizarra |
+| `Bitacora.kt` | la bitácora, el cierre y la trabada guardados, y la falla que se manda a Tiempos |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |

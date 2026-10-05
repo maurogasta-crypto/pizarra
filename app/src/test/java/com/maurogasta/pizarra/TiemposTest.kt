@@ -99,4 +99,19 @@ class TiemposTest {
         assertTrue(!q.contains("&") && !q.contains(" "))
         assertEquals(2000, java.net.URLDecoder.decode(urlDictado("a".repeat(5000)).substringAfter("="), "UTF-8").length)
     }
+
+    @Test fun unaFallaDeLaApp_tieneLaFormaQuePideLaRegla() {
+        val w = cuerpoFalla("abc", "uidMauro", "m@x.y", "  La app se CERRÓ  ", "no-anda").getJSONArray("writes").getJSONObject(0)
+        val f = w.getJSONObject("update").getJSONObject("fields")
+        assertEquals("$BASE_DOCS/reportes/abc", w.getJSONObject("update").getString("name"))
+        assertEquals("uidMauro", f.getJSONObject("uid").getString("stringValue"))
+        assertEquals("falla", f.getJSONObject("tipo").getString("stringValue"))
+        assertEquals("nuevo", f.getJSONObject("estado").getString("stringValue"))
+        assertEquals("La app se CERRÓ", f.getJSONObject("texto").getString("stringValue"))
+        assertTrue(!f.has("urgencia"))                      // una falla tiene gravedad, nunca urgencia
+        assertEquals(false, w.getJSONObject("currentDocument").getBoolean("exists"))   // no pisa un reporte
+        assertEquals(2000, cuerpoFalla("a", "u", "", "x".repeat(5000), "traba").getJSONArray("writes").getJSONObject(0)
+            .getJSONObject("update").getJSONObject("fields").getJSONObject("texto").getString("stringValue").length)
+        assertEquals(20, idNuevo().length)
+    }
 }

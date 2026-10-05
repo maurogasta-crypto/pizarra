@@ -60,6 +60,14 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   el banco lo comprueba. La IA es la del sitio; esta app no tiene claves.
 - **Una alarma que ya pasó no se programa** (sonar a destiempo enseña a no
   hacerle caso), y apagarla no la borra en Tiempos.
+- **El banco ABRE la app** (`AppTest`, Robolectric, sólo de pruebas): pizarra-2
+  pasó todo y en el teléfono se trababa. Una pantalla nueva entra con su caso
+  ahí.
+- **Una falla en el teléfono llega sola** (`Bitacora.kt`, pizarra-3): cierre
+  o trabada → `reportes/` de Tiempos al volver a abrir. Lo que se anota no
+  lleva lo dictado ni títulos, y eso no se afloja.
+- **Un hilo nunca tira**: una excepción sin atajar en un `thread {}` cierra la
+  app entera. Todo hilo ataja `Throwable` y lo anota.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

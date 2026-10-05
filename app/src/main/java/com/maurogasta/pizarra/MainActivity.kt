@@ -25,7 +25,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-2
+// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-3
 //
 // pizarra-2 (5-oct-2026, «que la Pizarra sea la app de Tiempos»): arriba de
 // todo, 🎙 Dictar —con el reconocedor de Android, el mismo del teclado— y el
@@ -53,13 +53,49 @@ class MainActivity : Activity() {
         raiz = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(28), dp(18), dp(28))
+            // Que la caja del dictado no se lleve el foco al abrir (y con él el
+            // teclado, tapando los botones): el foco arranca acá.
+            isFocusableInTouchMode = true
+            descendantFocusability = android.view.ViewGroup.FOCUS_BEFORE_DESCENDANTS
         }
-        setContentView(ScrollView(this).apply {
+        val vista = ScrollView(this).apply {
             setBackgroundColor(Color.parseColor("#16191C"))
             addView(raiz)
-        })
+        }
+        // pizarra-3: desde Android 15 la app se dibuja DEBAJO de las barras del
+        // sistema y del teclado, y «adjustResize» ya no achica nada. Sin esto lo
+        // de arriba queda bajo la hora y lo de abajo bajo los botones del
+        // sistema o el teclado: se ve, y no se puede tocar.
+        if (Build.VERSION.SDK_INT >= 30) vista.setOnApplyWindowInsetsListener { v, ins ->
+            val m = ins.getInsets(android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.ime() or
+                android.view.WindowInsets.Type.displayCutout())
+            v.setPadding(m.left, m.top, m.right, m.bottom)
+            ins
+        }
+        setContentView(vista)
+        raiz.requestFocus()
+        Bitacora.anotar(this, "pantalla: abre (sesión ${if (nube.conSesion) "sí" else "no"})")
         pintar()
         if (intent?.getBooleanExtra(EXTRA_DICTAR, false) == true && nube.conSesion) dictar()
+        mandarPendiente()
+    }
+
+    /* pizarra-3: si la vez anterior se cerró o se trabó, se manda a Tiempos. */
+    private fun mandarPendiente() {
+        val p = Bitacora.pendiente(this) ?: return
+        if (!nube.conSesion) return
+        thread {
+            val ok = try { nube.mandarFalla(p, "no-anda"); true } catch (e: Throwable) {
+                Bitacora.anotar(this, "no se pudo mandar la falla: ${e.message}"); false }
+            if (ok) Bitacora.olvidarPendiente(this)
+            runOnUiThread { decir(if (ok) "La vez anterior la app falló: ya se lo mandé a Claude." else "La vez anterior la app falló; lo mando cuando haya señal.") }
+        }
+    }
+
+    private fun mandarDiagnostico() {
+        val texto = "Diagnóstico pedido a mano desde la app.\n\n" + Bitacora.ultimos(this, 40).joinToString("\n")
+        decir("Mandando…")
+        enSegundo({ nube.mandarFalla(texto, "traba") }) { decir("Mandado a Claude. Contale en el chat qué estabas tocando.") }
     }
 
     // El widget con la app ya abierta: singleTop entrega acá.
@@ -133,6 +169,7 @@ class MainActivity : Activity() {
     }
 
     private fun dictar() {
+        Bitacora.anotar(this, "dictar: abre el reconocedor")
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-UY")
@@ -164,10 +201,11 @@ class MainActivity : Activity() {
 
     private fun cargarTiempos() {
         Alarmas.asegurarTrabajo(this)
-        Alarmas.sincronizar(this) { _ -> runOnUiThread { pintarAlertas() } }
+        Alarmas.sincronizar(this) { m -> Bitacora.anotar(this, "alarmas: $m"); runOnUiThread { pintarAlertas() } }
         thread {
             val hoy = java.time.LocalDate.now().toString()
-            val r = try { Result.success(posiblesDelDia(nube.deseos(), hoy)) } catch (e: Exception) { Result.failure(e) }
+            val r = try { Result.success(posiblesDelDia(nube.deseos(), hoy)) } catch (e: Throwable) { Result.failure(e) }
+            Bitacora.anotar(this, "hoy se puede: " + r.fold({ "${it.size}" }, { "error ${it.message}" }))
             runOnUiThread { pintarHoy(r) }
         }
     }
@@ -202,6 +240,7 @@ class MainActivity : Activity() {
 
     /** Notificaciones y alarmas exactas: se piden una vez; si se negaron, se manda a Ajustes. */
     private fun permisos(insistir: Boolean = false) {
+        Bitacora.anotar(this, "permisos (insistir=$insistir)")
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             if (insistir && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) && pedidoYa)
                 startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
@@ -236,7 +275,8 @@ class MainActivity : Activity() {
         val lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; id = View.generateViewId() }
         raiz.addView(lista)
         raiz.addView(boton("Sacar las tachadas de la pizarra") { sacarTachadas() })
-        raiz.addView(texto("Entraste como ${nube.mail ?: "—"}", 12f, "#6F757B"))
+        raiz.addView(texto("Entraste como ${nube.mail ?: "—"} · $SELLO", 12f, "#6F757B"))
+        raiz.addView(boton("🩺 Mandar diagnóstico a Claude") { mandarDiagnostico() })
         raiz.addView(boton("Salir") {
             nube.salir()
             Cache(this).filas = emptyList()
@@ -313,7 +353,8 @@ class MainActivity : Activity() {
             try {
                 val r = trabajo()
                 runOnUiThread { listo(r) }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
+                Bitacora.anotar(this, "error: " + (e.message ?: e.toString()))
                 runOnUiThread {
                     decir(e.message ?: "Algo salió mal.")
                     siFalla?.invoke()
