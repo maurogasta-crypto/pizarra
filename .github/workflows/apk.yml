@@ -31,6 +31,21 @@ jobs:
       - name: Banco de pruebas
         run: ./gradlew --no-daemon test
 
+      # Si el banco falla, qué prueba y por qué, como anotación de la corrida:
+      # el registro entero no se puede leer desde un chat, las anotaciones sí.
+      - name: Qué prueba falló
+        if: failure()
+        run: |
+          for f in app/build/test-results/*/TEST-*.xml; do
+            python3 - "$f" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          for c in ET.parse(sys.argv[1]).getroot().iter("testcase"):
+              for x in list(c.findall("failure")) + list(c.findall("error")):
+                  m = (x.get("message") or "") + " | " + (x.text or "")[:600]
+                  print("::error title=" + c.get("name") + "::" + m.replace("\n", " ").replace("\r", " ")[:900])
+          PY
+          done
+
       # ── LA FIRMA ─────────────────────────────────────────────────────────
       # Los mismos cuatro secretos que la app de la Hilux (FIRMA_JKS,
       # FIRMA_STORE_PASS, FIRMA_KEY_PASS, FIRMA_ALIAS), cargados por Mauro a
