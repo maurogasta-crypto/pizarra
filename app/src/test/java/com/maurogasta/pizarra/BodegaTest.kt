@@ -75,6 +75,10 @@ class BodegaTest {
         for (l in anota) assertFalse(l, Regex("\\.(texto|chat|lineas)\\b|titulo|\\bms\\b(?!\\.size)").containsMatchIn(l))
     }
 
+    @Test fun unTokenPegadoDeTermux_enRenglones_seJunta() {
+        assertEquals("github_pat_11ABCdef_xyz", limpiarToken(" github_pat_11AB\nCdef_\r\nxyz \u200B"))
+    }
+
     @Test fun elTokenVaAUnRepositorioSolo() {
         assertEquals("maurogasta-crypto/bodega", REPO_BODEGA)
     }

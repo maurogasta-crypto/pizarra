@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-9` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 40 casos (11 de la pizarra, 12 de Tiempos, 8 de la bodega, 9 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-10` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 41 casos (11 de la pizarra, 12 de Tiempos, 9 de la bodega, 9 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 

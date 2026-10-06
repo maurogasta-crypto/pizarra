@@ -25,7 +25,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-9
+// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-10
 //
 // pizarra-2 (5-oct-2026, «que la Pizarra sea la app de Tiempos»): arriba de
 // todo, 🎙 Dictar —con el reconocedor de Android, el mismo del teclado— y el
@@ -414,17 +414,30 @@ class MainActivity : Activity() {
     }
 
     private fun guardarToken(campo: EditText) {
-        val t = campo.text.toString().trim()
+        // pizarra-10: copiado de la pantalla de Termux, un token largo llega
+        // partido en renglones (Termux corta la línea al ancho de la pantalla)
+        // y GitHub contesta 401. Un token no lleva espacios ni saltos: se sacan.
+        val t = limpiarToken(campo.text.toString())
         if (t.length < 20) { decir("Pegá el token entero."); return }
         val b = Bodega(this)
         b.guardarToken(t)
         campo.setText("")
         decir("Probando el token…")
-        enSegundo({ b.probar(); b.latir(Bodega.fallaActual(this), forzar = true) }) {
-            Bitacora.anotar(this, "bodega: token guardado y probado")
+        enSegundo({ conError(b) { b.probar(); b.latir(Bodega.fallaActual(this), forzar = true) } }) {
+            Bitacora.anotar(this, "bodega: token guardado y probado (${t.length} caracteres)")
             decir("Listo: la bodega contesta y ya latió.")
             refrescarBodega()
         }
+    }
+
+    /** El error queda ESCRITO en la sección, no sólo arriba de la pantalla
+     *  (pizarra-10: Mauro tocaba «Subir ahora» y «no hacía nada»). */
+    private fun <T> conError(b: Bodega, trabajo: () -> T): T = try {
+        trabajo().also { b.ultimoError = "" }
+    } catch (e: Throwable) {
+        b.ultimoError = e.message ?: e.toString()
+        runOnUiThread { refrescarBodega() }
+        throw e
     }
 
     private fun subirAhora() {
@@ -432,7 +445,7 @@ class MainActivity : Activity() {
         if (!b.conToken) { decir("Primero guardá el token de la bodega."); return }
         decir("Subiendo…")
         LectorAirbnb.reconectar(this)
-        enSegundo({ b.latir(Bodega.fallaActual(this), forzar = true) }) {
+        enSegundo({ conError(b) { b.latir(Bodega.fallaActual(this), forzar = true) } }) {
             decir(if (Bodega.tieneAcceso(this)) "Latió. Lo que esté en la barra de Airbnb sube enseguida." else "Latió, avisando que no puede leer: falta el acceso.")
             refrescarBodega()
         }

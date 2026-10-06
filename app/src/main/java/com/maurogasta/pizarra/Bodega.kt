@@ -16,7 +16,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-9
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-10
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -87,6 +87,10 @@ fun unirMensajes(previos: JSONArray, nuevos: List<MensajeAirbnb>, captado: Strin
     return out to n
 }
 
+/** Un token de GitHub no lleva espacios ni saltos de línea: lo que venga
+ *  pegado de la pantalla de Termux, partido en renglones, se junta. */
+fun limpiarToken(t: String): String = t.filterNot { it.isWhitespace() || it == '\u200B' }
+
 fun latidoJson(ahoraIso: String, falla: String = ""): String {
     val j = JSONObject().put("ultimo", ahoraIso).put("lee", JSONArray().put("airbnb")).put("desde", SELLO)
     if (falla.isNotBlank()) j.put("falla", falla.take(200))
@@ -103,7 +107,7 @@ class Bodega(contexto: Context) {
     private val prefs = c.getSharedPreferences("bodega", Context.MODE_PRIVATE)
 
     val conToken: Boolean get() = !prefs.getString("token", null).isNullOrBlank()
-    fun guardarToken(t: String) { prefs.edit().putString("token", t.trim()).apply() }
+    fun guardarToken(t: String) { prefs.edit().putString("token", limpiarToken(t)).apply() }
     fun olvidarToken() { prefs.edit().remove("token").apply() }
 
     var ultimoLatido: Long
