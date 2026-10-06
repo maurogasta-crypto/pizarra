@@ -92,6 +92,19 @@
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
+        <!-- pizarra-9: lee las notificaciones de Airbnb y las sube a la bodega
+             (Bodega.kt). Android lo conecta recién cuando la persona le da el
+             acceso; la app la lleva a ese renglón. -->
+        <service
+            android:name=".LectorAirbnb"
+            android:exported="true"
+            android:label="Pizarra · mensajes de Airbnb"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".FilasServicio"
             android:exported="false"

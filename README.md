@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-8` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 32 casos (11 de la pizarra, 12 de Tiempos, 9 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-9` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 40 casos (11 de la pizarra, 12 de Tiempos, 8 de la bodega, 9 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -97,6 +97,34 @@ los secretos de `sitd-hilux`, que GitHub no deja leer de vuelta a nadie.
 5. La próxima corrida sale firmada con la clave propia: una última
    desinstalación, y de ahí en adelante se instala encima.
 
+## Los mensajes de Airbnb, a Claude (pizarra-9)
+
+Lo que hacía Termux (`telefono.mjs airbnb --vigilar` de `datos`) y en el
+Xiaomi de Mauro dejó de poder: Termux:API está hecha para Android 9, no pide
+nada, y en Android 16 / HyperOS 3 su lector nunca se conectó
+(`termux-notification-list` → NullPointerException, 6-oct-2026).
+
+- **`LectorAirbnb`** es un lector de notificaciones de Android. Toma SÓLO las
+  de `com.airbnb.android`, descarta los resúmenes, y sube cada mensaje nuevo a
+  `mensajes/<fecha UTC>.json` de la bodega privada con **el mismo formato y la
+  misma huella** que Termux: la ronda, los borradores y las reservas no
+  cambiaron una línea. El banco compara la huella contra la de Node.
+- **El latido** (`latido.json`) va cada 12 horas desde el trabajo de cada
+  hora, con `falla` si Android no le dio el acceso. La ronda avisa a las 26 h.
+- **En la app, «📬 Mensajes de Airbnb → Claude»**: si puede leer, si está el
+  token, el último envío y el último problema; «Dar acceso a notificaciones»
+  lleva al renglón exacto de la Pizarra; «Subir ahora» la reconecta y late.
+- **Una vez, en el teléfono:** Ajustes → Aplicaciones → Pizarra → ⋮ →
+  «Permitir ajustes restringidos» (Android 13+ lo exige a toda app que no
+  viene de Play Store), y después el botón «Dar acceso a notificaciones».
+- **El token** abre la bodega y ningún otro repositorio (el mismo de Termux:
+  `cat ~/.config/bodega/token`). Se pega una vez, no se muestra, y queda fuera
+  de las copias de seguridad.
+- **El texto de un mensaje es de un huésped**: la bitácora dice cuántos y si
+  subió, nunca qué decía, y el banco lo comprueba leyendo el código.
+- **En Termux, la lectura de Airbnb se apaga** para que no escriban dos el
+  mismo latido: `rm ~/.termux/boot/bodega-vigilar.sh; pkill -f vigilar`.
+
 ## Si falla en el teléfono (pizarra-3)
 
 pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro se trababa. El
@@ -164,5 +192,6 @@ crear una tarea que alguien borró.
 | `Bitacora.kt` | la bitácora, el cierre y la trabada guardados, y la falla que se manda a Tiempos |
 | `Imagenes.kt` | achicar y subir la captura a Cloudinary (preset sin firma, como el sitio) |
 | `Sirena.kt` | la alarma sonando: servicio en primer plano, sonido de alarma en bucle, Apagar |
+| `Bodega.kt` | leer las notificaciones de Airbnb y subirlas a la bodega, y el latido |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |

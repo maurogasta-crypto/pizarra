@@ -29,7 +29,7 @@ import java.time.ZoneId
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-8
+// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-9
 //
 // Pedido de Mauro, 5-oct-2026: «mañana tengo que ir antes al gimnasio… poner
 // una sirena un rato antes». El sitio guarda la alerta en `alertas/` (app-13)
@@ -222,6 +222,8 @@ class AlarmaReceptor : BroadcastReceiver() {
 
 class SincroTrabajo : JobService() {
     override fun onStartJob(p: JobParameters): Boolean {
+        // pizarra-9: de paso, el latido de la bodega si toca (cada 12 h).
+        kotlin.concurrent.thread { try { Bodega.alDia(this) } catch (e: Throwable) {} }
         Alarmas.sincronizar(this) { jobFinished(p, false) }
         return true
     }

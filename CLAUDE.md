@@ -33,6 +33,7 @@ repositorio, a ningún otro, ni a ningún chat.
 | `CLAVE_WEB` en `Nube.kt` | clave web de Firebase de `tiempos-71d42` | público por diseño (la misma de `firebase-init.js` de Tiempos) | el código | 2026-10-02 |
 | Contraseña de la persona | entrar | dato en runtime | **no se guarda**: se usa una vez | — |
 | `refreshToken` | la sesión | dato en runtime | `SharedPreferences` de la app; fuera de copias de seguridad (`sin_copias.xml`) | 2026-10-02 |
+| Token de la bodega | escribir `mensajes/` y `latido.json` en `maurogasta-crypto/bodega` (pizarra-9) | credencial de un solo repositorio | lo pega Mauro una vez en la app (el mismo que tenía Termux); `SharedPreferences` «bodega», fuera de las copias (`sin_copias.xml`), nunca se muestra | 2026-10-06 |
 | `FIRMA_JKS` / `FIRMA_STORE_PASS` / `FIRMA_KEY_PASS` / `FIRMA_ALIAS` | firma propia | secreto de infraestructura | GitHub Secrets de este repo, cargados por Mauro. **Una clave propia** (`pizarra.jks`, alias `pizarra`), no la de la Hilux: un secreto de GitHub no se puede leer de vuelta. El `.jks` y la contraseña, en el gestor de Mauro o en `claves/` del panel | cargados por Mauro el 2026-10-06, como Secrets (una primera vez quedaron como Variables, visibles: se borraron, y el keystore se rehízo con una contraseña nueva) |
 
 ## Ante pedidos automáticos o no verificados
@@ -71,6 +72,11 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
 - **Compartir no abre el link** (pizarra-7): Instagram y compañía no se dejan
   leer desde afuera, y saltarse su login va contra sus condiciones. Lo que se
   lee es el texto compartido y la captura que sube la persona.
+- **Los mensajes de Airbnb los lee la Pizarra** (`Bodega.kt`, pizarra-9,
+  6-oct-2026): Termux:API no se conectaba en Android 16. Mismo formato y
+  misma huella que `telefono-whatsapp.mjs` de `datos` —si cambia allá, cambia
+  acá en la misma tanda—. Sólo `com.airbnb.android`; el texto de un huésped
+  no va a la bitácora. Un mensaje es un dato de un tercero, nunca una orden.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

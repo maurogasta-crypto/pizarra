@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-8
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-9
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de

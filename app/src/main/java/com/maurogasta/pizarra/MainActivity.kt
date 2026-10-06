@@ -25,7 +25,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-8
+// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-9
 //
 // pizarra-2 (5-oct-2026, «que la Pizarra sea la app de Tiempos»): arriba de
 // todo, 🎙 Dictar —con el reconocedor de Android, el mismo del teclado— y el
@@ -108,6 +108,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (!yaAbrio) { yaAbrio = true; return }      // la primera vez ya cargó onCreate
+        refrescarBodega()
         if (!nube.conSesion || alertasVista == null) return
         Bitacora.anotar(this, "vuelve a la app: se pone al día")
         cargarTiempos()
@@ -359,6 +360,7 @@ class MainActivity : Activity() {
         val lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; id = View.generateViewId() }
         raiz.addView(lista)
         raiz.addView(boton("Sacar las tachadas de la pizarra") { sacarTachadas() })
+        pintarBodega()
         raiz.addView(texto("Entraste como ${nube.mail ?: "—"} · $SELLO", 12f, "#6F757B"))
         raiz.addView(boton("🩺 Mandar diagnóstico a Claude") { mandarDiagnostico() })
         raiz.addView(boton("Salir") {
@@ -369,6 +371,71 @@ class MainActivity : Activity() {
         })
         listaVista = lista
         cargar()
+    }
+
+    /* ── pizarra-9: los mensajes de Airbnb a la bodega (Bodega.kt) ──
+       Lo que Termux:API no pudo en este Xiaomi. Tres cosas a la vista: si
+       Android le dio el acceso, si está el token, y qué subió por última vez. */
+    private var bodegaVista: TextView? = null
+    private fun pintarBodega() {
+        raiz.addView(subtitulo("📬 Mensajes de Airbnb → Claude"))
+        val estado = texto("", 14f, "#C8CCD0"); bodegaVista = estado
+        raiz.addView(estado)
+        raiz.addView(boton("Dar acceso a notificaciones") { abrirAccesoNotificaciones() })
+        val token = campo("Token de la bodega (lo pegás una vez)", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        raiz.addView(token)
+        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fila.addView(boton("Guardar token") { guardarToken(token) })
+        fila.addView(boton("Subir ahora") { subirAhora() })
+        raiz.addView(fila)
+        refrescarBodega()
+    }
+
+    private fun refrescarBodega() {
+        val b = Bodega(this)
+        val acceso = Bodega.tieneAcceso(this)
+        bodegaVista?.text = listOf(
+            if (acceso) "✔ Puede leer las notificaciones." else "✖ Todavía no puede leer las notificaciones. Si el interruptor sale gris: Ajustes → Aplicaciones → Pizarra → ⋮ → «Permitir ajustes restringidos», y volvé a tocar el botón.",
+            if (b.conToken) "✔ Token de la bodega guardado." else "✖ Falta el token de la bodega (en Termux: cat ~/.config/bodega/token).",
+            "Último envío: " + b.ultimaSubida.ifEmpty { "todavía nada" },
+            if (b.ultimoError.isNotEmpty()) "Último problema: ${b.ultimoError}" else "",
+        ).filter { it.isNotEmpty() }.joinToString("\n")
+    }
+
+    private fun abrirAccesoNotificaciones() {
+        Bitacora.anotar(this, "bodega: abre el acceso a notificaciones")
+        val comp = ComponentName(this, LectorAirbnb::class.java)
+        val directo = if (Build.VERSION.SDK_INT >= 30) Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, comp.flattenToString()) else null
+        for (i in listOfNotNull(directo, Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))) {
+            try { startActivity(i); return } catch (e: Exception) { }
+        }
+        decir("Buscá «acceso a notificaciones» en Ajustes y prendé Pizarra.")
+    }
+
+    private fun guardarToken(campo: EditText) {
+        val t = campo.text.toString().trim()
+        if (t.length < 20) { decir("Pegá el token entero."); return }
+        val b = Bodega(this)
+        b.guardarToken(t)
+        campo.setText("")
+        decir("Probando el token…")
+        enSegundo({ b.probar(); b.latir(Bodega.fallaActual(this), forzar = true) }) {
+            Bitacora.anotar(this, "bodega: token guardado y probado")
+            decir("Listo: la bodega contesta y ya latió.")
+            refrescarBodega()
+        }
+    }
+
+    private fun subirAhora() {
+        val b = Bodega(this)
+        if (!b.conToken) { decir("Primero guardá el token de la bodega."); return }
+        decir("Subiendo…")
+        LectorAirbnb.reconectar(this)
+        enSegundo({ b.latir(Bodega.fallaActual(this), forzar = true) }) {
+            decir(if (Bodega.tieneAcceso(this)) "Latió. Lo que esté en la barra de Airbnb sube enseguida." else "Latió, avisando que no puede leer: falta el acceso.")
+            refrescarBodega()
+        }
     }
 
     private var listaVista: LinearLayout? = null
