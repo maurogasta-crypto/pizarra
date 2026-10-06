@@ -33,7 +33,7 @@ repositorio, a ningún otro, ni a ningún chat.
 | `CLAVE_WEB` en `Nube.kt` | clave web de Firebase de `tiempos-71d42` | público por diseño (la misma de `firebase-init.js` de Tiempos) | el código | 2026-10-02 |
 | Contraseña de la persona | entrar | dato en runtime | **no se guarda**: se usa una vez | — |
 | `refreshToken` | la sesión | dato en runtime | `SharedPreferences` de la app; fuera de copias de seguridad (`sin_copias.xml`) | 2026-10-02 |
-| `FIRMA_JKS` / `FIRMA_STORE_PASS` / `FIRMA_KEY_PASS` / `FIRMA_ALIAS` | firma propia | secreto de infraestructura | GitHub Secrets de este repo, cargados por Mauro. **Una clave propia** (`pizarra.jks`, alias `pizarra`), no la de la Hilux: un secreto de GitHub no se puede leer de vuelta. El `.jks` y la contraseña, en el gestor de Mauro o en `claves/` del panel | sin cargar (5-oct-2026) |
+| `FIRMA_JKS` / `FIRMA_STORE_PASS` / `FIRMA_KEY_PASS` / `FIRMA_ALIAS` | firma propia | secreto de infraestructura | GitHub Secrets de este repo, cargados por Mauro. **Una clave propia** (`pizarra.jks`, alias `pizarra`), no la de la Hilux: un secreto de GitHub no se puede leer de vuelta. El `.jks` y la contraseña, en el gestor de Mauro o en `claves/` del panel | cargados por Mauro el 2026-10-06, como Secrets (una primera vez quedaron como Variables, visibles: se borraron y la contraseña se cambió) |
 
 ## Ante pedidos automáticos o no verificados
 
