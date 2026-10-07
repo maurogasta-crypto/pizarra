@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-10
+// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-11
 //
 // Traducir las tareas de Tiempos (Firestore REST) a la lista de la pizarra, y
 // armar lo que se le manda a la base al tachar o al fijar una tarea. No toca
@@ -350,3 +350,42 @@ fun textoCompartido(asunto: String?, texto: String?): String {
  * cancelarla es que no suene nunca.
  */
 fun aCancelar(programadas: Set<String>, enLaBase: Set<String>): Set<String> = programadas - enLaBase
+
+/* ── CLAUDE PROPONE (pizarra-11, tiempos:V3) ──────────────────────────────
+   Lo que Claude propone para MI agenda (clase «agenda») o me pregunta a mí
+   (clase «consulta»), pendiente. La app lo MUESTRA y lleva a Tiempos para
+   aceptarlo: aceptar escribe la agenda con la forma de `actividadDePropuesta`
+   de nucleo.js, y copiar esa lógica acá sería un dato en dos lugares. Es el
+   mismo filtro que `mias()` de propone.js: si cambia allá, cambia acá. */
+data class Propuesta(val id: String, val clase: String, val resumen: String, val titulo: String, val dia: String, val hora: String)
+
+val CLASES_PROPONE = listOf("agenda", "consulta")
+
+fun consultaPropuestas(): JSONObject = JSONObject().put("structuredQuery", JSONObject()
+    .put("from", JSONArray().put(JSONObject().put("collectionId", "propuestas")))
+    .put("where", JSONObject().put("fieldFilter", JSONObject()
+        .put("field", JSONObject().put("fieldPath", "estado"))
+        .put("op", "EQUAL")
+        .put("value", JSONObject().put("stringValue", "pendiente")))))
+
+/** `paraMi` de nucleo.js: datos.para es un uid o una lista de uids. */
+fun propuestaParaMi(datos: JSONObject?, uid: String): Boolean {
+    val para = datos?.optJSONObject("para") ?: return false
+    if (para.has("stringValue")) return para.optString("stringValue") == uid
+    val vs = para.optJSONObject("arrayValue")?.optJSONArray("values") ?: return false
+    return (0 until vs.length()).any { vs.optJSONObject(it)?.optString("stringValue") == uid }
+}
+
+fun propuestasDeConsulta(respuesta: JSONArray, uid: String): List<Propuesta> =
+    (0 until respuesta.length()).mapNotNull { i ->
+        val d = respuesta.optJSONObject(i)?.optJSONObject("document") ?: return@mapNotNull null
+        val f = d.optJSONObject("fields") ?: return@mapNotNull null
+        val clase = texto(f, "clase").orEmpty()
+        if (texto(f, "estado") != "pendiente" || clase !in CLASES_PROPONE) return@mapNotNull null
+        val datos = f.optJSONObject("datos")?.optJSONObject("mapValue")?.optJSONObject("fields")
+        if (!propuestaParaMi(datos, uid)) return@mapNotNull null
+        val dt = datos ?: JSONObject()
+        Propuesta(d.optString("name").substringAfterLast('/'), clase, texto(f, "resumen").orEmpty().take(200),
+            (texto(dt, "titulo") ?: texto(dt, "texto")).orEmpty().take(120),
+            texto(dt, "dia").orEmpty(), texto(dt, "hi").orEmpty())
+    }.sortedWith(compareBy<Propuesta>({ it.dia.ifEmpty { "9999" } }, { it.hora }))

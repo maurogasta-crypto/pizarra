@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-10` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 41 casos (11 de la pizarra, 12 de Tiempos, 9 de la bodega, 9 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-11` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 42 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 9 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -49,6 +49,14 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
   (deseos-1). Se editan en Tiempos.
 
 No escribe nada nuevo en la base: alertas y deseos sólo se leen.
+
+## 🤖 Claude propone (pizarra-11, `tiempos:V3`)
+
+Lo que Claude te propone para tu agenda o te pregunta, pendiente, con el mismo
+filtro que `mias()` de `propone.js` de Tiempos. La app lo MUESTRA; «Ver y
+aceptar en Tiempos» abre el sitio, donde están las tarjetas con Aceptar y
+Corregir. Aceptar escribe la agenda con la forma de `actividadDePropuesta`, y
+copiar esa lógica acá sería un dato en dos lugares.
 
 ## Compartir desde otra app (pizarra-7)
 

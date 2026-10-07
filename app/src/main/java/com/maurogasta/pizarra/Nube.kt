@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-10
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-11
 //
 // Por REST y sin el SDK de Firebase, igual que la app de la Hilux: la app no
 // baja nada que no venga con Android.
@@ -115,6 +115,13 @@ class Nube(contexto: Context) {
     /** Los deseos de los dos, para «Hoy se puede» (pizarra-2). */
     fun deseos(): List<Deseo> = deseosDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
         consultaDeseos().toString(), "application/json", token())))
+
+    /** Lo que Claude me propone, pendiente (pizarra-11). */
+    fun propuestas(): List<Propuesta> {
+        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta de Tiempos.", true)
+        return propuestasDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
+            consultaPropuestas().toString(), "application/json", token())), yo)
+    }
 
     /** Una falla de la app a `reportes/` de Tiempos, con mi sesión (pizarra-3). */
     fun mandarFalla(texto: String, gravedad: String) {

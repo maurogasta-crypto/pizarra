@@ -25,7 +25,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-10
+// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-11
 //
 // pizarra-2 (5-oct-2026, «que la Pizarra sea la app de Tiempos»): arriba de
 // todo, 🎙 Dictar —con el reconocedor de Android, el mismo del teclado— y el
@@ -148,6 +148,7 @@ class MainActivity : Activity() {
 
     private var dictado: EditText? = null
     private var hoyVista: LinearLayout? = null
+    private var proponeVista: LinearLayout? = null
     private var alertasVista: TextView? = null
 
     private fun pintarTiempos() {
@@ -172,6 +173,11 @@ class MainActivity : Activity() {
         raiz.addView(boton("✨ Seguir en Tiempos") { seguir() })
         // Los avisos de la pantalla van acá arriba, al lado del dictado.
         raiz.addView(aviso)
+
+        // pizarra-11 (tiempos:V3): lo que Claude te propone. Aceptar es en Tiempos.
+        raiz.addView(subtitulo("🤖 Claude propone"))
+        proponeVista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        raiz.addView(proponeVista)
 
         raiz.addView(subtitulo("⭐ Hoy se puede"))
         hoyVista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -293,6 +299,24 @@ class MainActivity : Activity() {
             Bitacora.anotar(this, "hoy se puede: " + r.fold({ "${it.size}" }, { "error ${it.message}" }))
             runOnUiThread { pintarHoy(r) }
         }
+        thread {
+            val r = try { Result.success(nube.propuestas()) } catch (e: Throwable) { Result.failure(e) }
+            Bitacora.anotar(this, "claude propone: " + r.fold({ "${it.size}" }, { "error ${it.message}" }))
+            runOnUiThread { pintarPropone(r) }
+        }
+    }
+
+    private fun pintarPropone(r: Result<List<Propuesta>>) {
+        val v = proponeVista ?: return
+        v.removeAllViews()
+        val ps = r.getOrElse { v.addView(texto("No se pudo traer: ${it.message}", 13f, "#9AA0A6")); return }
+        if (ps.isEmpty()) { v.addView(texto("Nada pendiente.", 13f, "#9AA0A6")); return }
+        for (p in ps) {
+            val cuando = listOf(p.dia, p.hora).filter { it.isNotEmpty() }.joinToString(" ")
+            val que = (if (p.clase == "consulta") "❓ " else "📅 ") + p.titulo.ifEmpty { p.resumen }
+            v.addView(texto(que + (if (cuando.isNotEmpty()) "  · $cuando" else ""), 14f, "#F2F2F2"))
+        }
+        v.addView(boton("Ver y aceptar en Tiempos") { abrir(TIEMPOS_URL) })
     }
 
     private fun pintarHoy(r: Result<List<Deseo>>) {

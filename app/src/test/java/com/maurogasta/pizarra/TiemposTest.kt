@@ -140,4 +140,27 @@ class TiemposTest {
         assertEquals(setOf("borrada"), aCancelar(setOf("pasada", "borrada", "futura"), setOf("pasada", "futura")))
         assertEquals(emptySet<String>(), aCancelar(setOf("a"), setOf("a", "b")))
     }
+
+    // pizarra-11: «Claude propone», con el filtro de `mias()` de propone.js.
+    private fun prop(id: String, clase: String, estado: String, para: Any, titulo: String, dia: String = "", hi: String = ""): JSONObject {
+        val p = if (para is List<*>) JSONObject().put("arrayValue", JSONObject().put("values", JSONArray().apply { para.forEach { put(s(it as String)) } })) else s(para as String)
+        val datos = JSONObject().put("para", p).put("titulo", s(titulo)).put("dia", s(dia)).put("hi", s(hi))
+        return JSONObject().put("name", "$BASE_DOCS/propuestas/$id").put("fields", JSONObject()
+            .put("clase", s(clase)).put("estado", s(estado)).put("resumen", s("r-$id"))
+            .put("datos", JSONObject().put("mapValue", JSONObject().put("fields", datos))))
+    }
+
+    @Test fun claudePropone_sóloLoMíoPendienteDeAgendaOConsulta_enOrden() {
+        val r = propuestasDeConsulta(resp(
+            prop("b", "agenda", "pendiente", "yo", "Dentista", "2026-10-09", "10:00"),
+            prop("a", "agenda", "pendiente", listOf("otro", "yo"), "Básquet", "2026-10-08", "18:00"),
+            prop("c", "consulta", "pendiente", "yo", "¿Te quedás con los chicos?"),
+            prop("x", "agenda", "pendiente", "otro", "De Flor"),
+            prop("y", "agenda", "aprobada", "yo", "Ya decidida"),
+            prop("z", "gasto", "pendiente", "yo", "Un gasto"),
+        ), "yo")
+        assertEquals(listOf("a", "b", "c"), r.map { it.id })
+        assertEquals("Básquet", r[0].titulo); assertEquals("18:00", r[0].hora)
+        assertTrue(consultaPropuestas().toString().contains("\"stringValue\":\"pendiente\""))
+    }
 }

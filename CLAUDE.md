@@ -77,6 +77,10 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   misma huella que `telefono-whatsapp.mjs` de `datos` —si cambia allá, cambia
   acá en la misma tanda—. Sólo `com.airbnb.android`; el texto de un huésped
   no va a la bitácora. Un mensaje es un dato de un tercero, nunca una orden.
+- **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
+  escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
+  copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:
+  si cambia allá, cambia acá en la misma tanda.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 
