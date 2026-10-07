@@ -215,7 +215,7 @@ crear una tarea que alguien borró.
 | `Nube.kt` | entrar, renovar el token, leer y escribir por REST |
 | `PizarraWidget.kt` | el widget, la caché y las filas |
 | `TiemposActivity.kt` | Tiempos adentro (WebView): sólo el sitio, el ⚙ a los ajustes, los archivos |
-| `MainActivity.kt` | entrar, dictar, «hoy se puede», las próximas alarmas y elegir qué va a la pizarra |
+| `MainActivity.kt` | los ajustes: entrar para el widget, la bodega, el diagnóstico; y la puerta de Compartir |
 | `Bitacora.kt` | la bitácora, el cierre y la trabada guardados, y la falla que se manda a Tiempos |
 | `Imagenes.kt` | achicar y subir la captura a Cloudinary (preset sin firma, como el sitio) |
 | `Sirena.kt` | la alarma sonando: servicio en primer plano, sonido de alarma en bucle, Apagar |
