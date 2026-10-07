@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-11` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 42 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 9 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-12` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 43 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -49,6 +49,24 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
   (deseos-1). Se editan en Tiempos.
 
 No escribe nada nuevo en la base: alertas y deseos sólo se leen.
+
+## Tiempos ADENTRO de la app (pizarra-12, `tiempos:V7`)
+
+Mauro, 7-oct-2026: «no es práctico dos aplicaciones para hacer lo mismo». El
+ícono abre **Tiempos dentro de la app** (`TiemposActivity`, una WebView): la
+misma pantalla del sitio —Pizarra, Tareas, Hoy, Agenda con Mes, Chicos,
+Plata, Balance—, sin navegador y sin copiar su lógica. Lo nativo sigue: el
+widget, las alarmas, la lectura de Airbnb y Compartir.
+
+- Adentro se abre **sólo** el sitio de Tiempos (`esDeTiempos`); cualquier
+  otro enlace va al navegador. Los archivos (flyer, boleta) se eligen con el
+  selector del sistema.
+- **⚙** abajo a la izquierda: los ajustes de la app (`MainActivity`): la
+  cuenta del widget, la bodega, el diagnóstico. Compartir sigue entrando ahí.
+- **Sin botón de dictado**: se dicta con el 🎤 del teclado. El ✏️ del widget
+  abre Tiempos en Pizarra; el ✎, también (ahí se elige qué va a la pizarra).
+- La sesión del sitio adentro es aparte de la del widget: la primera vez se
+  entra en las dos.
 
 ## 🤖 Claude propone (pizarra-11, `tiempos:V3`)
 
@@ -196,6 +214,7 @@ crear una tarea que alguien borró.
 | `Logica.kt` | traducir Firestore ↔ pizarra; lo que se escribe. Sin Android ni red |
 | `Nube.kt` | entrar, renovar el token, leer y escribir por REST |
 | `PizarraWidget.kt` | el widget, la caché y las filas |
+| `TiemposActivity.kt` | Tiempos adentro (WebView): sólo el sitio, el ⚙ a los ajustes, los archivos |
 | `MainActivity.kt` | entrar, dictar, «hoy se puede», las próximas alarmas y elegir qué va a la pizarra |
 | `Bitacora.kt` | la bitácora, el cierre y la trabada guardados, y la falla que se manda a Tiempos |
 | `Imagenes.kt` | achicar y subir la captura a Cloudinary (preset sin firma, como el sitio) |

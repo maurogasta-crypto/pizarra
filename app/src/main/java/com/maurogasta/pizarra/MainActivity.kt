@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.speech.RecognizerIntent
 import android.text.InputType
 import android.view.Gravity
 import android.view.View
@@ -25,7 +24,13 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Entrar una vez y elegir qué va a la pizarra. Sello: pizarra-11
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-12
+//
+// pizarra-12 (7-oct-2026, tiempos:V7): Tiempos se abre ADENTRO de la app
+// (TiemposActivity), y ésta pasa a ser la pantalla de ajustes —la cuenta del
+// widget, la bodega, el diagnóstico— y la que recibe «Compartir». Sin botón de
+// dictado: se dicta con el micrófono del teclado (Mauro: «sacar el dictado»).
+// Lo que sigue cuenta cómo era.
 //
 // pizarra-2 (5-oct-2026, «que la Pizarra sea la app de Tiempos»): arriba de
 // todo, 🎙 Dictar —con el reconocedor de Android, el mismo del teclado— y el
@@ -39,8 +44,6 @@ import kotlin.concurrent.thread
 // selección sobrevive a reinstalar la app y no depende del teléfono.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const val EXTRA_DICTAR = "dictar"
-private const val PEDIDO_VOZ = 41
 private const val PEDIDO_CAPTURA = 43
 
 class MainActivity : Activity() {
@@ -77,7 +80,6 @@ class MainActivity : Activity() {
         raiz.requestFocus()
         Bitacora.anotar(this, "pantalla: abre (sesión ${if (nube.conSesion) "sí" else "no"})")
         pintar()
-        if (intent?.getBooleanExtra(EXTRA_DICTAR, false) == true && nube.conSesion) dictar()
         recibirCompartido(intent)
         mandarPendiente()
     }
@@ -117,7 +119,6 @@ class MainActivity : Activity() {
     override fun onNewIntent(i: Intent) {
         super.onNewIntent(i)
         setIntent(i)
-        if (i.getBooleanExtra(EXTRA_DICTAR, false) && nube.conSesion) dictar()
         recibirCompartido(i)
     }
 
@@ -164,7 +165,6 @@ class MainActivity : Activity() {
         raiz.addView(caja)
         compartidoPendiente?.let { caja.setText(it); compartidoPendiente = null }
         val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        fila.addView(boton("🎙 Dictar") { dictar() })
         fila.addView(boton("📷 Captura") { elegirCaptura() })
         raiz.addView(fila)
         capturaVista = texto("", 12f, "#9AA0A6")
@@ -247,7 +247,7 @@ class MainActivity : Activity() {
     private fun seguir() {
         val caja = dictado ?: return
         val t = caja.text.toString().trim().ifEmpty { if (captura != null) "Lo de la captura." else "" }
-        if (t.isEmpty()) { decir("Dictá, escribí o agregá una captura primero."); return }
+        if (t.isEmpty()) { decir("Escribí o agregá una captura primero."); return }
         val c = captura
         if (c == null) { abrir(urlDictado(t)); caja.setText(""); return }
         decir("Subiendo la captura…")
@@ -258,36 +258,11 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun dictar() {
-        Bitacora.anotar(this, "dictar: abre el reconocedor")
-        val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-UY")
-            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Decí qué hay que agendar o recordar")
-        try {
-            @Suppress("DEPRECATION")
-            startActivityForResult(i, PEDIDO_VOZ)
-        } catch (e: ActivityNotFoundException) {
-            decir("Este teléfono no tiene reconocedor de voz: escribilo, o usá el micrófono del teclado.")
-            dictado?.requestFocus()
-        }
-    }
-
     @Deprecated("Activity a secas, sin bibliotecas: es la forma que hay")
     override fun onActivityResult(pedido: Int, resultado: Int, datos: Intent?) {
         @Suppress("DEPRECATION")
         super.onActivityResult(pedido, resultado, datos)
         if (pedido == PEDIDO_CAPTURA) { if (resultado == RESULT_OK) datos?.data?.let { guardarCaptura(it) }; return }
-        if (pedido != PEDIDO_VOZ || resultado != RESULT_OK) return
-        val dicho = datos?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
-        val caja = dictado ?: return
-        if (dicho.isEmpty()) return
-        // Se SUMA a lo que ya había: se puede dictar en dos tandas.
-        val antes = caja.text.toString().trim()
-        caja.setText(if (antes.isEmpty()) dicho else "$antes $dicho")
-        caja.setSelection(caja.text.length)
-        caja.requestFocus()
-        decir("Corregí si hace falta y tocá ✨ Seguir en Tiempos.")
     }
 
     private fun cargarTiempos() {
@@ -366,7 +341,10 @@ class MainActivity : Activity() {
         pintarAlertas()
     }
 
+    /** Tiempos se abre ADENTRO (pizarra-12); lo demás, en el navegador. */
     private fun abrir(url: String) {
+        if (esDeTiempos(url)) { startActivity(Intent(this, TiemposActivity::class.java).putExtra(EXTRA_URL, url)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)); return }
         try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
         catch (e: ActivityNotFoundException) { decir("No hay navegador para abrir Tiempos.") }
     }

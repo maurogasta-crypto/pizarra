@@ -81,6 +81,10 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:
   si cambia allá, cambia acá en la misma tanda.
+- **Tiempos va ADENTRO, no se copia** (pizarra-12, `tiempos:V7`):
+  `TiemposActivity` muestra el sitio en una WebView y adentro carga SÓLO
+  `TIEMPOS_URL` (`esDeTiempos`); lo demás va al navegador. Lo que hace
+  Tiempos se cambia en el sitio, no acá. Sin dictado propio: el del teclado.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

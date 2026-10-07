@@ -29,7 +29,7 @@ import java.time.ZoneId
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-11
+// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-12
 //
 // Pedido de Mauro, 5-oct-2026: «mañana tengo que ir antes al gimnasio… poner
 // una sirena un rato antes». El sitio guarda la alerta en `alertas/` (app-13)
@@ -148,7 +148,7 @@ object Alarmas {
     }
 
     private fun abrirApp(c: Context) = PendingIntent.getActivity(c, 10,
-        Intent(c, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        Intent(c, TiemposActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
 
     fun crearCanales(c: Context) {
         val nm = c.getSystemService(NotificationManager::class.java) ?: return

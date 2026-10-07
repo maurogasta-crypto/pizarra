@@ -13,7 +13,7 @@ import java.util.Date
 import java.util.Locale
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bitacora.kt — Que la app diga sola qué le pasó. Sello: pizarra-11
+// Bitacora.kt — Que la app diga sola qué le pasó. Sello: pizarra-12
 //
 // 5-oct-2026: pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro
 // «se traba, no deja ningún botón». El informe de fallos que ofreció HyperOS
@@ -38,7 +38,7 @@ class App : Application() {
     }
 }
 
-const val SELLO = "pizarra-11"
+const val SELLO = "pizarra-12"
 
 object Bitacora {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("bitacora", Context.MODE_PRIVATE)

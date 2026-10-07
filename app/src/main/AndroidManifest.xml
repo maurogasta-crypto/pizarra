@@ -16,12 +16,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
-    <!-- El dictado: sin esto, desde Android 11 la app no «ve» al reconocedor de voz. -->
-    <queries>
-        <intent>
-            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
-        </intent>
-    </queries>
 
     <application
         android:name=".App"
@@ -31,15 +25,26 @@
         android:dataExtractionRules="@xml/sin_copias"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
+        <!-- pizarra-12: lo que abre el ícono es Tiempos ADENTRO de la app. -->
         <activity
-            android:name=".MainActivity"
+            android:name=".TiemposActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <!-- Los ajustes de la app y la puerta de «Compartir». -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="Ajustes de Tiempos"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
             <!-- pizarra-7: «Compartir → Tiempos» desde Instagram, Facebook, TikTok,
                  WhatsApp o el navegador: un link, un texto o una captura. -->
             <intent-filter android:label="Agendar en Tiempos">

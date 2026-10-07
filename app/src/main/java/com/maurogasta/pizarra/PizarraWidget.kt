@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-11
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-12
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -88,11 +88,14 @@ class PizarraWidget : AppWidgetProvider() {
                     else "Tocá ✎ y entrá con tu cuenta de Tiempos.")
                 v.setTextViewText(R.id.estado, cache.estado)
                 v.setOnClickPendingIntent(R.id.actualizar, difusion(contexto, ACCION_ACTUALIZAR, 1))
-                v.setOnClickPendingIntent(R.id.editar, PendingIntent.getActivity(contexto, 2,
-                    Intent(contexto, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
-                // pizarra-2: 🎙 abre la app directo en el dictado.
+                // pizarra-12: ✎ abre Tiempos adentro, en la solapa Pizarra (ahí se
+                // elige qué va); sin sesión en el widget, los ajustes para entrar.
+                val editar = if (Nube(contexto).conSesion) Intent(contexto, TiemposActivity::class.java) else Intent(contexto, MainActivity::class.java)
+                v.setOnClickPendingIntent(R.id.editar, PendingIntent.getActivity(contexto, 2, editar,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                // ✏️ abre Tiempos para anotar (se dicta con el teclado).
                 v.setOnClickPendingIntent(R.id.dictar, PendingIntent.getActivity(contexto, 4,
-                    Intent(contexto, MainActivity::class.java).putExtra(EXTRA_DICTAR, true)
+                    Intent(contexto, TiemposActivity::class.java)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 // La plantilla de cada fila: MUTABLE porque la fila le agrega

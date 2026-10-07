@@ -46,7 +46,8 @@ class AppTest {
         shadowOf(Looper.getMainLooper()).idle()
         val bs = botones(a.window.decorView)
         println("botones: " + bs.map { it.text })
-        assertTrue(bs.any { it.text.contains("Dictar") })
+        assertTrue(bs.any { it.text.contains("Seguir en Tiempos") })
+        assertTrue("pizarra-12: sin botón de dictado", bs.none { it.text.contains("Dictar") })
         for (b in bs.filter { it.text != "Salir" && it.text != "Poner el widget" }) {
             b.performClick()
             shadowOf(Looper.getMainLooper()).idle()
@@ -149,5 +150,27 @@ class AppTest {
             .putExtra("id", "x").putExtra("tipo", "alarma").putExtra("texto", "Prueba").putExtra("hora", "07:26"))
         assertTrue(Bitacora.ultimos(c).any { it.contains("alerta RECIBIDA: alarma 07:26") })
         assertTrue(shadowOf(c).nextStartedService?.component?.className?.endsWith("SirenaServicio") == true)
+    }
+
+    // pizarra-12 (tiempos:V7): el ícono abre Tiempos ADENTRO; lo de afuera, al navegador.
+    @Test fun tiempos_seAbreAdentro_conElSitioYNadaMás() {
+        val a = Robolectric.buildActivity(TiemposActivity::class.java).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        fun webs(v: View): List<android.webkit.WebView> = when (v) {
+            is android.webkit.WebView -> listOf(v)
+            is ViewGroup -> (0 until v.childCount).flatMap { webs(v.getChildAt(it)) }
+            else -> emptyList()
+        }
+        val w = webs(a.window.decorView).single()
+        assertTrue(shadowOf(w).lastLoadedUrl == TIEMPOS_URL)
+        assertTrue(w.settings.javaScriptEnabled && w.settings.domStorageEnabled)
+        assertTrue(w.settings.userAgentString.contains("PizarraApp/"))
+        assertTrue(esDeTiempos(TIEMPOS_URL + "?dictar=hola") && !esDeTiempos("https://www.instagram.com/reel/x") && !esDeTiempos(null))
+        val conUrl = android.content.Intent(RuntimeEnvironment.getApplication(), TiemposActivity::class.java).putExtra(EXTRA_URL, "https://evil.example/")
+        val b = Robolectric.buildActivity(TiemposActivity::class.java, conUrl).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertTrue("una dirección de afuera no se carga adentro", shadowOf(webs(b.window.decorView).single()).lastLoadedUrl == TIEMPOS_URL)
+        val m = java.io.File("src/main/AndroidManifest.xml").readText()
+        assertTrue(m.indexOf(".TiemposActivity") < m.indexOf("android.intent.category.LAUNCHER") && m.indexOf("android.intent.category.LAUNCHER") < m.indexOf(".MainActivity"))
     }
 }
