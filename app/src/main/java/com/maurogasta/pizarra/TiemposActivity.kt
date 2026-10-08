@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
+import android.content.pm.PackageManager
+import android.webkit.GeolocationPermissions
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -19,7 +21,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TiemposActivity.kt — Tiempos ADENTRO de la app. Sello: pizarra-12
+// TiemposActivity.kt — Tiempos ADENTRO de la app. Sello: pizarra-13
 //
 // 7-oct-2026, tiempos:V7 (Mauro): «no es práctico dos aplicaciones para hacer
 // lo mismo». La app muestra el sitio de Tiempos en su propia pantalla (sin
@@ -41,6 +43,9 @@ fun esDeTiempos(url: String?): Boolean = url != null && url.startsWith(TIEMPOS_U
 class TiemposActivity : Activity() {
     private lateinit var web: WebView
     private var archivos: ValueCallback<Array<Uri>>? = null
+    // pizarra-13: la ubicación APROXIMADA, sólo para el sitio de Tiempos (de
+    // qué país sale la alarma de salir: lugares.js). Se pide al usarla.
+    private var ubicacion: Pair<String, GeolocationPermissions.Callback>? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(estado: Bundle?) {
@@ -56,7 +61,16 @@ class TiemposActivity : Activity() {
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean = desviar(r.url.toString())
             }
+            settings.setGeolocationEnabled(true)
             webChromeClient = object : WebChromeClient() {
+                override fun onGeolocationPermissionsShowPrompt(origen: String, cb: GeolocationPermissions.Callback) {
+                    if (!esDeTiempos(origen) && !TIEMPOS_URL.startsWith(origen)) { cb.invoke(origen, false, false); return }
+                    if (Build.VERSION.SDK_INT < 23 || checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        cb.invoke(origen, true, false); return
+                    }
+                    ubicacion = origen to cb
+                    requestPermissions(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION), PEDIDO_UBICACION)
+                }
                 // <input type="file">: el flyer, la boleta, la captura.
                 override fun onShowFileChooser(v: WebView, cb: ValueCallback<Array<Uri>>, p: FileChooserParams): Boolean {
                     archivos?.onReceiveValue(null)
@@ -113,6 +127,16 @@ class TiemposActivity : Activity() {
         archivos = null
     }
 
+    override fun onRequestPermissionsResult(pedido: Int, permisos: Array<out String>, resultados: IntArray) {
+        super.onRequestPermissionsResult(pedido, permisos, resultados)
+        if (pedido != PEDIDO_UBICACION) return
+        val (origen, cb) = ubicacion ?: return
+        ubicacion = null
+        val si = resultados.firstOrNull() == PackageManager.PERMISSION_GRANTED
+        Bitacora.anotar(this, "tiempos: ubicación aproximada " + if (si) "permitida" else "negada")
+        cb.invoke(origen, si, false)
+    }
+
     @Deprecated("Activity sin AndroidX")
     override fun onBackPressed() {
         if (web.canGoBack()) web.goBack() else @Suppress("DEPRECATION") super.onBackPressed()
@@ -120,5 +144,5 @@ class TiemposActivity : Activity() {
 
     override fun onSaveInstanceState(s: Bundle) { super.onSaveInstanceState(s); web.saveState(s) }
 
-    companion object { private const val PEDIDO_ARCHIVO = 41 }
+    companion object { private const val PEDIDO_ARCHIVO = 41; private const val PEDIDO_UBICACION = 42 }
 }

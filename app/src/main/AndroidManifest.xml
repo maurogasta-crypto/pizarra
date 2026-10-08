@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- pizarra-13: ubicación APROXIMADA, sólo para que Tiempos sepa en qué país
+         estás (de qué casa sale la alarma de salir). Se pide al usarla. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Sin éste, programar el trabajo de cada hora «con red» CIERRA la app al
          abrir (pizarra-3, en el teléfono de Mauro). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

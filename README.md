@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
-| Sello | `pizarra-12` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-13` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 43 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -67,6 +67,10 @@ widget, las alarmas, la lectura de Airbnb y Compartir.
   abre Tiempos en Pizarra; el ✎, también (ahí se elige qué va a la pizarra).
 - La sesión del sitio adentro es aparte de la del widget: la primera vez se
   entra en las dos.
+- **Ubicación aproximada** (pizarra-13): el sitio la pide al armar un plan
+  para saber si estás en Uruguay o en Brasil (de qué casa sale la alarma de
+  salir). La app la concede sólo al sitio de Tiempos, después de preguntarte;
+  no pide la precisa ni la guarda.
 
 ## 🤖 Claude propone (pizarra-11, `tiempos:V3`)
 

@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-12
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-13
 //
 // pizarra-12 (7-oct-2026, tiempos:V7): Tiempos se abre ADENTRO de la app
 // (TiemposActivity), y ésta pasa a ser la pantalla de ajustes —la cuenta del

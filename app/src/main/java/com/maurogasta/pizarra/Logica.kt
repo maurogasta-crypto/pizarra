@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-12
+// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-13
 //
 // Traducir las tareas de Tiempos (Firestore REST) a la lista de la pizarra, y
 // armar lo que se le manda a la base al tachar o al fijar una tarea. No toca

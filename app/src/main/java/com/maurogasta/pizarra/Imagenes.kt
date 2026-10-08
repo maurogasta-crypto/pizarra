@@ -10,7 +10,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Imagenes.kt — Subir la captura de un reel o un flyer. Sello: pizarra-12
+// Imagenes.kt — Subir la captura de un reel o un flyer. Sello: pizarra-13
 //
 // La misma cuenta y el mismo preset SIN FIRMA que `CV2.subirImagen` de Casa
 // Verde (públicos por diseño: identifican, no abren nada), a la carpeta
