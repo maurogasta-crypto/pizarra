@@ -24,7 +24,12 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-13
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-14
+//
+// pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es de todo el equipo. Al
+// entrar se elige el sitio; arriba de todo van los AVISOS de Claude (Avisos.kt)
+// con su configuración —un canal de Android por sitio—, y lo de Tiempos sólo
+// aparece con una cuenta de Tiempos.
 //
 // pizarra-12 (7-oct-2026, tiempos:V7): Tiempos se abre ADENTRO de la app
 // (TiemposActivity), y ésta pasa a ser la pantalla de ajustes —la cuenta del
@@ -124,13 +129,29 @@ class MainActivity : Activity() {
 
     private fun pintar() {
         raiz.removeAllViews()
-        raiz.addView(titulo("Tiempos"))
+        raiz.addView(titulo(if (!nube.conSesion) "Pizarra" else if (nube.esTiempos) "Tiempos" else "Pizarra · ${nube.sitio.nombre}"))
         aviso = texto("", 13f, "#9AA0A6")
-        if (!nube.conSesion) pintarEntrada() else pintarEleccion()
+        when {
+            !nube.conSesion -> pintarEntrada()
+            nube.esTiempos -> { pintarAvisos(); pintarEleccion() }
+            else -> { pintarAvisos(); pintarCuenta() }
+        }
     }
 
+    private var sitioElegido = "tiempos"
+
     private fun pintarEntrada() {
-        raiz.addView(texto("Entrá con la misma cuenta que usás en Tiempos. La contraseña se usa una sola vez y no queda guardada en el teléfono.", 14f, "#C8CCD0"))
+        raiz.addView(texto("¿De qué sitio sos? Entrá con la misma cuenta que usás ahí. La contraseña se usa una sola vez y no queda guardada en el teléfono.", 14f, "#C8CCD0"))
+        val grupo = android.widget.RadioGroup(this)
+        for (s in SITIOS.filter { it.cuenta }) grupo.addView(android.widget.RadioButton(this).apply {
+            id = View.generateViewId()
+            text = s.nombre
+            textSize = 15f
+            setTextColor(Color.parseColor("#F2F2F2"))
+            isChecked = s.id == sitioElegido
+            setOnCheckedChangeListener { _, si -> if (si) sitioElegido = s.id }
+        })
+        raiz.addView(grupo)
         val mail = campo("Mail", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
         val clave = campo("Contraseña", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
         raiz.addView(mail)
@@ -140,9 +161,80 @@ class MainActivity : Activity() {
             val c = clave.text.toString()
             if (m.isEmpty() || c.isEmpty()) { decir("Falta el mail o la contraseña."); return@boton }
             decir("Entrando…")
-            enSegundo({ nube.entrar(m, c) }) { pintar() }
+            enSegundo({ nube.entrar(m, c, sitioElegido) }) {
+                Bitacora.anotar(this, "entró con ${nube.sitio.id}")
+                // Con Tiempos, el ícono abre Tiempos adentro; con otro sitio, esta pantalla.
+                if (nube.esTiempos) startActivity(Intent(this, TiemposActivity::class.java))
+                pintar()
+            }
         })
         raiz.addView(aviso)
+    }
+
+    /* ── pizarra-14: los avisos de Claude, de todo el ecosistema ── */
+
+    private var avisosVista: LinearLayout? = null
+
+    private fun pintarAvisos() {
+        raiz.addView(subtitulo("🔔 Avisos de Claude"))
+        raiz.addView(texto("Lo que Claude te avisa de ${if (nube.esTiempos) "todos los sitios" else nube.sitio.nombre}. Llegan solos como notificación (puede tardar hasta una hora). Cada sitio tiene su canal: lo silenciás o lo dejás sonar en «Configurar».", 13f, "#9AA0A6"))
+        val lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        avisosVista = lista
+        raiz.addView(lista)
+        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fila.addView(boton("⟳ Traer") { traerAvisos() })
+        fila.addView(boton("⚙ Configurar") { configurarAvisos() })
+        raiz.addView(fila)
+        raiz.addView(texto("WhatsApp se prende o se apaga en «Mis avisos por WhatsApp» de tu sitio.", 12f, "#6F757B").apply {
+            setOnClickListener { abrir(nube.sitio.panel) }
+        })
+        Buzon.crearCanales(this)
+        permisos()
+        Alarmas.asegurarTrabajo(this)
+        pintarListaAvisos(with(Buzon) { avisosGuardados })
+        traerAvisos()
+    }
+
+    private fun traerAvisos() {
+        enSegundo({ Buzon.ponerAlDia(this, nube) }) { pintarListaAvisos(it) }
+    }
+
+    private fun pintarListaAvisos(avisos: List<Aviso>) {
+        val v = avisosVista ?: return
+        v.removeAllViews()
+        if (avisos.isEmpty()) { v.addView(texto("Todavía no hay avisos.", 13f, "#6F757B")); return }
+        for (a in avisos.take(15)) {
+            val cuando = instante(a.creado)?.let {
+                java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.ofEpochMilli(it))
+            }.orEmpty()
+            v.addView(texto("${if (a.leido) "" else "● "}${iconoTema(a.tema)} ${nombreSitio(a.sitio)} · $cuando\n${a.texto}", 14f,
+                if (a.leido) "#8A8F98" else "#F2F2F2").apply {
+                setPadding(0, dp(6), 0, dp(6))
+                setOnClickListener {
+                    if (!a.leido) enSegundo({ nube.marcarLeido(a.id) }) {
+                        pintarListaAvisos(with(Buzon) { avisosGuardados }.map { x -> if (x.id == a.id) x.copy(leido = true) else x })
+                    }
+                    // Un enlace del ecosistema en el texto se abre (Tiempos, adentro).
+                    Regex("https://\\S+").find(a.texto)?.let { m -> abrir(m.value.trimEnd('.', ',', ')')) }
+                }
+            })
+        }
+    }
+
+    /** La configuración de los avisos: la pantalla de notificaciones de la app,
+     *  con un canal por sitio. Es de Android: no hay que inventar otra. */
+    private fun configurarAvisos() {
+        Buzon.crearCanales(this)
+        try { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }
+        catch (e: ActivityNotFoundException) { decir("Buscá en Ajustes → Aplicaciones → Pizarra → Notificaciones.") }
+    }
+
+    /** Lo que queda abajo con una cuenta que no es de Tiempos. */
+    private fun pintarCuenta() {
+        raiz.addView(aviso)
+        raiz.addView(texto("Entraste como ${nube.mail ?: "—"} (${nube.sitio.nombre}) · $SELLO", 12f, "#6F757B"))
+        raiz.addView(boton("Abrir ${nube.sitio.nombre}") { abrir(nube.sitio.panel) })
+        raiz.addView(boton("Salir") { nube.salir(); pintar() })
     }
 
     /* ── pizarra-2: dictar, hoy se puede, alarmas ── */

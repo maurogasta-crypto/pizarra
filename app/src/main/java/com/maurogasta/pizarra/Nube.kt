@@ -8,7 +8,13 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-13
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-14
+//
+// pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es para todo el equipo. Al
+// entrar se elige el SITIO (Avisos.kt, `SITIOS`): Tiempos para Mauro y
+// Florencia, Casa Verde, CasaYourte o remate para los demás. Con otro sitio la
+// app sólo trae los avisos; lo de Tiempos (tareas, alertas, deseos) pide
+// Tiempos, y lo dice.
 //
 // Por REST y sin el SDK de Firebase, igual que la app de la Hilux: la app no
 // baja nada que no venga con Android.
@@ -44,20 +50,25 @@ class Nube(contexto: Context) {
     private val prefs = contexto.getSharedPreferences("sesion", Context.MODE_PRIVATE)
 
     val uid: String? get() = prefs.getString("uid", null)
+    /** El sitio con el que se entró. Una sesión de antes de pizarra-14 es de Tiempos. */
+    val sitio: Sitio get() = sitio(prefs.getString("sitio", "tiempos"))
+    val esTiempos: Boolean get() = sitio.id == "tiempos"
     val mail: String? get() = prefs.getString("mail", null)
     val conSesion: Boolean get() = prefs.getString("refresh", null) != null && uid != null
 
     private var idToken: String? = null
     private var vence = 0L
 
-    fun entrar(mail: String, clave: String) {
+    fun entrar(mail: String, clave: String, sitioId: String = "tiempos") {
+        val s = sitio(sitioId)
         val r = pedir(
-            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$CLAVE_WEB",
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${s.clave}",
             JSONObject().put("email", mail).put("password", clave).put("returnSecureToken", true).toString(),
             "application/json", null,
         )
         val j = JSONObject(r)
         prefs.edit()
+            .putString("sitio", s.id)
             .putString("refresh", j.getString("refreshToken"))
             .putString("uid", j.getString("localId"))
             .putString("mail", mail)
@@ -74,10 +85,10 @@ class Nube(contexto: Context) {
     /** El token de una hora, renovado con el refreshToken cuando hace falta. */
     private fun token(): String {
         idToken?.let { if (System.currentTimeMillis() < vence) return it }
-        val refresh = prefs.getString("refresh", null) ?: throw ErrorNube("Entrá con tu cuenta de Tiempos.", true)
+        val refresh = prefs.getString("refresh", null) ?: throw ErrorNube("Entrá con tu cuenta.", true)
         val r = try {
             pedir(
-                "https://securetoken.googleapis.com/v1/token?key=$CLAVE_WEB",
+                "https://securetoken.googleapis.com/v1/token?key=${sitio.clave}",
                 "grant_type=refresh_token&refresh_token=" + URLEncoder.encode(refresh, "UTF-8"),
                 "application/x-www-form-urlencoded", null,
             )
@@ -85,7 +96,7 @@ class Nube(contexto: Context) {
             // Un token revocado o vencido no se arregla reintentando.
             if (e.message?.contains("TOKEN") == true || e.message?.contains("USER") == true) {
                 prefs.edit().remove("refresh").apply()
-                throw ErrorNube("La sesión venció. Entrá de nuevo con tu cuenta de Tiempos.", true)
+                throw ErrorNube("La sesión venció. Entrá de nuevo con tu cuenta de ${sitio.nombre}.", true)
             }
             throw e
         }
@@ -96,9 +107,27 @@ class Nube(contexto: Context) {
         return idToken!!
     }
 
+    /** Lo de Tiempos sólo con una cuenta de Tiempos (pizarra-14). */
+    private fun deTiempos(): String {
+        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta de Tiempos.", true)
+        if (!esTiempos) throw ErrorNube("La pizarra de tareas es de Tiempos: entraste con ${sitio.nombre}.")
+        return yo
+    }
+
+    /** Mis avisos del ecosistema, de la base del sitio con el que entré (pizarra-14). */
+    fun avisos(): List<Aviso> {
+        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta.", true)
+        return avisosDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/${sitio.docs}:runQuery",
+            consultaAvisos(yo).toString(), "application/json", token())))
+    }
+
+    fun marcarLeido(id: String) {
+        pedir("https://firestore.googleapis.com/v1/${sitio.docs}:commit", cuerpoLeido(sitio.docs, id).toString(), "application/json", token())
+    }
+
     /** Las comunes y las personales mías, como las trae el sitio. */
     fun tareas(): List<Tarea> {
-        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta de Tiempos.", true)
+        val yo = deTiempos()
         val url = "https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery"
         val comunes = JSONArray(pedir(url, consultaComunes().toString(), "application/json", token()))
         val mias = JSONArray(pedir(url, consultaMias(yo).toString(), "application/json", token()))
@@ -107,31 +136,33 @@ class Nube(contexto: Context) {
 
     /** Mis recordatorios y alarmas (pizarra-2). */
     fun alertas(): List<Alerta> {
-        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta de Tiempos.", true)
+        val yo = deTiempos()
         return alertasDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
             consultaAlertas(yo).toString(), "application/json", token())))
     }
 
     /** Los deseos de los dos, para «Hoy se puede» (pizarra-2). */
-    fun deseos(): List<Deseo> = deseosDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
-        consultaDeseos().toString(), "application/json", token())))
+    fun deseos(): List<Deseo> = deTiempos().let { _ -> deseosDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
+        consultaDeseos().toString(), "application/json", token()))) }
 
     /** Lo que Claude me propone, pendiente (pizarra-11). */
     fun propuestas(): List<Propuesta> {
-        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta de Tiempos.", true)
+        val yo = deTiempos()
         return propuestasDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
             consultaPropuestas().toString(), "application/json", token())), yo)
     }
 
     /** Una falla de la app a `reportes/` de Tiempos, con mi sesión (pizarra-3). */
     fun mandarFalla(texto: String, gravedad: String) {
-        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta de Tiempos.", true)
+        // Los reportes de cada sitio tienen otra forma: por ahora, las fallas
+        // de la app llegan a Claude sólo desde una cuenta de Tiempos.
+        val yo = deTiempos()
         commit(cuerpoFalla(idNuevo(), yo, mail.orEmpty(), texto, gravedad))
     }
 
-    fun tachar(id: String, hecho: Boolean) = commit(cuerpoTachar(id, hecho, uid ?: throw ErrorNube("Sin sesión", true)))
+    fun tachar(id: String, hecho: Boolean) = commit(cuerpoTachar(id, hecho, deTiempos()))
 
-    fun fijar(id: String, fijar: Boolean) = commit(cuerpoFijar(id, fijar, uid ?: throw ErrorNube("Sin sesión", true)))
+    fun fijar(id: String, fijar: Boolean) = commit(cuerpoFijar(id, fijar, deTiempos()))
 
     private fun commit(cuerpo: JSONObject) {
         pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:commit", cuerpo.toString(), "application/json", token())
@@ -146,7 +177,7 @@ class Nube(contexto: Context) {
             c.readTimeout = 15_000
             c.doOutput = true
             c.setRequestProperty("Content-Type", tipo)
-            c.setRequestProperty("Referer", REFERER)
+            c.setRequestProperty("Referer", sitio.referer.ifEmpty { REFERER })
             if (bearer != null) c.setRequestProperty("Authorization", "Bearer $bearer")
             c.outputStream.use { it.write(cuerpo.toByteArray(Charsets.UTF_8)) }
             val codigo = c.responseCode
@@ -177,7 +208,7 @@ fun motivo(codigo: Int, texto: String): String {
         m.contains("INVALID_LOGIN_CREDENTIALS") || m.contains("INVALID_PASSWORD") || m.contains("EMAIL_NOT_FOUND") ->
             "Mail o contraseña equivocados."
         m.contains("TOO_MANY_ATTEMPTS") -> "Demasiados intentos. Esperá unos minutos."
-        codigo == 403 -> "La base no deja: ¿tu cuenta está aprobada en Tiempos?"
+        codigo == 403 -> "La base no deja: ¿tu cuenta está aprobada en ese sitio (y sus reglas publicadas)?"
         codigo == 404 || m.contains("NOT_FOUND") -> "Esa tarea ya no existe."
         m.isNotEmpty() -> "$m ($codigo)"
         else -> "La base contestó $codigo."

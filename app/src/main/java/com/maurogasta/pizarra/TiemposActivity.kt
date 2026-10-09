@@ -21,7 +21,11 @@ import android.widget.Button
 import android.widget.FrameLayout
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TiemposActivity.kt — Tiempos ADENTRO de la app. Sello: pizarra-13
+// TiemposActivity.kt — Tiempos ADENTRO de la app. Sello: pizarra-14
+//
+// pizarra-14 (tiempos:V10): la Pizarra es de todo el equipo. Sin cuenta, o con
+// una de otro sitio, el ícono abre la pantalla de la app (entrar y los avisos):
+// Tiempos es de Mauro y Florencia.
 //
 // 7-oct-2026, tiempos:V7 (Mauro): «no es práctico dos aplicaciones para hacer
 // lo mismo». La app muestra el sitio de Tiempos en su propia pantalla (sin
@@ -50,6 +54,12 @@ class TiemposActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(estado: Bundle?) {
         super.onCreate(estado)
+        val nube = Nube(this)
+        if (!nube.conSesion || !nube.esTiempos) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
         Bitacora.anotar(this, "tiempos: abre adentro")
         web = WebView(this).apply {
             setBackgroundColor(Color.parseColor("#14161a"))
@@ -107,7 +117,7 @@ class TiemposActivity : Activity() {
     override fun onNewIntent(i: Intent) {
         super.onNewIntent(i)
         setIntent(i)
-        i.getStringExtra(EXTRA_URL)?.let { if (esDeTiempos(it)) web.loadUrl(it) }
+        if (::web.isInitialized) i.getStringExtra(EXTRA_URL)?.let { if (esDeTiempos(it)) web.loadUrl(it) }
     }
 
     private fun urlPedida(i: Intent?): String = i?.getStringExtra(EXTRA_URL)?.takeIf { esDeTiempos(it) } ?: TIEMPOS_URL
@@ -142,7 +152,7 @@ class TiemposActivity : Activity() {
         if (web.canGoBack()) web.goBack() else @Suppress("DEPRECATION") super.onBackPressed()
     }
 
-    override fun onSaveInstanceState(s: Bundle) { super.onSaveInstanceState(s); web.saveState(s) }
+    override fun onSaveInstanceState(s: Bundle) { super.onSaveInstanceState(s); if (::web.isInitialized) web.saveState(s) }
 
     companion object { private const val PEDIDO_ARCHIVO = 41; private const val PEDIDO_UBICACION = 42 }
 }

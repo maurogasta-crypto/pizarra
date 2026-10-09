@@ -85,6 +85,20 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   `TiemposActivity` muestra el sitio en una WebView y adentro carga SÓLO
   `TIEMPOS_URL` (`esDeTiempos`); lo demás va al navegador. Lo que hace
   Tiempos se cambia en el sitio, no acá. Sin dictado propio: el del teclado.
+- **La Pizarra es de TODO el equipo, no sólo de Tiempos** (pizarra-14,
+  9-oct-2026, `tiempos:V10`). Al entrar se elige el sitio (`SITIOS` de
+  `Avisos.kt`: Tiempos, Casa Verde, CasaYourte, remate) y se usa la cuenta de
+  ese sitio; con otro sitio la app muestra sólo los **avisos de Claude**, y lo
+  de Tiempos (tareas, alertas, deseos, el ícono que abre Tiempos) pide una
+  cuenta de Tiempos. Los avisos salen de `avisos/` de la base de la persona
+  (los deja `herramientas/avisos.mjs` de `datos`), se traen al abrir la app y
+  con el trabajo de cada hora, y se muestran con **un canal de
+  Android por sitio**: ésa es la configuración. Una sesión de antes de
+  pizarra-14 es de Tiempos. **Las claves web de `SITIOS` son las de cada
+  sitio** (públicas por diseño): si un sitio cambia la suya, cambia acá en la
+  misma tanda (el banco las compara si el sitio está al lado). **La guía de
+  instalación es `pizarra.html` de `datos`**: si cambia cómo se entra o qué
+  permisos pide la app, cambia allá en la misma tanda.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

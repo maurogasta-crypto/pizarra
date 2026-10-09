@@ -13,7 +13,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 | | |
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
-| Base | Firebase `tiempos-71d42`, la de Tiempos, por REST |
+| Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
 | Sello | `pizarra-13` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 43 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 

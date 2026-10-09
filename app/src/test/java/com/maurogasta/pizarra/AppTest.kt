@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import org.robolectric.RuntimeEnvironment
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,10 +23,11 @@ import org.robolectric.annotation.Config
 class AppTest {
     @org.junit.Before fun sinRed() { Nube.sinRed = true }
 
-    private fun conSesion() {
+    private fun conSesion(sitio: String? = null) {
         val c = RuntimeEnvironment.getApplication()
         c.getSharedPreferences("sesion", Context.MODE_PRIVATE).edit()
-            .putString("refresh", "x").putString("uid", "uidPrueba").putString("mail", "a@b.c").commit()
+            .putString("refresh", "x").putString("uid", "uidPrueba").putString("mail", "a@b.c")
+            .apply { if (sitio != null) putString("sitio", sitio) }.commit()
     }
 
     private fun botones(v: View): List<Button> = when (v) {
@@ -154,6 +156,7 @@ class AppTest {
 
     // pizarra-12 (tiempos:V7): el ícono abre Tiempos ADENTRO; lo de afuera, al navegador.
     @Test fun tiempos_seAbreAdentro_conElSitioYNadaMás() {
+        conSesion()
         val a = Robolectric.buildActivity(TiemposActivity::class.java).setup().get()
         shadowOf(Looper.getMainLooper()).idle()
         fun webs(v: View): List<android.webkit.WebView> = when (v) {
@@ -175,5 +178,33 @@ class AppTest {
         assertTrue("una dirección de afuera no se carga adentro", shadowOf(webs(b.window.decorView).single()).lastLoadedUrl == TIEMPOS_URL)
         val m = java.io.File("src/main/AndroidManifest.xml").readText()
         assertTrue(m.indexOf(".TiemposActivity") < m.indexOf("android.intent.category.LAUNCHER") && m.indexOf("android.intent.category.LAUNCHER") < m.indexOf(".MainActivity"))
+    }
+
+    // pizarra-14 (tiempos:V10): la Pizarra es de todo el equipo.
+    @Test fun sinCuenta_elÍconoLlevaAEntrar_yHayQueElegirElSitio() {
+        val a = Robolectric.buildActivity(TiemposActivity::class.java).setup().get()
+        assertTrue("sin cuenta, Tiempos no se abre", a.isFinishing)
+        assertTrue(shadowOf(a).nextStartedActivity?.component?.className?.endsWith("MainActivity") == true)
+        val m = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        fun radios(v: View): List<android.widget.RadioButton> = when (v) {
+            is android.widget.RadioButton -> listOf(v)
+            is ViewGroup -> (0 until v.childCount).flatMap { radios(v.getChildAt(it)) }
+            else -> emptyList()
+        }
+        assertEquals(listOf("Tiempos (Mauro y Florencia)", "Casa Verde", "CasaYourte", "remateTaller"), radios(m.window.decorView).map { it.text.toString() })
+    }
+
+    @Test fun conCuentaDeOtroSitio_hayAvisosYNadaDeTiempos() {
+        conSesion("casayourte")
+        val t = Robolectric.buildActivity(TiemposActivity::class.java).setup().get()
+        assertTrue("con CasaYourte, el ícono no abre Tiempos", t.isFinishing)
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        val bs = botones(a.window.decorView).map { it.text.toString() }
+        println("botones: $bs")
+        assertTrue(bs.any { it.contains("Traer") } && bs.any { it.contains("Configurar") })
+        assertTrue("sin nada de Tiempos", bs.none { it.contains("Seguir en Tiempos") || it.contains("widget") })
+        for (b in botones(a.window.decorView).filter { it.text != "Salir" }) { b.performClick(); shadowOf(Looper.getMainLooper()).idle() }
     }
 }

@@ -29,7 +29,10 @@ import java.time.ZoneId
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-13
+// Alarmas.kt — Los recordatorios y las alarmas de Tiempos, a su hora. Sello: pizarra-14
+//
+// pizarra-14: la misma puesta al día trae también los AVISOS del ecosistema
+// (Avisos.kt), con cualquier cuenta; las alertas, sólo con una de Tiempos.
 //
 // Pedido de Mauro, 5-oct-2026: «mañana tengo que ir antes al gimnasio… poner
 // una sirena un rato antes». El sitio guarda la alerta en `alertas/` (app-13)
@@ -72,7 +75,9 @@ object Alarmas {
         thread {
             val msg = try {
                 val nube = Nube(ctx)
-                if (!nube.conSesion) "sin sesión" else {
+                if (nube.conSesion) try { Buzon.ponerAlDia(ctx, nube) } catch (e: Throwable) {
+                    Bitacora.anotar(ctx, "avisos: " + (e.message ?: e.toString()).take(200)) }
+                if (!nube.conSesion) "sin sesión" else if (!nube.esTiempos) "sin alertas: no es una cuenta de Tiempos" else {
                     val a = nube.alertas()
                     ctx.alertasGuardadas = a
                     "${programar(ctx, a)} programada(s)"
