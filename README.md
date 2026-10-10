@@ -22,7 +22,10 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 1. Instalar `pizarra.apk` y abrir **Pizarra**.
 2. Entrar con la misma cuenta de Tiempos. La contraseña se usa una vez y no se
    guarda: queda el `refreshToken` de esa entrada.
-3. Tildar las tareas que van a la pizarra (comunes y tus personales).
+3. Abrir **📝 La pizarra** (viene plegada desde pizarra-15: un toque la abre) y
+   tildar las tareas que van a la pizarra (comunes y tus personales). Están
+   agrupadas por categoría —Producción, Mantenimiento, Chicos, Casa y comida,
+   Personal—, la misma de Tiempos: la de la tarea de más arriba.
 4. **Poner el widget** (o mantener apretado el inicio → Widgets → Pizarra).
 5. En el widget: tocar una tarea la tacha; tocarla tachada la vuelve a
    pendiente. ⟳ actualiza, ✎ abre la app.
@@ -49,6 +52,12 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
   (deseos-1). Se editan en Tiempos.
 
 No escribe nada nuevo en la base: alertas y deseos sólo se leen.
+
+**Desde pizarra-15 (10-oct-2026) el cuadro de arriba es «✨ Pedile a la IA»**
+y no «Para la agenda»: lo que se escribe ahí puede ser cualquier cosa que
+Tiempos registra —un gasto, algo de los chicos, mover o sacar algo de la
+agenda, una alarma, un deseo, una compra—. Lo arma Tiempos (sugerir-16); la
+app sigue sin llamar a la IA.
 
 ## Tiempos ADENTRO de la app (pizarra-12, `tiempos:V7`)
 

@@ -24,7 +24,13 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-14
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-15
+//
+// pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
+// un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
+// cuadro de arriba ya no es «Para la agenda» sino «✨ Pedile a la IA»: lo que
+// se escribe ahí puede ser cualquier cosa que Tiempos registra —un gasto, los
+// chicos, la agenda, una alarma, un deseo, compras—, y el plan lo arma Tiempos.
 //
 // pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es de todo el equipo. Al
 // entrar se elige el sitio; arriba de todo van los AVISOS de Claude (Avisos.kt)
@@ -245,10 +251,10 @@ class MainActivity : Activity() {
     private var alertasVista: TextView? = null
 
     private fun pintarTiempos() {
-        raiz.addView(subtitulo("🎙 Para la agenda"))
-        raiz.addView(texto("Dictá o escribí, corregí, y Tiempos arma el plan: agenda, pizarra, recordatorio, alarma, deseo o compras.", 13f, "#9AA0A6"))
+        raiz.addView(subtitulo("✨ Pedile a la IA"))
+        raiz.addView(texto("Lo que sea, dictado o escrito: un gasto, algo de los chicos, mover o sacar algo de tu agenda, una alarma, un deseo, una compra. Tiempos arma el plan y vos marcás qué va.", 13f, "#9AA0A6"))
         val caja = EditText(this).apply {
-            hint = "Ej.: mañana ir antes al gimnasio para llevarle los títulos a Pedro"
+            hint = "Ej.: gasté 850 en la farmacia · el básquet pasa a las 18 · mañana alarma 7:30"
             minLines = 2
             setTextColor(Color.WHITE)
             setHintTextColor(Color.parseColor("#6F757B"))
@@ -445,15 +451,23 @@ class MainActivity : Activity() {
 
     private fun pintarEleccion() {
         pintarTiempos()
-        raiz.addView(subtitulo("📝 La pizarra"))
-        raiz.addView(texto("Tildá lo que querés en la pizarra. Desde el widget, tocar una tarea la tacha en Tiempos para todos; tocarla de nuevo la vuelve a pendiente.", 14f, "#C8CCD0"))
+        // pizarra-15: plegada. Se abre con un toque, y recién ahí la lista.
+        val titulo = subtitulo("").apply { isClickable = true }
+        val cuerpo = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        cuerpo.addView(texto("Tildá lo que querés en la pizarra. Desde el widget, tocar una tarea la tacha en Tiempos para todos; tocarla de nuevo la vuelve a pendiente.", 14f, "#C8CCD0"))
         val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         fila.addView(boton("⟳ Actualizar") { cargar() })
         fila.addView(boton("Poner el widget") { ponerWidget() })
-        raiz.addView(fila)
+        cuerpo.addView(fila)
         val lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; id = View.generateViewId() }
-        raiz.addView(lista)
-        raiz.addView(boton("Sacar las tachadas de la pizarra") { sacarTachadas() })
+        cuerpo.addView(lista)
+        cuerpo.addView(boton("Sacar las tachadas de la pizarra") { sacarTachadas() })
+        pizarraTitulo = titulo
+        pizarraCuerpo = cuerpo
+        titulo.setOnClickListener { pizarraAbierta = !pizarraAbierta; pintarPliegue() }
+        raiz.addView(titulo)
+        raiz.addView(cuerpo)
+        pintarPliegue()
         pintarBodega()
         raiz.addView(texto("Entraste como ${nube.mail ?: "—"} · $SELLO", 12f, "#6F757B"))
         raiz.addView(boton("🩺 Mandar diagnóstico a Claude") { mandarDiagnostico() })
@@ -547,6 +561,16 @@ class MainActivity : Activity() {
 
     private var listaVista: LinearLayout? = null
     private var tareas: List<Tarea> = emptyList()
+    private var pizarraAbierta = false
+    private var pizarraTitulo: TextView? = null
+    private var pizarraCuerpo: LinearLayout? = null
+
+    /** El título dice cuántas hay en la pizarra, y una flecha si está abierta o no. */
+    private fun pintarPliegue() {
+        val fijadas = tareas.count { it.enMiPizarra && !it.hecho }
+        pizarraTitulo?.text = (if (pizarraAbierta) "▾ " else "▸ ") + "📝 La pizarra" + (if (fijadas > 0) "  ($fijadas)" else "")
+        pizarraCuerpo?.visibility = if (pizarraAbierta) View.VISIBLE else View.GONE
+    }
 
     private fun cargar() {
         decir("Trayendo las tareas…")
@@ -561,8 +585,13 @@ class MainActivity : Activity() {
     private fun pintarLista() {
         val lista = listaVista ?: return
         lista.removeAllViews()
+        pintarPliegue()
         val porId = tareas.associateBy { it.id }
-        for (t in paraElegir(tareas)) {
+        for ((cat, grupo) in paraElegirPorCategoria(tareas)) {
+          val enEsta = grupo.count { it.enMiPizarra }
+          lista.addView(texto((CATEGORIAS[cat] ?: cat) + (if (enEsta > 0) "  · $enEsta en la pizarra" else ""), 15f, "#E8D3A2").apply {
+              setPadding(0, dp(12), 0, dp(2)) })
+          for (t in grupo) {
             val padre = t.parentId?.let { porId[it]?.titulo }
             val nombre = (if (padre != null) "$padre › " else "") + t.titulo +
                 (if (t.alcance == "personal") "  · personal" else "") + (if (t.hecho) "  · hecha" else "")
@@ -580,10 +609,12 @@ class MainActivity : Activity() {
                     }) {
                         caja.isEnabled = true
                         tareas = tareas.map { if (it.id == t.id) it.copy(enMiPizarra = marcada) else it }
+                        pintarPliegue()
                         PizarraWidget.actualizarDesdeLaRed(this@MainActivity, null)
                     }
                 }
             })
+          }
         }
     }
 

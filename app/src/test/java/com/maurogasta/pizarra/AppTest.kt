@@ -56,6 +56,31 @@ class AppTest {
         }
     }
 
+    // pizarra-15: la pizarra arranca plegada; un toque la abre y otro la cierra.
+    // Y el cuadro de arriba es neutro: «Pedile a la IA», no «Para la agenda».
+    @Test fun laPizarra_arrancaPlegada_yUnToqueLaAbre() {
+        conSesion()
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        fun textos(v: View): List<android.widget.TextView> = when (v) {
+            is ViewGroup -> (0 until v.childCount).flatMap { textos(v.getChildAt(it)) }
+            is android.widget.TextView -> listOf(v)
+            else -> emptyList()
+        }
+        val todos = textos(a.window.decorView)
+        assertTrue(todos.any { it.text.contains("Pedile a la IA") })
+        assertTrue(todos.none { it.text.contains("Para la agenda") })
+        val titulo = todos.first { it.text.contains("La pizarra") }
+        val actualizar = botones(a.window.decorView).first { it.text.contains("Actualizar") }
+        assertTrue(titulo.text.startsWith("▸"))
+        assertTrue("plegada: no se ve", !actualizar.isShown)
+        titulo.performClick(); shadowOf(Looper.getMainLooper()).idle()
+        assertTrue(titulo.text.startsWith("▾"))
+        assertTrue("abierta: se ve", actualizar.isShown)
+        titulo.performClick(); shadowOf(Looper.getMainLooper()).idle()
+        assertTrue(!actualizar.isShown)
+    }
+
     // pizarra-3 se cerraba al abrir en el teléfono: el trabajo «con red» exige
     // ACCESS_NETWORK_STATE, y Robolectric no lo exige. Lo que pide Android y el
     // simulador no controla, se controla leyendo el manifiesto.

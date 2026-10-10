@@ -99,6 +99,10 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   misma tanda (el banco las compara si el sitio está al lado). **La guía de
   instalación es `pizarra.html` de `datos`**: si cambia cómo se entra o qué
   permisos pide la app, cambia allá en la misma tanda.
+- **La pizarra para elegir viene PLEGADA y agrupada por categoría**
+  (pizarra-15, 10-oct-2026, pedido de Mauro). La categoría es la de Tiempos
+  (`CATEGORIAS` y `tipoHeredado` de `Logica.kt` = `TIPOS` y `tipoHeredado` de
+  `nucleo.js`): si cambian allá, cambian acá en la misma tanda.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

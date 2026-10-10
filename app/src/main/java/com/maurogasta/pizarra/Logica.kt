@@ -33,6 +33,7 @@ data class Tarea(
     val parentId: String?,
     val enMiPizarra: Boolean,
     val color: String?,
+    val tipo: String? = null,
 )
 
 /** Lee una tarea del formato de Firestore REST. Lo que no entiende, null. */
@@ -54,6 +55,7 @@ fun tareaDe(doc: JSONObject, uid: String): Tarea? {
         parentId = texto(f, "parentId"),
         enMiPizarra = mia,
         color = texto(f, "color"),
+        tipo = texto(f, "tipo"),
     )
 }
 
@@ -87,6 +89,28 @@ data class Fila(val id: String, val texto: String, val hecho: Boolean)
 fun paraElegir(todas: List<Tarea>): List<Tarea> =
     todas.filter { !it.hecho || it.enMiPizarra }
         .sortedWith(compareBy<Tarea>({ !it.enMiPizarra }, { it.hecho }, { it.titulo.lowercase() }))
+
+/* ── pizarra-15: elegir por CATEGORÍA (10-oct-2026, Mauro: «que muestre la
+   lista en un menú que se despliega, y recién ahí las actividades ordenadas
+   por categorías»). La categoría es la de Tiempos: el `tipo` de la tarea de
+   más arriba (`tipoHeredado` y `TIPOS` de nucleo.js; si cambian allá, cambian
+   acá en la misma tanda). Sin tipo, «Personal», como allá. */
+val CATEGORIAS = linkedMapOf("produccion" to "Producción", "mantenimiento" to "Mantenimiento",
+    "ninos" to "Chicos", "casa" to "Casa y comida", "personal" to "Personal")
+
+fun tipoHeredado(t: Tarea, porId: Map<String, Tarea>): String {
+    var x = t
+    var vueltas = 0
+    while (vueltas++ < 30) x = x.parentId?.let { porId[it] } ?: break
+    return if (x.tipo != null && x.tipo in CATEGORIAS) x.tipo else "personal"
+}
+
+/** Lo de `paraElegir`, agrupado por categoría en el orden de Tiempos. */
+fun paraElegirPorCategoria(todas: List<Tarea>): List<Pair<String, List<Tarea>>> {
+    val porId = todas.associateBy { it.id }
+    val g = paraElegir(todas).groupBy { tipoHeredado(it, porId) }
+    return CATEGORIAS.keys.mapNotNull { k -> g[k]?.let { k to it } }
+}
 
 /* ── Lo que se escribe ─────────────────────────────────────────────────────
    Un `commit` con UNA escritura: sólo los campos de la máscara, la tarea tiene

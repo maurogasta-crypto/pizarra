@@ -16,13 +16,14 @@ class LogicaTest {
     private val OTRA = "9uidFlorencia"
 
     private fun doc(id: String, titulo: String, hecho: Boolean = false, pizarra: Map<String, Boolean> = emptyMap(),
-                    parent: String? = null, alcance: String = "comun"): JSONObject {
+                    parent: String? = null, alcance: String = "comun", tipo: String? = null): JSONObject {
         val f = JSONObject()
             .put("titulo", JSONObject().put("stringValue", titulo))
             .put("hecho", JSONObject().put("booleanValue", hecho))
             .put("alcance", JSONObject().put("stringValue", alcance))
             .put("duenio", JSONObject().put("stringValue", YO))
         if (parent != null) f.put("parentId", JSONObject().put("stringValue", parent))
+        if (tipo != null) f.put("tipo", JSONObject().put("stringValue", tipo))
         if (pizarra.isNotEmpty()) {
             val m = JSONObject()
             pizarra.forEach { (k, v) -> m.put(k, JSONObject().put("booleanValue", v)) }
@@ -123,6 +124,24 @@ class LogicaTest {
             doc("c", "Hecha suelta", hecho = true),
         ), YO)
         assertEquals(listOf("b", "a"), paraElegir(t).map { it.id })
+    }
+
+    // pizarra-15: por categoría, la de la tarea de más arriba (como Tiempos).
+    @Test fun porCategoria_heredaDelProyecto_yVaEnElOrdenDeTiempos() {
+        val t = tareasDeConsulta(respuesta(
+            doc("p", "Dgo Aramburú", tipo = "produccion"),
+            doc("h", "Fotos", parent = "p", tipo = "personal"),
+            doc("c", "Compras para limpieza", tipo = "mantenimiento", pizarra = mapOf(YO to true)),
+            doc("s", "Sin tipo"),
+            doc("r", "Tipo raro", tipo = "inventado"),
+            doc("x", "Hecha suelta", hecho = true, tipo = "produccion"),
+        ), YO)
+        val g = paraElegirPorCategoria(t)
+        assertEquals(listOf("produccion", "mantenimiento", "personal"), g.map { it.first })
+        assertEquals(setOf("p", "h"), g[0].second.map { it.id }.toSet())
+        assertEquals(setOf("s", "r"), g[2].second.map { it.id }.toSet())
+        assertEquals(paraElegir(t).map { it.id }.toSet(), g.flatMap { p -> p.second.map { it.id } }.toSet())
+        assertEquals(listOf("produccion", "mantenimiento", "ninos", "casa", "personal"), CATEGORIAS.keys.toList())
     }
 
     @Test fun losErroresSeDicenEnCastellano() {
