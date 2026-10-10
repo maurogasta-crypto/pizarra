@@ -158,8 +158,11 @@ class TiemposTest {
             prop("x", "agenda", "pendiente", "otro", "De Flor"),
             prop("y", "agenda", "aprobada", "yo", "Ya decidida"),
             prop("z", "gasto", "pendiente", "yo", "Un gasto"),
+            prop("n", "analisis", "pendiente", "yo", ""),
+            prop("m", "analisis", "aprobada", "yo", ""),
         ), "yo")
-        assertEquals(listOf("a", "b", "c"), r.map { it.id })
+        assertEquals(listOf("a", "b", "c", "n"), r.map { it.id })
+        assertEquals("r-n", r[3].resumen)
         assertEquals("Básquet", r[0].titulo); assertEquals("18:00", r[0].hora)
         assertTrue(consultaPropuestas().toString().contains("\"stringValue\":\"pendiente\""))
     }

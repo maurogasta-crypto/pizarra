@@ -80,7 +80,8 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:
-  si cambia allá, cambia acá en la misma tanda.
+  si cambia allá, cambia acá en la misma tanda. Desde pizarra-16 entra también
+  la clase «analisis» (📊, lo que Claude analizó a pedido): se lee en Tiempos.
 - **Tiempos va ADENTRO, no se copia** (pizarra-12, `tiempos:V7`):
   `TiemposActivity` muestra el sitio en una WebView y adentro carga SÓLO
   `TIEMPOS_URL` (`esDeTiempos`); lo demás va al navegador. Lo que hace

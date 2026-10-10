@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-15
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-16
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -386,7 +386,7 @@ class MainActivity : Activity() {
         if (ps.isEmpty()) { v.addView(texto("Nada pendiente.", 13f, "#9AA0A6")); return }
         for (p in ps) {
             val cuando = listOf(p.dia, p.hora).filter { it.isNotEmpty() }.joinToString(" ")
-            val que = (if (p.clase == "consulta") "❓ " else "📅 ") + p.titulo.ifEmpty { p.resumen }
+            val que = (when (p.clase) { "consulta" -> "❓ "; "analisis" -> "📊 "; else -> "📅 " }) + p.titulo.ifEmpty { p.resumen }
             v.addView(texto(que + (if (cuando.isNotEmpty()) "  · $cuando" else ""), 14f, "#F2F2F2"))
         }
         v.addView(boton("Ver y aceptar en Tiempos") { abrir(TIEMPOS_URL) })

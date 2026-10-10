@@ -383,7 +383,9 @@ fun aCancelar(programadas: Set<String>, enLaBase: Set<String>): Set<String> = pr
    mismo filtro que `mias()` de propone.js: si cambia allá, cambia acá. */
 data class Propuesta(val id: String, val clase: String, val resumen: String, val titulo: String, val dia: String, val hora: String)
 
-val CLASES_PROPONE = listOf("agenda", "consulta")
+// pizarra-16 (10-oct-2026, tiempos:V11): «analisis» = lo que Claude analizó a
+// pedido (balances, gastos). Se lee en Tiempos; acá se avisa que está.
+val CLASES_PROPONE = listOf("agenda", "consulta", "analisis")
 
 fun consultaPropuestas(): JSONObject = JSONObject().put("structuredQuery", JSONObject()
     .put("from", JSONArray().put(JSONObject().put("collectionId", "propuestas")))
