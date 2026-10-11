@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-17
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-18
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -161,7 +161,7 @@ class MainActivity : Activity() {
         val mail = campo("Mail", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
         val clave = campo("Contraseña", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
         raiz.addView(mail)
-        raiz.addView(clave)
+        raiz.addView(conOjo(clave))
         raiz.addView(boton("Entrar") {
             val m = mail.text.toString().trim()
             val c = clave.text.toString()
@@ -685,6 +685,32 @@ class MainActivity : Activity() {
         inputType = tipo
         setTextColor(Color.WHITE)
         setHintTextColor(Color.parseColor("#6F757B"))
+    }
+
+    /** pizarra-18: el ojo 👁 para ver la contraseña mientras se tipea, como en
+     *  los cinco sitios (Mauro: «en todos los sitios»). El campo y el ojo en un
+     *  renglón; tocar el ojo alterna entre ver y ocultar, y el cursor queda al
+     *  final para seguir escribiendo. */
+    private fun conOjo(clave: EditText): LinearLayout {
+        val oculta = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        val visible = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+        val ojo = boton("👁") {}.apply {
+            contentDescription = "Mostrar la contraseña"
+            setBackgroundColor(Color.TRANSPARENT)
+        }
+        ojo.setOnClickListener {
+            val ver = clave.inputType == oculta
+            clave.inputType = if (ver) visible else oculta
+            clave.setSelection(clave.text.length)
+            ojo.text = if (ver) "🙈" else "👁"
+            ojo.contentDescription = if (ver) "Ocultar la contraseña" else "Mostrar la contraseña"
+        }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(clave, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(ojo, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        }
     }
 
     private fun boton(t: String, alTocar: () -> Unit) = Button(this).apply {

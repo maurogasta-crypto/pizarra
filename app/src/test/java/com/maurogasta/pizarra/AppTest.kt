@@ -57,6 +57,28 @@ class AppTest {
         assertTrue(textos(a.window.decorView).any { it.contains("Escribí tu mail") })
     }
 
+    // pizarra-18: el ojo muestra y vuelve a ocultar la contraseña.
+    @Test fun sinSesion_elOjo_muestraYOcultaLaContraseña() {
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        fun cajas(v: View): List<android.widget.EditText> = when (v) {
+            is android.widget.EditText -> listOf(v)
+            is ViewGroup -> (0 until v.childCount).flatMap { cajas(v.getChildAt(it)) }
+            else -> emptyList()
+        }
+        val clave = cajas(a.window.decorView).first { it.hint == "Contraseña" }
+        val oculta = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        assertEquals(oculta, clave.inputType)
+        clave.setText("secreta")
+        val ojo = botones(a.window.decorView).first { it.contentDescription == "Mostrar la contraseña" }
+        ojo.performClick()
+        assertEquals(android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, clave.inputType)
+        assertEquals("Ocultar la contraseña", ojo.contentDescription)
+        assertEquals(7, clave.selectionEnd)
+        ojo.performClick()
+        assertEquals(oculta, clave.inputType)
+    }
+
     @Test fun abreConSesion_yLosBotonesResponden() {
         conSesion()
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()

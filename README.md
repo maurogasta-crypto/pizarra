@@ -14,8 +14,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-17` (en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 55 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-18` (en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
@@ -24,6 +24,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    guarda: queda el `refreshToken` de esa entrada. Si no te acordás de la
    contraseña: escribí el mail y tocá **«Olvidé la contraseña»** (pizarra-17):
    Firebase manda el mail para elegir una nueva, que vale también en la web.
+   Y el ojo 👁 al lado de la contraseña la muestra mientras la escribís
+   (pizarra-18).
 3. Abrir **📝 La pizarra** (viene plegada desde pizarra-15: un toque la abre) y
    tildar las tareas que van a la pizarra (comunes y tus personales). Están
    agrupadas por categoría —Producción, Mantenimiento, Chicos, Casa y comida,

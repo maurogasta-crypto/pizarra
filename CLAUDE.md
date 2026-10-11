@@ -52,6 +52,10 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
 - **El campo `pizarra` de `tareas` es de esta app.** Mapa uid → true, uno por
   persona. Si Tiempos lo empieza a mostrar o a editar, que sea con esa forma.
 - **Sin dependencias en la app**, a propósito: HttpURLConnection y org.json.
+- **La contraseña tiene su ojo 👁** (`conOjo`, pizarra-18, 11-oct-2026) y
+  «Olvidé la contraseña» (pizarra-17), como los cinco sitios web, donde el ojo
+  es `ojosEnClaves()` de cada núcleo. Si cambia cómo se ve o se comporta allá,
+  cambia acá en la misma tanda.
 - **El widget no espera a la red para tachar**, y si la base dice que no, la
   fila vuelve. Nunca queda tachado algo que la base no tiene tachado.
 - **`posiblesDelDia` está dos veces**: en `Logica.kt` y en `nucleo.js` de
