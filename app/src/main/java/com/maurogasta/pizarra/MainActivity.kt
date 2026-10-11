@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-16
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-17
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -172,6 +172,17 @@ class MainActivity : Activity() {
                 // Con Tiempos, el ícono abre Tiempos adentro; con otro sitio, esta pantalla.
                 if (nube.esTiempos) startActivity(Intent(this, TiemposActivity::class.java))
                 pintar()
+            }
+        })
+        // pizarra-17: sin esto, quien no recordaba la contraseña tenía que ir a
+        // la web a pedir el mail. Es el mismo mail que manda la web del sitio.
+        raiz.addView(boton("Olvidé la contraseña") {
+            val m = mail.text.toString().trim()
+            if (m.isEmpty()) { decir("Escribí tu mail arriba y tocá de nuevo."); return@boton }
+            decir("Pidiendo el mail…")
+            enSegundo({ nube.restablecer(m, sitioElegido) }) {
+                Bitacora.anotar(this, "pidió restablecer la contraseña (${sitioElegido})")
+                decir("Te mandamos un mail a $m para elegir una contraseña nueva. Mirá también en spam.")
             }
         })
         raiz.addView(aviso)

@@ -42,6 +42,21 @@ class AppTest {
         assertTrue(botones(a.window.decorView).any { it.text == "Entrar" })
     }
 
+    // pizarra-17: «Olvidé la contraseña» en la entrada, y sin mail no pide nada.
+    @Test fun sinSesion_olvidéLaContraseña_pideElMailPrimero() {
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        val b = botones(a.window.decorView).first { it.text == "Olvidé la contraseña" }
+        b.performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+        fun textos(v: View): List<String> = when (v) {
+            is android.widget.TextView -> listOf(v.text.toString())
+            is ViewGroup -> (0 until v.childCount).flatMap { textos(v.getChildAt(it)) }
+            else -> emptyList()
+        }
+        assertTrue(textos(a.window.decorView).any { it.contains("Escribí tu mail") })
+    }
+
     @Test fun abreConSesion_yLosBotonesResponden() {
         conSesion()
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()

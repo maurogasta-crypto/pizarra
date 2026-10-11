@@ -77,6 +77,24 @@ class Nube(contexto: Context) {
         vence = System.currentTimeMillis() + 50 * 60 * 1000
     }
 
+    /** pizarra-17: «Olvidé la contraseña». Firebase manda el mail para elegir
+     *  una nueva; la app no ve ni guarda nada. Es la misma cuenta del sitio,
+     *  así que la contraseña nueva sirve también en la web. */
+    fun restablecer(mail: String, sitioId: String = "tiempos") {
+        val s = sitio(sitioId)
+        try {
+            pedir(
+                "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${s.clave}",
+                JSONObject().put("requestType", "PASSWORD_RESET").put("email", mail).toString(),
+                "application/json", null,
+            )
+        } catch (e: ErrorNube) {
+            if (e.message?.contains("EMAIL_NOT_FOUND") == true)
+                throw ErrorNube("Ese mail no tiene cuenta en ${s.nombre}. Pedile el alta a Mauro.")
+            throw e
+        }
+    }
+
     fun salir() {
         prefs.edit().clear().apply()
         idToken = null
