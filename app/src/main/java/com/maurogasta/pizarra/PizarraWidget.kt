@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-13
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-19
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -89,14 +89,11 @@ class PizarraWidget : AppWidgetProvider() {
                 v.setTextViewText(R.id.estado, cache.estado)
                 v.setOnClickPendingIntent(R.id.actualizar, difusion(contexto, ACCION_ACTUALIZAR, 1))
                 // pizarra-12: ✎ abre Tiempos adentro, en la solapa Pizarra (ahí se
-                // elige qué va); sin sesión en el widget, los ajustes para entrar.
+                // elige qué va y se anota); sin sesión en el widget, los ajustes
+                // para entrar. pizarra-19: era uno de DOS lápices que abrían lo
+                // mismo (Mauro, 12-oct); el ✏️ se fue y queda éste.
                 val editar = if (Nube(contexto).conSesion) Intent(contexto, TiemposActivity::class.java) else Intent(contexto, MainActivity::class.java)
                 v.setOnClickPendingIntent(R.id.editar, PendingIntent.getActivity(contexto, 2, editar,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-                // ✏️ abre Tiempos para anotar (se dicta con el teclado).
-                v.setOnClickPendingIntent(R.id.dictar, PendingIntent.getActivity(contexto, 4,
-                    Intent(contexto, TiemposActivity::class.java)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 // La plantilla de cada fila: MUTABLE porque la fila le agrega
                 // qué tarea es y si se tacha o se destacha.

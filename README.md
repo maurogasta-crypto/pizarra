@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-18` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-19` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -76,8 +76,9 @@ widget, las alarmas, la lectura de Airbnb y Compartir.
   selector del sistema.
 - **⚙** abajo a la izquierda: los ajustes de la app (`MainActivity`): la
   cuenta del widget, la bodega, el diagnóstico. Compartir sigue entrando ahí.
-- **Sin botón de dictado**: se dicta con el 🎤 del teclado. El ✏️ del widget
-  abre Tiempos en Pizarra; el ✎, también (ahí se elige qué va a la pizarra).
+- **Sin botón de dictado**: se dicta con el 🎤 del teclado. El ✎ del widget
+  abre Tiempos en Pizarra: ahí se anota y se elige qué va (pizarra-19: había
+  un ✏️ al lado que hacía lo mismo, y se fue).
 - La sesión del sitio adentro es aparte de la del widget: la primera vez se
   entra en las dos.
 - **Ubicación aproximada** (pizarra-13): el sitio la pide al armar un plan
