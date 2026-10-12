@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-19
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-23
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -96,9 +96,10 @@ class PizarraWidget : AppWidgetProvider() {
                 v.setOnClickPendingIntent(R.id.editar, PendingIntent.getActivity(contexto, 2, editar,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 // La plantilla de cada fila: MUTABLE porque la fila le agrega
-                // qué tarea es y si se tacha o se destacha.
-                v.setPendingIntentTemplate(R.id.lista, PendingIntent.getBroadcast(contexto, 3,
-                    Intent(contexto, PizarraWidget::class.java).setAction(ACCION_TACHAR),
+                // qué tarea es y qué se tocó. pizarra-23: va a ToqueActivity,
+                // que tacha (el ☐) o abre la tarea en Tiempos (el texto).
+                v.setPendingIntentTemplate(R.id.lista, PendingIntent.getActivity(contexto, 3,
+                    Intent(contexto, ToqueActivity::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE))
                 manager.updateAppWidget(id, v)
                 manager.notifyAppWidgetViewDataChanged(id, R.id.lista)
@@ -191,9 +192,11 @@ class Filas(private val contexto: Context) : RemoteViewsService.RemoteViewsFacto
         v.setTextViewText(R.id.marca, if (f.hecho) "☑" else "☐")
         v.setTextViewText(R.id.texto, texto)
         v.setTextColor(R.id.texto, if (f.hecho) Color.parseColor("#8A8F98") else Color.parseColor("#F2F2F2"))
-        // Tocar una pendiente la tacha; tocar una tachada la vuelve a pendiente,
-        // por si fue un dedo de más.
-        v.setOnClickFillInIntent(R.id.fila, Intent().putExtra("id", f.id).putExtra("hecho", !f.hecho))
+        // El ☐: tocar una pendiente la tacha; tocar una tachada la vuelve a
+        // pendiente, por si fue un dedo de más. El texto (pizarra-23): abre la
+        // tarea en Tiempos.
+        v.setOnClickFillInIntent(R.id.marca, Intent().putExtra("que", "tachar").putExtra("id", f.id).putExtra("hecho", !f.hecho))
+        v.setOnClickFillInIntent(R.id.texto, Intent().putExtra("que", "abrir").putExtra("id", f.id))
         return v
     }
 }

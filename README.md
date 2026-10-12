@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-22` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-23` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -31,8 +31,9 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    agrupadas por categoría —Producción, Mantenimiento, Chicos, Casa y comida,
    Personal—, la misma de Tiempos: la de la tarea de más arriba.
 4. **Poner el widget** (o mantener apretado el inicio → Widgets → Pizarra).
-5. En el widget: tocar una tarea la tacha; tocarla tachada la vuelve a
-   pendiente. ⟳ actualiza, ✎ abre la app.
+5. En el widget: tocar el **☐** tacha la tarea; tocarlo tachada la vuelve a
+   pendiente. Tocar el **texto** abre la tarea en Tiempos, con su ficha
+   (pizarra-23; `?solapa=tareas&abrir=`, app-34). ⟳ actualiza, ✎ abre la app.
 6. **El segundo widget, «Mi agenda»** (pizarra-20, 12-oct-2026): Widgets →
    Tiempos → «Mi agenda». Los siete días que vienen, cada uno con su
    encabezado («Hoy · lunes 12/10», «… · libre» si no hay nada), y en cada día
@@ -247,6 +248,7 @@ crear una tarea que alguien borró.
 | `PizarraWidget.kt` | el widget de la pizarra, la caché y las filas |
 | `AgendaLogica.kt` | la agenda de la semana armada como en Tiempos (actividades, tareas agendadas, chicos). Sin Android ni red |
 | `AgendaWidget.kt` | el widget «Mi agenda», su caché y sus renglones |
+| `ToqueActivity.kt` | el toque en la pizarra, invisible: el ☐ tacha, el texto abre la tarea |
 | `TiemposActivity.kt` | Tiempos adentro (WebView): sólo el sitio, el ⚙ a los ajustes, los archivos |
 | `MainActivity.kt` | los ajustes: entrar para el widget, la bodega, el diagnóstico; y la puerta de Compartir |
 | `Bitacora.kt` | la bitácora, el cierre y la trabada guardados, y la falla que se manda a Tiempos |

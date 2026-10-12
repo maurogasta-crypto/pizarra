@@ -96,6 +96,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- pizarra-23: el toque en un renglón de la pizarra: el ☐ tacha, el
+             texto abre la tarea. Invisible, y no queda en Recientes. -->
+        <activity
+            android:name=".ToqueActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <activity
             android:name=".AlarmaPantalla"
             android:exported="false"

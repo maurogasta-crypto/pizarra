@@ -56,6 +56,12 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   «Olvidé la contraseña» (pizarra-17), como los cinco sitios web, donde el ojo
   es `ojosEnClaves()` de cada núcleo. Si cambia cómo se ve o se comporta allá,
   cambia acá en la misma tanda.
+- **En la pizarra el ☐ tacha y el TEXTO abre la tarea** (pizarra-23, 12-oct,
+  Mauro: «que el widget de pizarra también abra la tarea tocada»). Una lista
+  tiene UNA plantilla para sus renglones: va a `ToqueActivity`, invisible, que
+  decide (`que`: tachar o abrir) y se cierra. Es una Activity porque Android no
+  deja abrir una pantalla desde una difusión en segundo plano. Abre `urlTarea`
+  (`?solapa=tareas&abrir=f:<id>`, app-34 de Tiempos).
 - **El widget no espera a la red para tachar**, y si la base dice que no, la
   fila vuelve. Nunca queda tachado algo que la base no tiene tachado.
 - **`posiblesDelDia` está dos veces**: en `Logica.kt` y en `nucleo.js` de

@@ -319,6 +319,10 @@ fun posiblesDelDia(deseos: List<Deseo>, iso: String): List<Deseo> {
    lo precarga con su IA (app-14). La dirección no lleva nada más. */
 const val TIEMPOS_URL = "https://maurogasta-crypto.github.io/tiempos/"
 
+/** pizarra-23: Tiempos en Tareas con la ficha de esa tarea abierta (app-34). */
+fun urlTarea(id: String): String =
+    TIEMPOS_URL + "?solapa=tareas&abrir=" + java.net.URLEncoder.encode("f:$id", "UTF-8")
+
 fun urlDictado(texto: String, imagen: String = ""): String =
     TIEMPOS_URL + "?dictar=" + java.net.URLEncoder.encode(texto.trim().take(2000), "UTF-8") +
         (if (esImagenNuestra(imagen)) "&imagen=" + java.net.URLEncoder.encode(imagen, "UTF-8") else "")
