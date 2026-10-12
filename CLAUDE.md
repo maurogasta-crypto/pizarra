@@ -116,7 +116,9 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   recordatorios, a su hora), como `piezasDelDia` de `agenda.js` y
   `eventosDelDia` de `nucleo.js`: **si cambia cómo Tiempos guarda una
   actividad, una tarea agendada o un evento, cambia acá en la misma tanda.** Es
-  de lectura: tocar abre Tiempos en `?solapa=agenda`. Un widget sólo admite
+  de lectura: tocar abre Tiempos en la Agenda con ESA pieza abierta
+  (`urlPieza`: `?abrir=<clave>&dia=`, agenda-16); una alarma, la suya (`sobre`).
+  **Si cambia la forma de una clave de pieza en Tiempos, cambia acá.** Un widget sólo admite
   algunas vistas (un `View` suelto lo rompe): el lint lo marca y no se apaga.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.

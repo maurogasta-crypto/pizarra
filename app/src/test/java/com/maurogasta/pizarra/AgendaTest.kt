@@ -106,6 +106,25 @@ class AgendaTest {
         assertFalse("una de antes de hoy no va", l.any { it.titulo.contains("Pasada") })
     }
 
+    @Test fun tocarAbreLaPiezaYUnaAlarmaLaSuya() {
+        val al = listOf(Alerta("x1", "alarma", "Odontólogo", "2026-10-14", "18:30", sobre = "ev:e2|2026-10-14"),
+            Alerta("x2", "recordatorio", "Suelto", "2026-10-12", "08:00"))
+        val l = agendaDeLaSemana(hoy, campos(), eventos, tareas, alertas = al)
+        assertEquals("act:a1", l.first { it.titulo == "Gimnasio" }.clave)
+        assertEquals("f:t1", l.first { it.titulo == "Santa fe › Cortinas" }.clave)
+        assertEquals("ev:e1|2026-10-12", l.first { it.titulo == "Psicóloga" && it.dia == hoy }.clave)
+        assertEquals("ev:e2|2026-10-14", l.first { it.titulo == "⏰ Odontólogo" }.clave)
+        assertEquals("", l.first { it.titulo == "🔔 Suelto" }.clave)
+        assertEquals("https://maurogasta-crypto.github.io/tiempos/?solapa=agenda&dia=2026-10-14&abrir=ev%3Ae2%7C2026-10-14",
+            urlPieza("2026-10-14", "ev:e2|2026-10-14"))
+        assertEquals("https://maurogasta-crypto.github.io/tiempos/?solapa=agenda&dia=2026-10-12", urlPieza("2026-10-12", ""))
+        assertTrue(esDeTiempos(urlPieza("2026-10-12", "act:a1")))
+        // La alarma trae su pieza desde la base.
+        val doc = JSONObject().put("name", "$BASE_DOCS/alertas/z").put("fields", JSONObject().put("tipo", s("alarma"))
+            .put("texto", s("x")).put("dia", s("2026-10-14")).put("hora", s("10:00")).put("sobre", s("act:a1")))
+        assertEquals("act:a1", alertaDe(doc)!!.sobre)
+    }
+
     @Test fun sinAgendaTodaviaSeVeLaSemanaLibre() {
         val l = agendaDeLaSemana(hoy, null, emptyList(), emptyList())
         assertEquals(7, l.size)

@@ -5,7 +5,7 @@ import org.json.JSONObject
 import java.time.LocalDate
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AgendaLogica.kt — La agenda de la semana, para el widget. Sello: pizarra-21
+// AgendaLogica.kt — La agenda de la semana, para el widget. Sello: pizarra-22
 //
 // Pedido de Mauro, 12-oct-2026: «quiero dos widgets en la Pizarra: uno para la
 // pizarra y otro para la agenda semanal de ese usuario». Lo que muestra es la
@@ -37,7 +37,14 @@ data class FilaAgenda(
     val dia: String, val hora: String, val titulo: String, val sub: String,
     val clase: String,                     // "dia" | "act" | "tarea" | "chicos" | "alerta"
     val hoy: Boolean = false,
+    /** pizarra-22: la pieza que abre al tocarla (`?abrir=` de Tiempos, agenda-16);
+     *  una alarma lleva a la suya. Vacía: sólo el día. */
+    val clave: String = "",
 )
+
+/** Tiempos en la Agenda, en ese día y con esa pieza abierta (agenda-16 / app-33). */
+fun urlPieza(dia: String, clave: String): String =
+    TIEMPOS_URL + "?solapa=agenda&dia=" + dia + (if (clave.isEmpty()) "" else "&abrir=" + java.net.URLEncoder.encode(clave, "UTF-8"))
 
 private val DIAS = listOf("domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado")
 private val ISO = Regex("^\\d{4}-\\d{2}-\\d{2}$")
@@ -99,7 +106,7 @@ fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChico
             val hf = txt(a, "hf")
             meter(d, FilaAgenda(d, rango(hhmm(txt(a, "desde")), if (hf.isEmpty()) "" else hhmm(txt(a, "hasta"))),
                 txt(a, "titulo").ifEmpty { "Actividad" }.take(120),
-                listOf(NOMBRE_CLASE[txt(a, "tipo")].orEmpty(), txt(a, "lugar")).filter { it.isNotEmpty() }.joinToString(" · "), "act"))
+                listOf(NOMBRE_CLASE[txt(a, "tipo")].orEmpty(), txt(a, "lugar")).filter { it.isNotEmpty() }.joinToString(" · "), "act", clave = "act:$id"))
         }
     }
     mapa(agenda, "items")?.let { items ->
@@ -113,19 +120,19 @@ fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChico
             val d = if (flota) hoy else dia
             val padre = t.parentId?.let { porId[it]?.titulo }
             meter(d, FilaAgenda(d, rango(txt(m, "hora"), txt(m, "hasta")), if (padre != null) "$padre › ${t.titulo}" else t.titulo,
-                listOf("Tarea", txt(m, "lugar"), if (flota) "sin día" else "").filter { it.isNotEmpty() }.joinToString(" · "), "tarea"))
+                listOf("Tarea", txt(m, "lugar"), if (flota) "sin día" else "").filter { it.isNotEmpty() }.joinToString(" · "), "tarea", clave = clave))
         }
     }
     for (i in 0 until dias) {
         val d = sumarDiasIso(hoy, i)
         for (e in eventos) if (eventoEnDia(e, d))
             meter(d, FilaAgenda(d, rango(e.hora, e.horaFin), e.titulo,
-                listOf("Con los chicos", e.lugar).filter { it.isNotEmpty() }.joinToString(" · "), "chicos"))
+                listOf("Con los chicos", e.lugar).filter { it.isNotEmpty() }.joinToString(" · "), "chicos", clave = "ev:${e.id}|$d"))
     }
 
     for (a in alertas)
         meter(a.dia, FilaAgenda(a.dia, a.hora, (if (a.tipo == "alarma") "⏰ " else "🔔 ") + a.texto,
-            if (a.tipo == "alarma") "Alarma" else "Recordatorio", "alerta"))
+            if (a.tipo == "alarma") "Alarma" else "Recordatorio", "alerta", clave = a.sobre))
 
     val out = mutableListOf<FilaAgenda>()
     for (i in 0 until dias) {
@@ -139,13 +146,13 @@ fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChico
 }
 
 fun filasAgendaAJson(l: List<FilaAgenda>): String = JSONArray().apply {
-    l.forEach { put(JSONObject().put("d", it.dia).put("h", it.hora).put("t", it.titulo).put("s", it.sub).put("c", it.clase).put("y", it.hoy)) }
+    l.forEach { put(JSONObject().put("d", it.dia).put("h", it.hora).put("t", it.titulo).put("s", it.sub).put("c", it.clase).put("y", it.hoy).put("k", it.clave)) }
 }.toString()
 
 fun filasAgendaDeJson(s: String?): List<FilaAgenda> = try {
     val a = JSONArray(s ?: "[]")
     (0 until a.length()).map { i -> a.getJSONObject(i).let {
-        FilaAgenda(it.optString("d"), it.optString("h"), it.optString("t"), it.optString("s"), it.optString("c"), it.optBoolean("y")) } }
+        FilaAgenda(it.optString("d"), it.optString("h"), it.optString("t"), it.optString("s"), it.optString("c"), it.optBoolean("y"), it.optString("k")) } }
 } catch (e: Exception) { emptyList() }
 
 /** El cuerpo de un `batchGet` del documento de mi agenda. */

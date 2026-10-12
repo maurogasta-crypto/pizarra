@@ -204,7 +204,9 @@ fun conTachada(filas: List<Fila>, id: String, hecho: Boolean): List<Fila> =
    hora del teléfono. Un recordatorio es una notificación; una alarma suena
    hasta que se la apaga. */
 
-data class Alerta(val id: String, val tipo: String, val texto: String, val dia: String, val hora: String)
+// pizarra-22: `sobre` es la pieza de la agenda a la que pertenece (agenda-14 de
+// Tiempos); vacío si se dictó suelta.
+data class Alerta(val id: String, val tipo: String, val texto: String, val dia: String, val hora: String, val sobre: String = "")
 
 private val DIA_RE = Regex("""^\d{4}-\d{2}-\d{2}$""")
 private val HORA_RE = Regex("""^([01]\d|2[0-3]):[0-5]\d$""")
@@ -219,7 +221,7 @@ fun alertaDe(doc: JSONObject): Alerta? {
     val hora = texto(f, "hora").orEmpty().let { if (HORA_RE.matches(it)) it else "08:00" }
     val t = texto(f, "texto")?.trim().orEmpty()
     if (t.isEmpty()) return null
-    return Alerta(id, tipo, t.take(200), dia, hora)
+    return Alerta(id, tipo, t.take(200), dia, hora, texto(f, "sobre").orEmpty().take(120))
 }
 
 fun alertasDeConsulta(respuesta: JSONArray): List<Alerta> =

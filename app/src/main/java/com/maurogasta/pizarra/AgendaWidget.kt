@@ -17,7 +17,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AgendaWidget.kt — La agenda de la semana en la pantalla de inicio. Sello: pizarra-21
+// AgendaWidget.kt — La agenda de la semana en la pantalla de inicio. Sello: pizarra-22
 //
 // El segundo widget (Mauro, 12-oct-2026: «uno para la pizarra y otro para la
 // agenda semanal de ese usuario»). Es de LECTURA: muestra los siete días que
@@ -147,7 +147,7 @@ class FilasAgenda(private val contexto: Context) : RemoteViewsService.RemoteView
             val v = RemoteViews(contexto.packageName, R.layout.widget_agenda_dia)
             v.setTextViewText(R.id.dia_texto, f.titulo)
             v.setTextColor(R.id.dia_texto, Color.parseColor(if (f.hoy) "#E8B85C" else "#AEB3BA"))
-            v.setOnClickFillInIntent(R.id.dia_fila, Intent())
+            v.setOnClickFillInIntent(R.id.dia_fila, Intent().putExtra(EXTRA_URL, urlPieza(f.dia, "")))
             return v
         }
         val v = RemoteViews(contexto.packageName, R.layout.widget_agenda_fila)
@@ -157,7 +157,8 @@ class FilasAgenda(private val contexto: Context) : RemoteViewsService.RemoteView
         // El color de la clase, como en la agenda de Tiempos.
         v.setInt(R.id.agenda_barra, "setBackgroundColor", Color.parseColor(when (f.clase) {
             "chicos" -> "#C89BD8"; "tarea" -> "#7FB4BF"; "alerta" -> "#E08B8B"; else -> "#D8A657" }))
-        v.setOnClickFillInIntent(R.id.agenda_fila, Intent())
+        // pizarra-22: tocar abre ESA pieza en Tiempos; una alarma, la suya.
+        v.setOnClickFillInIntent(R.id.agenda_fila, Intent().putExtra(EXTRA_URL, urlPieza(f.dia, f.clave)))
         return v
     }
 }
