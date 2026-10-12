@@ -5,7 +5,7 @@ import org.json.JSONObject
 import java.time.LocalDate
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AgendaLogica.kt — La agenda de la semana, para el widget. Sello: pizarra-20
+// AgendaLogica.kt — La agenda de la semana, para el widget. Sello: pizarra-21
 //
 // Pedido de Mauro, 12-oct-2026: «quiero dos widgets en la Pizarra: uno para la
 // pizarra y otro para la agenda semanal de ese usuario». Lo que muestra es la
@@ -17,6 +17,9 @@ import java.time.LocalDate
 //   · las de los chicos — `eventos/`, de una fecha o de todas las semanas
 //                         (`eventosDelDia` de nucleo.js: `semanal`, `hasta`,
 //                         `excepto`)
+//   · sus alarmas y recordatorios — `alertas/` (pizarra-21, Mauro: «que el
+//                         widget de agenda muestre las alarmas»), en su día y a
+//                         su hora, como renglón propio con ⏰ o 🔔
 // Lo de Casa Verde (`cv:`) vive en la base de Casa Verde, y el widget entra
 // sólo a la de Tiempos: no va, y la pantalla lo dice.
 //
@@ -32,7 +35,7 @@ data class EventoChicos(
 /** Un renglón del widget: el encabezado de un día, o una cosa de ese día. */
 data class FilaAgenda(
     val dia: String, val hora: String, val titulo: String, val sub: String,
-    val clase: String,                     // "dia" | "act" | "tarea" | "chicos"
+    val clase: String,                     // "dia" | "act" | "tarea" | "chicos" | "alerta"
     val hoy: Boolean = false,
 )
 
@@ -81,7 +84,8 @@ private fun rango(desde: String, hasta: String) = if (desde.isNotEmpty() && hast
  * `agendas/{uid}` (o null si todavía no tiene). Cada día lleva su encabezado,
  * aunque esté libre: así se ve la semana entera de un vistazo.
  */
-fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChicos>, tareas: List<Tarea>, dias: Int = 7): List<FilaAgenda> {
+fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChicos>, tareas: List<Tarea>, dias: Int = 7,
+                     alertas: List<Alerta> = emptyList()): List<FilaAgenda> {
     val porId = tareas.associateBy { it.id }
     val porDia = mutableMapOf<String, MutableList<FilaAgenda>>()
     val ultimo = sumarDiasIso(hoy, dias - 1)
@@ -118,6 +122,10 @@ fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChico
             meter(d, FilaAgenda(d, rango(e.hora, e.horaFin), e.titulo,
                 listOf("Con los chicos", e.lugar).filter { it.isNotEmpty() }.joinToString(" · "), "chicos"))
     }
+
+    for (a in alertas)
+        meter(a.dia, FilaAgenda(a.dia, a.hora, (if (a.tipo == "alarma") "⏰ " else "🔔 ") + a.texto,
+            if (a.tipo == "alarma") "Alarma" else "Recordatorio", "alerta"))
 
     val out = mutableListOf<FilaAgenda>()
     for (i in 0 until dias) {

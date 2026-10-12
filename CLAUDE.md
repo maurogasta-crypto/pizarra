@@ -112,7 +112,8 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   y otro para la agenda semanal de ese usuario»). «Mi agenda»
   (`AgendaWidget.kt`) muestra la semana con la misma cuenta y lo arma
   `agendaDeLaSemana` de `AgendaLogica.kt` desde `agendas/{uid}` (actividades e
-  `items` `f:`) y `eventos/`, como `piezasDelDia` de `agenda.js` y
+  `items` `f:`), `eventos/` y, desde pizarra-21, `alertas/` (las alarmas y
+  recordatorios, a su hora), como `piezasDelDia` de `agenda.js` y
   `eventosDelDia` de `nucleo.js`: **si cambia cómo Tiempos guarda una
   actividad, una tarea agendada o un evento, cambia acá en la misma tanda.** Es
   de lectura: tocar abre Tiempos en `?solapa=agenda`. Un widget sólo admite

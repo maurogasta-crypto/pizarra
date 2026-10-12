@@ -93,6 +93,19 @@ class AgendaTest {
         assertEquals(2, eventos.size)
     }
 
+    @Test fun lasAlarmasVanEnSuDiaYASuHora() {
+        val al = listOf(Alerta("x1", "alarma", "Odontólogo", "2026-10-14", "18:30"),
+            Alerta("x2", "recordatorio", "Llamar a la escuela", "2026-10-12", "08:00"),
+            Alerta("x3", "alarma", "Pasada", "2026-10-11", "09:00"))
+        val l = agendaDeLaSemana(hoy, campos(), eventos, tareas, alertas = al)
+        val mie = l.filter { it.dia == "2026-10-14" && it.clase != "dia" }
+        assertEquals(listOf("Santa fe › Cortinas", "⏰ Odontólogo", "Odontólogo"), mie.map { it.titulo })
+        assertEquals("alerta", mie[1].clase)
+        assertEquals("Alarma", mie[1].sub)
+        assertEquals("🔔 Llamar a la escuela", l.first { it.dia == hoy && it.clase != "dia" }.titulo)
+        assertFalse("una de antes de hoy no va", l.any { it.titulo.contains("Pasada") })
+    }
+
     @Test fun sinAgendaTodaviaSeVeLaSemanaLibre() {
         val l = agendaDeLaSemana(hoy, null, emptyList(), emptyList())
         assertEquals(7, l.size)

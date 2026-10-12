@@ -17,7 +17,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AgendaWidget.kt — La agenda de la semana en la pantalla de inicio. Sello: pizarra-20
+// AgendaWidget.kt — La agenda de la semana en la pantalla de inicio. Sello: pizarra-21
 //
 // El segundo widget (Mauro, 12-oct-2026: «uno para la pizarra y otro para la
 // agenda semanal de ese usuario»). Es de LECTURA: muestra los siete días que
@@ -156,7 +156,7 @@ class FilasAgenda(private val contexto: Context) : RemoteViewsService.RemoteView
         v.setTextViewText(R.id.agenda_sub, f.sub)
         // El color de la clase, como en la agenda de Tiempos.
         v.setInt(R.id.agenda_barra, "setBackgroundColor", Color.parseColor(when (f.clase) {
-            "chicos" -> "#C89BD8"; "tarea" -> "#7FB4BF"; else -> "#D8A657" }))
+            "chicos" -> "#C89BD8"; "tarea" -> "#7FB4BF"; "alerta" -> "#E08B8B"; else -> "#D8A657" }))
         v.setOnClickFillInIntent(R.id.agenda_fila, Intent())
         return v
     }
