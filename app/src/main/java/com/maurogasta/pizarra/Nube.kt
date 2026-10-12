@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-14
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-20
 //
 // pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es para todo el equipo. Al
 // entrar se elige el SITIO (Avisos.kt, `SITIOS`): Tiempos para Mauro y
@@ -150,6 +150,15 @@ class Nube(contexto: Context) {
         val comunes = JSONArray(pedir(url, consultaComunes().toString(), "application/json", token()))
         val mias = JSONArray(pedir(url, consultaMias(yo).toString(), "application/json", token()))
         return tareasDeConsulta(comunes, yo) + tareasDeConsulta(mias, yo)
+    }
+
+    /** pizarra-20: mi agenda de la semana, para su widget (AgendaLogica.kt). */
+    fun agendaSemana(hoy: String): List<FilaAgenda> {
+        val yo = deTiempos()
+        val docs = "https://firestore.googleapis.com/v1/$BASE_DOCS"
+        val agenda = agendaDeRespuesta(JSONArray(pedir("$docs:batchGet", pedidoAgenda(yo).toString(), "application/json", token())))
+        val eventos = eventosDeConsulta(JSONArray(pedir("$docs:runQuery", consultaEventos().toString(), "application/json", token())))
+        return agendaDeLaSemana(hoy, agenda, eventos, tareas())
     }
 
     /** Mis recordatorios y alarmas (pizarra-2). */

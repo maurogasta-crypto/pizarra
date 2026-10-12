@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Tiempos</string>
     <string name="descripcion">Las tareas de Tiempos que elegiste, para tachar desde la pantalla.</string>
+    <string name="descripcion_agenda">Tu agenda de Tiempos de los próximos siete días: actividades, tareas agendadas y lo de los chicos.</string>
 </resources>

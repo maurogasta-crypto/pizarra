@@ -21,7 +21,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TiemposActivity.kt — Tiempos ADENTRO de la app. Sello: pizarra-14
+// TiemposActivity.kt — Tiempos ADENTRO de la app. Sello: pizarra-20
 //
 // pizarra-14 (tiempos:V10): la Pizarra es de todo el equipo. Sin cuenta, o con
 // una de otro sitio, el ícono abre la pantalla de la app (entrar y los avisos):
@@ -150,6 +150,14 @@ class TiemposActivity : Activity() {
     @Deprecated("Activity sin AndroidX")
     override fun onBackPressed() {
         if (web.canGoBack()) web.goBack() else @Suppress("DEPRECATION") super.onBackPressed()
+    }
+
+    // pizarra-20: al salir de Tiempos, los dos widgets se ponen al día, así lo
+    // que se movió en la agenda o se tachó se ve en la pantalla de inicio.
+    override fun onPause() {
+        super.onPause()
+        PizarraWidget.actualizarDesdeLaRed(this, null)
+        AgendaWidget.actualizar(this, null)
     }
 
     override fun onSaveInstanceState(s: Bundle) { super.onSaveInstanceState(s); if (::web.isInitialized) web.saveState(s) }

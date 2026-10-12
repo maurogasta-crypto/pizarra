@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/agenda_fila"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="40dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
+    <!-- Un TextView vacío y no un View: un widget sólo admite algunas vistas,
+         y un View suelto lo rompe en el teléfono (lo marca el lint). -->
+    <TextView
+        android:id="@+id/agenda_barra"
+        android:layout_width="4dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="8dp"
+        android:background="#D8A657" />
+    <TextView
+        android:id="@+id/agenda_hora"
+        android:layout_width="74dp"
+        android:layout_height="wrap_content"
+        android:textColor="#F2F2F2"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/agenda_titulo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#F2F2F2"
+            android:textSize="14sp"
+            android:maxLines="2" />
+        <TextView
+            android:id="@+id/agenda_sub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#8A8F98"
+            android:textSize="11sp"
+            android:maxLines="1" />
+    </LinearLayout>
+</LinearLayout>

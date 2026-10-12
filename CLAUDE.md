@@ -108,6 +108,15 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   (pizarra-15, 10-oct-2026, pedido de Mauro). La categoría es la de Tiempos
   (`CATEGORIAS` y `tipoHeredado` de `Logica.kt` = `TIPOS` y `tipoHeredado` de
   `nucleo.js`): si cambian allá, cambian acá en la misma tanda.
+- **Hay DOS widgets** (pizarra-20, 12-oct-2026, Mauro: «uno para la pizarra
+  y otro para la agenda semanal de ese usuario»). «Mi agenda»
+  (`AgendaWidget.kt`) muestra la semana con la misma cuenta y lo arma
+  `agendaDeLaSemana` de `AgendaLogica.kt` desde `agendas/{uid}` (actividades e
+  `items` `f:`) y `eventos/`, como `piezasDelDia` de `agenda.js` y
+  `eventosDelDia` de `nucleo.js`: **si cambia cómo Tiempos guarda una
+  actividad, una tarea agendada o un evento, cambia acá en la misma tanda.** Es
+  de lectura: tocar abre Tiempos en `?solapa=agenda`. Un widget sólo admite
+  algunas vistas (un `View` suelto lo rompe): el lint lo marca y no se apaga.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

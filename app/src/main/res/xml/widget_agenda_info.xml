@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pizarra-20: la agenda de la semana. Cada media hora, como la pizarra; lo
+     demás con ⟳, al abrir la app y con el trabajo de cada hora. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="180dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="3"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_agenda"
+    android:previewLayout="@layout/widget_agenda"
+    android:description="@string/descripcion_agenda"
+    android:widgetCategory="home_screen" />

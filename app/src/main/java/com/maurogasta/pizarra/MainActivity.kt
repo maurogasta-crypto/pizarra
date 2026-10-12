@@ -485,7 +485,7 @@ class MainActivity : Activity() {
         raiz.addView(boton("Salir") {
             nube.salir()
             Cache(this).filas = emptyList()
-            PizarraWidget.dibujar(this)
+            PizarraWidget.dibujar(this); AgendaWidget.dibujar(this)
             pintar()
         })
         listaVista = lista
@@ -589,7 +589,7 @@ class MainActivity : Activity() {
             tareas = t
             pintarLista()
             decir(if (t.isEmpty()) "No hay tareas en Tiempos." else "")
-            PizarraWidget.actualizarDesdeLaRed(this, null)
+            PizarraWidget.actualizarDesdeLaRed(this, null); AgendaWidget.actualizar(this, null)
         }
     }
 
@@ -621,7 +621,7 @@ class MainActivity : Activity() {
                         caja.isEnabled = true
                         tareas = tareas.map { if (it.id == t.id) it.copy(enMiPizarra = marcada) else it }
                         pintarPliegue()
-                        PizarraWidget.actualizarDesdeLaRed(this@MainActivity, null)
+                        PizarraWidget.actualizarDesdeLaRed(this@MainActivity, null); AgendaWidget.actualizar(this@MainActivity, null)
                     }
                 }
             })
