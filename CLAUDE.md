@@ -141,7 +141,11 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   Mauro: «mantener la sesión despierta en el horario de uso»): cada 10 min,
   sesión renovada si le quedan menos de 15 y un pedido SIN sesión al puente,
   que contesta «falta la sesión» y alcanza para que la función no se duerma. No
-  toca Tuya (su cupo de consultas) ni la base. Sólo con sesión de remate. **Si cambian los alias de `TUYA_LUCES` o la forma del
+  toca Tuya (su cupo de consultas) ni la base. Sólo con sesión de remate.
+  **pizarra-25 traía un error** —pintaba el botón antes de decidir la orden y
+  mandaba lo que la luz ya tenía—; lo arregló pizarra-27 (`Luces.preparar`:
+  se decide UNA vez y eso se manda), y **Mauro lo verificó en el teléfono el
+  13-oct**: las dos luces prenden y apagan desde el widget. **Si cambian los alias de `TUYA_LUCES` o la forma del
   registro en `luces.html`, cambia acá en la misma tanda** (`LUCES_WIDGET`,
   `cuerpoRegistroLuz`).
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
