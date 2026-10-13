@@ -145,7 +145,12 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   **pizarra-25 traía un error** —pintaba el botón antes de decidir la orden y
   mandaba lo que la luz ya tenía—; lo arregló pizarra-27 (`Luces.preparar`:
   se decide UNA vez y eso se manda), y **Mauro lo verificó en el teléfono el
-  13-oct**: las dos luces prenden y apagan desde el widget. **Si cambian los alias de `TUYA_LUCES` o la forma del
+  13-oct**: las dos luces prenden y apagan desde el widget.
+  **Y desde pizarra-28 la sección de luces dice lo que pasa AHÍ, debajo de
+  sus botones** (Flor tocaba «Entrar a remate» y el error salía arriba de
+  todo, fuera de la vista: «no hace nada»), con «Olvidé la contraseña de
+  remate» (`Luces.restablecer`). Toda sección nueva que hable con la red dice
+  su resultado al lado de su botón, no con `decir()`. **Si cambian los alias de `TUYA_LUCES` o la forma del
   registro en `luces.html`, cambia acá en la misma tanda** (`LUCES_WIDGET`,
   `cuerpoRegistroLuz`).
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la

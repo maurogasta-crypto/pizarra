@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-27` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-28` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -45,7 +45,10 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    hace al puente un pedido sin sesión para que no se duerma (no toca Tuya ni
    mueve luces); fuera de ese horario no hace nada. Hace falta entrar una vez con tu
    cuenta de remate en los ajustes de la app (⚙ → «💡 Luces de remate»); tu
-   cuenta tiene que tener el permiso de luces. Cada toque queda en el registro
+   cuenta tiene que tener el permiso de luces. **La contraseña de remate puede
+   no ser la de Tiempos**: si no la recordás, «Olvidé la contraseña de remate»
+   manda el mail (pizarra-28). Lo que pasa al entrar se lee ahí mismo, debajo
+   de los botones. Cada toque queda en el registro
    de luces de remate, a tu nombre.
 6. **El segundo widget, «Mi agenda»** (pizarra-20, 12-oct-2026): Widgets →
    Tiempos → «Mi agenda». Los siete días que vienen, cada uno con su

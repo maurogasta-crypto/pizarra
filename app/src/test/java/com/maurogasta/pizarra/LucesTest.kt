@@ -83,4 +83,16 @@ class LucesTest {
         assertTrue("la orden es la decidida, no se recalcula", w.contains("encender = previsto ?: luces.aEncender(alias)"))
         assertFalse(w.contains("luces.marcar(alias, previsto)"))
     }
+
+    // pizarra-28 (Flor: «al tocar Entrar a remate no hace nada»): el mensaje de la
+    // sección de luces va debajo de sus botones, no arriba de todo, y hay cómo
+    // recuperar la contraseña de remate desde acá.
+    @Test fun laSeccionDeLucesDiceLoQuePasaAhiMismo() {
+        val m = java.io.File("src/main/java/com/maurogasta/pizarra/MainActivity.kt").readText()
+        val luces = m.substring(m.indexOf("private fun pintarLuces()"), m.indexOf("private fun pintarBodega()"))
+        assertFalse("nada de decir(): eso escribe arriba de todo", Regex("""\bdecir\("(Entrando|Preguntando|Falta)""").containsMatchIn(luces))
+        assertTrue(luces.contains("raiz.addView(dice)"))
+        assertTrue(luces.contains("Olvidé la contraseña de remate"))
+        assertTrue(java.io.File("src/main/java/com/maurogasta/pizarra/Luces.kt").readText().contains("fun restablecer(mail: String)"))
+    }
 }

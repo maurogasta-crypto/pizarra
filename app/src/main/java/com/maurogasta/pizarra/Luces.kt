@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Luces.kt — Las luces de remate desde el widget. Sello: pizarra-27
+// Luces.kt — Las luces de remate desde el widget. Sello: pizarra-28
 //
 // Mauro, 13-oct-2026: «arriba del todo un botón para encender las luces de la
 // entrada y del depósito, dos botoncitos, en el widget de la pizarra».
@@ -110,10 +110,28 @@ class Luces(contexto: Context) {
         set(v) { prefs.edit().putLong("vence", v).apply() }
 
     fun entrar(mail: String, clave: String) {
-        val j = JSONObject(pedir("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${remate.clave}", "POST",
-            JSONObject().put("email", mail).put("password", clave).put("returnSecureToken", true).toString(), "application/json", null, remate.referer))
+        val j = JSONObject(try { pedir("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${remate.clave}", "POST",
+            JSONObject().put("email", mail).put("password", clave).put("returnSecureToken", true).toString(), "application/json", null, remate.referer)
+        } catch (e: ErrorNube) {
+            // La de remate puede no ser la misma contraseña que la de Tiempos.
+            if (e.message?.startsWith("Mail o contraseña") == true)
+                throw ErrorNube("Mail o contraseña de remate equivocados. Puede no ser la misma que la de Tiempos: probá «Olvidé la contraseña de remate».")
+            throw e
+        })
         prefs.edit().putString("refresh", j.getString("refreshToken")).putString("uid", j.getString("localId")).putString("mail", mail).apply()
         idToken = j.getString("idToken"); vence = System.currentTimeMillis() + 50 * 60 * 1000
+    }
+
+    /** pizarra-28: «Olvidé la contraseña de remate». Firebase de remate manda el
+     *  mail para elegir una nueva; vale también en rematetaller.github.io. */
+    fun restablecer(mail: String) {
+        try {
+            pedir("https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${remate.clave}", "POST",
+                JSONObject().put("requestType", "PASSWORD_RESET").put("email", mail).toString(), "application/json", null, remate.referer)
+        } catch (e: ErrorNube) {
+            if (e.message?.contains("EMAIL_NOT_FOUND") == true) throw ErrorNube("Ese mail no tiene cuenta en remate.")
+            throw e
+        }
     }
 
     fun salir() { prefs.edit().clear().apply(); idToken = null }

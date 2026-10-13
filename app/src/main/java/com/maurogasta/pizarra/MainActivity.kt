@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-24
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-28
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -501,18 +501,34 @@ class MainActivity : Activity() {
     private fun pintarLuces() {
         val luces = Luces(this)
         raiz.addView(subtitulo("💡 Luces de remate (en el widget)"))
+        // pizarra-28 (13-oct, Flor: «al tocar Entrar a remate no hace nada»): el
+        // mensaje iba arriba de todo, fuera de la vista. Ahora va ACÁ, debajo del
+        // botón, y en el mismo color que un error si es un error.
+        val dice = texto("", 14f, "#E8D3A2").apply { visibility = View.GONE }
+        fun mostrar(t: String, error: Boolean = false) = runOnUiThread {
+            dice.text = t; dice.visibility = View.VISIBLE
+            dice.setTextColor(Color.parseColor(if (error) "#E08B8B" else "#E8D3A2"))
+        }
+        fun enFondo(trabajo: () -> Unit) = thread {
+            try { trabajo() } catch (e: Throwable) {
+                Bitacora.anotar(this, "luces: " + (e.message ?: e.toString()))
+                mostrar(e.message ?: "Algo salió mal.", error = true)
+            }
+        }
         if (luces.conSesion) {
             raiz.addView(texto("Entraste con ${luces.mail}. Los botones «Entrada» y «Depósito» de arriba del widget prenden y apagan las luces; cada toque queda en el registro de remate, a tu nombre. De 8 a 23 la conexión se mantiene despierta, para que el botón reaccione enseguida.", 13f, "#9AA0A6"))
             val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
             fila.addView(boton("Ver cómo están") {
-                decir("Preguntando…")
-                enSegundo({ luces.luces() }) { l ->
-                    decir(l.joinToString(" · ") { "${it.label}: ${when { it.enLinea == false -> "no contesta"; it.encendida == true -> "prendida"; it.encendida == false -> "apagada"; else -> "?" }}" })
-                    PizarraWidget.dibujar(this)
+                mostrar("Preguntando…")
+                enFondo {
+                    val l = luces.luces()
+                    mostrar(l.joinToString(" · ") { "${it.label}: ${when { it.enLinea == false -> "no contesta"; it.encendida == true -> "prendida"; it.encendida == false -> "apagada"; else -> "?" }}" })
+                    runOnUiThread { PizarraWidget.dibujar(this) }
                 }
             })
             fila.addView(boton("Salir de remate") { luces.salir(); Tibio.agendar(this); PizarraWidget.dibujar(this); pintar() })
             raiz.addView(fila)
+            raiz.addView(dice)
             return
         }
         raiz.addView(texto("Para prender las luces desde el widget, entrá con tu cuenta de remate (la de rematetaller.github.io). La contraseña se usa una vez y no queda guardada; tu cuenta tiene que tener el permiso de luces.", 13f, "#9AA0A6"))
@@ -522,16 +538,28 @@ class MainActivity : Activity() {
         raiz.addView(conOjo(clave))
         raiz.addView(boton("Entrar a remate") {
             val m = mail.text.toString().trim(); val c = clave.text.toString()
-            if (m.isEmpty() || c.isEmpty()) { decir("Falta el mail o la contraseña de remate."); return@boton }
-            decir("Entrando a remate…")
-            enSegundo({ luces.entrar(m, c); luces.luces() }) {
-                Bitacora.anotar(this, "luces: entró a remate")
-                Tibio.agendar(this)                       // pizarra-26: tibia de 8 a 23
-                PizarraWidget.dibujar(this)
-                pintar()
-                decir("Listo: las luces responden.")
+            if (m.isEmpty() || c.isEmpty()) { mostrar("Falta el mail o la contraseña de remate.", true); return@boton }
+            mostrar("Entrando a remate…")
+            enFondo {
+                luces.entrar(m, c)
+                mostrar("Entraste. Preguntando cómo están las luces…")
+                luces.luces()
+                runOnUiThread {
+                    Bitacora.anotar(this, "luces: entró a remate")
+                    Tibio.agendar(this)                   // pizarra-26: tibia de 8 a 23
+                    PizarraWidget.dibujar(this)
+                    pintar()
+                    decir("Listo: las luces responden.")
+                }
             }
         })
+        raiz.addView(boton("Olvidé la contraseña de remate") {
+            val m = mail.text.toString().trim()
+            if (m.isEmpty()) { mostrar("Escribí tu mail de remate arriba y tocá de nuevo.", true); return@boton }
+            mostrar("Pidiendo el mail…")
+            enFondo { luces.restablecer(m); mostrar("Te mandamos un mail a $m para elegir una contraseña nueva de remate. Mirá también en spam.") }
+        })
+        raiz.addView(dice)
     }
 
     private fun pintarBodega() {
