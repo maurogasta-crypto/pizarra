@@ -35,10 +35,12 @@ class App : Application() {
         super.onCreate()
         Bitacora.vigilar(this)
         Bitacora.anotar(this, "abre la app · ${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · $SELLO")
+        // pizarra-26: que las luces queden tibias de 8 a 23 (si hay sesión de remate).
+        try { Tibio.agendar(this) } catch (e: Throwable) { }
     }
 }
 
-const val SELLO = "pizarra-25"
+const val SELLO = "pizarra-26"
 
 object Bitacora {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("bitacora", Context.MODE_PRIVATE)

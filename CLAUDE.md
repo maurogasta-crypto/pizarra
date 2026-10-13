@@ -137,7 +137,11 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   preguntar antes, la sesión de una hora se guarda, la conexión se reusa (sin
   `disconnect()`), y el registro y la verificación van después. Una conexión
   abierta para siempre no se puede: Android duerme el widget y el puente es una
-  función que nace con cada pedido. **Si cambian los alias de `TUYA_LUCES` o la forma del
+  función que nace con cada pedido. **Y desde pizarra-26 queda TIBIA de 8 a 23** (`Tibio.kt`,
+  Mauro: «mantener la sesión despierta en el horario de uso»): cada 10 min,
+  sesión renovada si le quedan menos de 15 y un pedido SIN sesión al puente,
+  que contesta «falta la sesión» y alcanza para que la función no se duerma. No
+  toca Tuya (su cupo de consultas) ni la base. Sólo con sesión de remate. **Si cambian los alias de `TUYA_LUCES` o la forma del
   registro en `luces.html`, cambia acá en la misma tanda** (`LUCES_WIDGET`,
   `cuerpoRegistroLuz`).
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la

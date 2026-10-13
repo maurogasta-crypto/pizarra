@@ -220,6 +220,7 @@ class AlarmaReceptor : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 with(Alarmas) { programar(c, c.alertasGuardadas) }
                 Alarmas.asegurarTrabajo(c)
+                Tibio.agendar(c)                          // pizarra-26
             }
         }
     }

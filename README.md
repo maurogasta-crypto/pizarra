@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-25` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-26` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -40,7 +40,10 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    prendida. **Desde pizarra-25 el botón cambia en el acto** y sale una sola
    orden (no se pregunta antes cómo estaba: se usa lo último que se supo); a
    los segundos se verifica con el aparato y, si alguien la movió por otro
-   lado, el botón se corrige solo. Hace falta entrar una vez con tu
+   lado, el botón se corrige solo. **Desde pizarra-26, de 8 a 23 queda tibia**:
+   cada 10 minutos la app renueva la sesión de remate si está por vencer y le
+   hace al puente un pedido sin sesión para que no se duerma (no toca Tuya ni
+   mueve luces); fuera de ese horario no hace nada. Hace falta entrar una vez con tu
    cuenta de remate en los ajustes de la app (⚙ → «💡 Luces de remate»); tu
    cuenta tiene que tener el permiso de luces. Cada toque queda en el registro
    de luces de remate, a tu nombre.
@@ -259,6 +262,7 @@ crear una tarea que alguien borró.
 | `AgendaLogica.kt` | la agenda de la semana armada como en Tiempos (actividades, tareas agendadas, chicos). Sin Android ni red |
 | `AgendaWidget.kt` | el widget «Mi agenda», su caché y sus renglones |
 | `Luces.kt` | las luces de remate: la sesión de remate, el puente y el registro |
+| `Tibio.kt` | de 8 a 23, cada 10 min: la sesión de remate al día y el puente despierto |
 | `ToqueActivity.kt` | el toque en la pizarra, invisible: el ☐ tacha, el texto abre la tarea |
 | `TiemposActivity.kt` | Tiempos adentro (WebView): sólo el sitio, el ⚙ a los ajustes, los archivos |
 | `MainActivity.kt` | los ajustes: entrar para el widget, la bodega, el diagnóstico; y la puerta de Compartir |

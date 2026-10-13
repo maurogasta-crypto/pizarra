@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Luces.kt — Las luces de remate desde el widget. Sello: pizarra-25
+// Luces.kt — Las luces de remate desde el widget. Sello: pizarra-26
 //
 // Mauro, 13-oct-2026: «arriba del todo un botón para encender las luces de la
 // entrada y del depósito, dos botoncitos, en el widget de la pizarra».
@@ -136,6 +136,15 @@ class Luces(contexto: Context) {
         idToken = j.getString("id_token")
         vence = System.currentTimeMillis() + (j.optString("expires_in", "3600").toLong() - 300) * 1000
         return idToken!!
+    }
+
+    /** pizarra-26 (Tibio.kt): la sesión renovada si le quedan menos de 15 min, y
+     *  un pedido SIN sesión al puente para que la función no se duerma. */
+    fun mantenerTibia() {
+        if (!conSesion) return
+        if (vence - System.currentTimeMillis() < 15 * 60_000L) { idToken = null; token() }
+        try { pedir(PUENTE_LUCES, "GET", null, null, null, ORIGEN_REMATE + "/") }
+        catch (e: ErrorNube) { /* «falta la sesión» es justo lo que se espera */ }
     }
 
     fun luces(): List<Luz> {

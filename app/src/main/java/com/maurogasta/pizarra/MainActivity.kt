@@ -502,7 +502,7 @@ class MainActivity : Activity() {
         val luces = Luces(this)
         raiz.addView(subtitulo("💡 Luces de remate (en el widget)"))
         if (luces.conSesion) {
-            raiz.addView(texto("Entraste con ${luces.mail}. Los botones «Entrada» y «Depósito» de arriba del widget prenden y apagan las luces; cada toque queda en el registro de remate, a tu nombre.", 13f, "#9AA0A6"))
+            raiz.addView(texto("Entraste con ${luces.mail}. Los botones «Entrada» y «Depósito» de arriba del widget prenden y apagan las luces; cada toque queda en el registro de remate, a tu nombre. De 8 a 23 la conexión se mantiene despierta, para que el botón reaccione enseguida.", 13f, "#9AA0A6"))
             val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
             fila.addView(boton("Ver cómo están") {
                 decir("Preguntando…")
@@ -511,7 +511,7 @@ class MainActivity : Activity() {
                     PizarraWidget.dibujar(this)
                 }
             })
-            fila.addView(boton("Salir de remate") { luces.salir(); PizarraWidget.dibujar(this); pintar() })
+            fila.addView(boton("Salir de remate") { luces.salir(); Tibio.agendar(this); PizarraWidget.dibujar(this); pintar() })
             raiz.addView(fila)
             return
         }
@@ -526,6 +526,7 @@ class MainActivity : Activity() {
             decir("Entrando a remate…")
             enSegundo({ luces.entrar(m, c); luces.luces() }) {
                 Bitacora.anotar(this, "luces: entró a remate")
+                Tibio.agendar(this)                       // pizarra-26: tibia de 8 a 23
                 PizarraWidget.dibujar(this)
                 pintar()
                 decir("Listo: las luces responden.")

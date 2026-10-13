@@ -87,6 +87,11 @@
                 android:resource="@xml/widget_agenda_info" />
         </receiver>
 
+        <!-- pizarra-26: las luces tibias de 8 a 23 (Tibio.kt). -->
+        <receiver
+            android:name=".TibioReceptor"
+            android:exported="false" />
+
         <receiver
             android:name=".AlarmaReceptor"
             android:exported="false">
