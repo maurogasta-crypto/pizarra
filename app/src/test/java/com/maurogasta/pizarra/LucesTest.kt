@@ -68,4 +68,19 @@ class LucesTest {
         val f = java.io.File("src/main/java/com/maurogasta/pizarra/Luces.kt").readText()
         assertFalse("sin disconnect(): la conexión se reusa", f.contains("c.disconnect()"))
     }
+
+    // pizarra-27: el error de pizarra-25. Pintar antes de decidir mandaba lo que
+    // la luz ya tenía. El toque decide una vez, y eso es lo que se manda.
+    @Test fun elToqueMandaLoContrarioDeComoEstaba() {
+        val l = Luces(RuntimeEnvironment.getApplication())
+        l.marcar("deposito", false)                        // apagada
+        val orden = l.preparar("deposito")
+        assertEquals("apagada → la orden es prender", true, orden)
+        assertEquals("el botón ya se pinta prendido", true, l.ultimo("deposito"))
+        l.marcar("deposito", true)                         // prendida
+        assertEquals(false, l.preparar("deposito"))
+        val w = java.io.File("src/main/java/com/maurogasta/pizarra/PizarraWidget.kt").readText()
+        assertTrue("la orden es la decidida, no se recalcula", w.contains("encender = previsto ?: luces.aEncender(alias)"))
+        assertFalse(w.contains("luces.marcar(alias, previsto)"))
+    }
 }

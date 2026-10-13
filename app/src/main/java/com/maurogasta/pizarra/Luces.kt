@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Luces.kt — Las luces de remate desde el widget. Sello: pizarra-26
+// Luces.kt — Las luces de remate desde el widget. Sello: pizarra-27
 //
 // Mauro, 13-oct-2026: «arriba del todo un botón para encender las luces de la
 // entrada y del depósito, dos botoncitos, en el widget de la pizarra».
@@ -162,6 +162,17 @@ class Luces(contexto: Context) {
         val r = JSONObject(pedir(PUENTE_LUCES, "POST", cuerpoLuz(alias, encender).toString(), "application/json", token(), ORIGEN_REMATE + "/"))
         prefs.edit().putBoolean("luz.$alias", encender).apply()
         return Luz(alias, r.optString("label", alias), encender, true)
+    }
+
+    /** pizarra-27: el toque DECIDE una sola vez qué mandar y recién ahí pinta el
+     *  botón. En pizarra-25 se pintaba primero y la orden se calculaba después,
+     *  leyendo el estado ya pintado: mandaba lo que la luz ya tenía y no cambiaba
+     *  nada (Mauro, 13-oct: «muestra el estado pero no lo cambia»). Devuelve qué
+     *  mandar, o null si nunca se supo (entonces se pregunta, con `aEncender`). */
+    fun preparar(alias: String): Boolean? {
+        val p = proximo(alias) ?: return null
+        marcar(alias, p)
+        return p
     }
 
     /** Si nunca se supo cómo estaba, se pregunta una vez (el primer toque). */

@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-25
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-27
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -160,16 +160,16 @@ class PizarraWidget : AppWidgetProvider() {
             val cache = Cache(contexto)
             val luces = Luces(contexto)
             val nombre = LUCES_WIDGET.firstOrNull { it.first == alias }?.second ?: alias
-            val previsto = luces.proximo(alias)
-            if (previsto != null) { luces.marcar(alias, previsto); cache.estado = "$nombre: ${if (previsto) "prendiendo" else "apagando"}…" }
-            else cache.estado = "$nombre: un momento…"
+            // La orden se decide ACÁ, una sola vez, antes de pintar (pizarra-27).
+            val previsto = luces.preparar(alias)
+            cache.estado = if (previsto != null) "$nombre: ${if (previsto) "prendiendo" else "apagando"}…" else "$nombre: un momento…"
             dibujar(contexto)
             thread {
                 val antes: Boolean? = previsto?.let { !it }
                 var luz: Luz? = null
                 var encender = false
                 try {
-                    encender = luces.aEncender(alias)
+                    encender = previsto ?: luces.aEncender(alias)
                     luz = luces.mandar(alias, encender)
                     cache.estado = "${luz.label}: ${if (encender) "prendida" else "apagada"} · " + hora()
                     Bitacora.anotar(contexto, "luz $alias → ${if (encender) "prendida" else "apagada"}")
