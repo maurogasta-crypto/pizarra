@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-24
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-25
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -135,6 +135,9 @@ class PizarraWidget : AppWidgetProvider() {
                 val cache = Cache(contexto)
                 try {
                     val nube = Nube(contexto)
+                    // pizarra-25: de paso, cómo están las luces (así el próximo toque no
+                    // tiene que preguntar) y la sesión de remate queda tibia.
+                    try { Luces(contexto).let { if (it.conSesion) it.luces() } } catch (e: Throwable) { }
                     if (nube.conSesion) {
                         cache.filas = paraLaPizarra(nube.tareas())
                         cache.estado = "al día · " + hora()
@@ -151,23 +154,45 @@ class PizarraWidget : AppWidgetProvider() {
             }
         }
 
-        /** pizarra-24: prende o apaga una luz de remate y dice cómo quedó. Nunca tira. */
+        /** pizarra-24/25: prende o apaga una luz de remate. El botón cambia EN EL
+         *  ACTO; la orden sale enseguida; registro y verificación, después. Nunca tira. */
         private fun cambiarLuz(contexto: Context, alias: String, pendiente: PendingResult) {
             val cache = Cache(contexto)
+            val luces = Luces(contexto)
             val nombre = LUCES_WIDGET.firstOrNull { it.first == alias }?.second ?: alias
-            cache.estado = "$nombre: un momento…"
+            val previsto = luces.proximo(alias)
+            if (previsto != null) { luces.marcar(alias, previsto); cache.estado = "$nombre: ${if (previsto) "prendiendo" else "apagando"}…" }
+            else cache.estado = "$nombre: un momento…"
             dibujar(contexto)
             thread {
+                val antes: Boolean? = previsto?.let { !it }
+                var luz: Luz? = null
+                var encender = false
                 try {
-                    val (luz, prendida) = Luces(contexto).cambiar(alias)
-                    cache.estado = "${luz.label}: ${if (prendida) "prendida" else "apagada"} · " + hora()
-                    Bitacora.anotar(contexto, "luz $alias → ${if (prendida) "prendida" else "apagada"}")
+                    encender = luces.aEncender(alias)
+                    luz = luces.mandar(alias, encender)
+                    cache.estado = "${luz.label}: ${if (encender) "prendida" else "apagada"} · " + hora()
+                    Bitacora.anotar(contexto, "luz $alias → ${if (encender) "prendida" else "apagada"}")
                 } catch (e: Throwable) {
+                    // Si la orden no salió, el botón vuelve a como estaba.
+                    antes?.let { luces.marcar(alias, it) }
                     cache.estado = (e.message ?: "no se pudo mover la luz") + " · " + hora()
                 } finally {
                     dibujar(contexto)
-                    pendiente.finish()
+                    pendiente.finish()            // lo que el toque esperaba, ya está
                 }
+                val hecha = luz ?: return@thread
+                try {
+                    luces.anotar(hecha, encender)
+                    // El aparato tarda en informar el cambio: se le pregunta a los
+                    // segundos y, si alguien la movió por otro lado, el botón se corrige.
+                    Thread.sleep(2500)
+                    val real = luces.luces().firstOrNull { it.alias == alias }
+                    if (real?.encendida != null && real.encendida != encender) {
+                        cache.estado = "${real.label}: ${if (real.encendida) "prendida" else "apagada"} (la movieron) · " + hora()
+                        dibujar(contexto)
+                    }
+                } catch (e: Throwable) { /* verificar es un plus: la orden ya salió */ }
             }
         }
 

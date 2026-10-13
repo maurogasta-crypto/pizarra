@@ -5,9 +5,15 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 // pizarra-24: las luces de remate desde el widget. Lo que se le manda al
 // puente y al registro tiene que ser lo mismo que manda `luces.html`.
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class LucesTest {
     @Test fun laRespuestaDelPuente() {
         val l = lucesDeRespuesta("""{"ok":true,"luces":[
@@ -45,5 +51,21 @@ class LucesTest {
         assertEquals(listOf("entrada", "deposito"), LUCES_WIDGET.map { it.first })
         assertEquals("https://rematetaller.github.io", ORIGEN_REMATE)
         assertTrue(PUENTE_LUCES.endsWith("/.netlify/functions/luces-remate"))
+    }
+
+    // pizarra-25: el toque no pregunta antes si ya se sabe cómo estaba.
+    @Test fun elToqueRapidoNoPreguntaSiYaSeSabe() {
+        val l = Luces(RuntimeEnvironment.getApplication())
+        assertNull("nunca se supo: el primer toque pregunta", l.proximo("entrada"))
+        l.marcar("entrada", true)
+        assertEquals(false, l.proximo("entrada"))
+        assertEquals(false, l.aEncender("entrada"))   // sin red: no hizo falta preguntar
+        l.marcar("entrada", false)
+        assertEquals(true, l.aEncender("entrada"))
+    }
+
+    @Test fun laConexionNoSeCorta() {
+        val f = java.io.File("src/main/java/com/maurogasta/pizarra/Luces.kt").readText()
+        assertFalse("sin disconnect(): la conexión se reusa", f.contains("c.disconnect()"))
     }
 }

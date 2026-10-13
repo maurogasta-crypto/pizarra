@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-24` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-25` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -36,8 +36,11 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    (pizarra-23; `?solapa=tareas&abrir=`, app-34). ⟳ actualiza, ✎ abre la app.
 5 bis. **Las luces de remate** (pizarra-24): arriba del widget de la pizarra hay
    dos botoncitos, **Entrada** y **Depósito**. Cada toque la prende si está
-   apagada y la apaga si está prendida (se le pregunta al aparato antes), y se
-   pinta 💡 amarillo cuando está prendida. Hace falta entrar una vez con tu
+   apagada y la apaga si está prendida, y se pinta 💡 amarillo cuando está
+   prendida. **Desde pizarra-25 el botón cambia en el acto** y sale una sola
+   orden (no se pregunta antes cómo estaba: se usa lo último que se supo); a
+   los segundos se verifica con el aparato y, si alguien la movió por otro
+   lado, el botón se corrige solo. Hace falta entrar una vez con tu
    cuenta de remate en los ajustes de la app (⚙ → «💡 Luces de remate»); tu
    cuenta tiene que tener el permiso de luces. Cada toque queda en el registro
    de luces de remate, a tu nombre.

@@ -131,8 +131,13 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   13-oct, Mauro). `Luces.kt` habla con el MISMO puente que `luces.html` y por
   la misma puerta: token de remate, ficha activa y permiso de luces; manda el
   origen del panel de remate (una app no tiene) y anota cada toque en
-  `lucesRegistro`, como el panel. Cada botón CAMBIA la luz: pregunta cómo está
-  y manda lo contrario. **Si cambian los alias de `TUYA_LUCES` o la forma del
+  `lucesRegistro`, como el panel. Cada botón CAMBIA la luz. **Desde pizarra-25,
+  lo más rápido posible** (Mauro: «menos latencia en la reacción del botón»):
+  el botón cambia en el acto según lo último que se supo, sale UNA orden sin
+  preguntar antes, la sesión de una hora se guarda, la conexión se reusa (sin
+  `disconnect()`), y el registro y la verificación van después. Una conexión
+  abierta para siempre no se puede: Android duerme el widget y el puente es una
+  función que nace con cada pedido. **Si cambian los alias de `TUYA_LUCES` o la forma del
   registro en `luces.html`, cambia acá en la misma tanda** (`LUCES_WIDGET`,
   `cuerpoRegistroLuz`).
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la

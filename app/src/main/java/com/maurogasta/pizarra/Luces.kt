@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Luces.kt — Las luces de remate desde el widget. Sello: pizarra-24
+// Luces.kt — Las luces de remate desde el widget. Sello: pizarra-25
 //
 // Mauro, 13-oct-2026: «arriba del todo un botón para encender las luces de la
 // entrada y del depósito, dos botoncitos, en el widget de la pizarra».
@@ -27,6 +27,23 @@ import java.net.URLEncoder
 // abierta en su navegador. Una app no tiene origen, así que manda el del panel
 // de remate, de donde viene el pedido que reemplaza. Lo que abre la luz sigue
 // siendo el token de la persona y su permiso, y nada más.
+//
+// ── LO MÁS RÁPIDO POSIBLE (pizarra-25, 13-oct, Mauro: «que haya menos
+//    latencia en la reacción del botón») ────────────────────────────────────
+// Lo lento no era remate —el puente es el único camino a Tuya, porque el
+// secreto que firma cada orden no puede estar en el teléfono—: era el toque en
+// cuatro idas y vueltas (renovar la sesión, preguntar cómo estaban las dos
+// luces, mandar, anotar) antes de redibujar. Ahora:
+//   · el botón cambia EN EL ACTO, según lo último que se supo (`cambiarRapido`);
+//   · se manda UNA orden, sin preguntar antes (si nunca se supo, sí se pregunta);
+//   · la sesión de una hora se guarda, y la conexión se reusa (keep-alive: no se
+//     corta con `disconnect`), así no se paga otra vez el saludo seguro;
+//   · el registro y la verificación van DESPUÉS de redibujar: a los segundos se
+//     le pregunta al aparato y, si alguien la había movido por otro lado, el
+//     botón se corrige solo.
+// Una conexión abierta para siempre no se puede: un widget no corre todo el
+// tiempo (Android lo duerme), y el puente es una función que nace y muere con
+// cada pedido.
 //
 // ── CÓMO SE PRENDE ──────────────────────────────────────────────────────────
 // Un botón por luz, que CAMBIA su estado: primero se le pregunta al puente
@@ -76,13 +93,21 @@ class Luces(contexto: Context) {
     val conSesion: Boolean get() = prefs.getString("refresh", null) != null
     val mail: String get() = prefs.getString("mail", "").orEmpty()
     /** Lo último que dijo el puente de cada luz: para pintar los botones sin esperar. */
+    /** Lo que se cree ahora (antes de que conteste el puente), para pintar el botón. */
+    fun marcar(alias: String, prendida: Boolean) { prefs.edit().putBoolean("luz.$alias", prendida).apply() }
     fun ultimo(alias: String): Boolean? = if (!prefs.contains("luz.$alias")) null else prefs.getBoolean("luz.$alias", false)
     var estado: String
         get() = prefs.getString("estado", "").orEmpty()
         set(v) { prefs.edit().putString("estado", v).apply() }
 
-    private var idToken: String? = null
-    private var vence = 0L
+    // pizarra-25: la sesión de una hora queda guardada (no sólo en memoria), así
+    // un toque después de que Android durmió la app no paga otra renovación.
+    private var idToken: String?
+        get() = prefs.getString("id", null)
+        set(v) { prefs.edit().putString("id", v).apply() }
+    private var vence: Long
+        get() = prefs.getLong("vence", 0L)
+        set(v) { prefs.edit().putLong("vence", v).apply() }
 
     fun entrar(mail: String, clave: String) {
         val j = JSONObject(pedir("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${remate.clave}", "POST",
@@ -119,20 +144,33 @@ class Luces(contexto: Context) {
         return l
     }
 
-    /** Cambia la luz: pregunta cómo está y manda lo contrario. Devuelve cómo quedó. */
-    fun cambiar(alias: String): Pair<Luz, Boolean> {
+    /** Lo que el botón va a hacer, sin red: lo contrario de lo último que se supo
+     *  (null si nunca se supo: entonces hay que preguntar). */
+    fun proximo(alias: String): Boolean? = ultimo(alias)?.let { !it }
+
+    /** Manda UNA orden, sin preguntar antes. Devuelve lo que contestó el puente. */
+    fun mandar(alias: String, encender: Boolean): Luz {
+        val r = JSONObject(pedir(PUENTE_LUCES, "POST", cuerpoLuz(alias, encender).toString(), "application/json", token(), ORIGEN_REMATE + "/"))
+        prefs.edit().putBoolean("luz.$alias", encender).apply()
+        return Luz(alias, r.optString("label", alias), encender, true)
+    }
+
+    /** Si nunca se supo cómo estaba, se pregunta una vez (el primer toque). */
+    fun aEncender(alias: String): Boolean {
+        proximo(alias)?.let { return it }
         val luz = luces().firstOrNull { it.alias == alias } ?: throw ErrorNube("El puente no conoce la luz «$alias».")
         if (luz.enLinea == false) throw ErrorNube("${luz.label}: el aparato no contesta.")
-        val encender = luz.encendida != true
-        pedir(PUENTE_LUCES, "POST", cuerpoLuz(alias, encender).toString(), "application/json", token(), ORIGEN_REMATE + "/")
-        prefs.edit().putBoolean("luz.$alias", encender).apply()
+        return luz.encendida != true
+    }
+
+    /** El renglón del registro, después de que la luz ya se movió. Nunca tira. */
+    fun anotar(luz: Luz, encendida: Boolean) {
         try {
             val docs = "projects/${remate.proyecto}/databases/(default)/documents"
             pedir("https://firestore.googleapis.com/v1/$docs:commit", "POST",
-                cuerpoRegistroLuz(docs, idNuevo(), prefs.getString("uid", "").orEmpty(), mail, luz, encender).toString(),
+                cuerpoRegistroLuz(docs, idNuevo(), prefs.getString("uid", "").orEmpty(), mail, luz, encendida).toString(),
                 "application/json", token(), remate.referer)
         } catch (e: Exception) { /* la luz es el trabajo; el registro es la memoria */ }
-        return luz to encender
     }
 
     private fun pedir(url: String, metodo: String, cuerpo: String?, tipo: String?, bearer: String?, referer: String): String {
@@ -161,8 +199,9 @@ class Luces(contexto: Context) {
             throw e
         } catch (e: Exception) {
             throw ErrorNube("Sin conexión. Probá de nuevo cuando haya señal.")
-        } finally {
-            c.disconnect()
         }
+        // Sin `disconnect()`, a propósito (pizarra-25): leer la respuesta entera
+        // y cerrar el stream devuelve la conexión al pozo, y el próximo pedido al
+        // mismo lugar se ahorra el saludo seguro.
     }
 }
