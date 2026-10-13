@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-23
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-24
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -42,6 +42,8 @@ import kotlin.concurrent.thread
 
 const val ACCION_TACHAR = "com.maurogasta.pizarra.TACHAR"
 const val ACCION_ACTUALIZAR = "com.maurogasta.pizarra.ACTUALIZAR"
+/** pizarra-24: cambiar una luz de remate (Luces.kt); el alias va en "luz". */
+const val ACCION_LUZ = "com.maurogasta.pizarra.LUZ"
 
 class PizarraWidget : AppWidgetProvider() {
 
@@ -60,6 +62,10 @@ class PizarraWidget : AppWidgetProvider() {
                 dibujar(contexto)
                 actualizarDesdeLaRed(contexto, goAsync())
                 Alarmas.sincronizar(contexto)
+            }
+            ACCION_LUZ -> {
+                val alias = intent.getStringExtra("luz") ?: return
+                cambiarLuz(contexto, alias, goAsync())
             }
             ACCION_TACHAR -> {
                 val id = intent.getStringExtra("id") ?: return
@@ -87,6 +93,19 @@ class PizarraWidget : AppWidgetProvider() {
                     if (Nube(contexto).conSesion) "Nada en la pizarra.\nTocá ✎ para elegir tareas."
                     else "Tocá ✎ y entrá con tu cuenta de Tiempos.")
                 v.setTextViewText(R.id.estado, cache.estado)
+                // pizarra-24: las luces, con el color de cómo estaban la última vez.
+                val luces = Luces(contexto)
+                for ((i, par) in LUCES_WIDGET.withIndex()) {
+                    val (alias, nombre) = par
+                    val vista = if (alias == "entrada") R.id.luz_entrada else R.id.luz_deposito
+                    val prendida = luces.ultimo(alias)
+                    v.setTextViewText(vista, (if (prendida == true) "💡 " else "○ ") + nombre)
+                    v.setInt(vista, "setBackgroundColor", Color.parseColor(if (prendida == true) "#5A4A1E" else "#2A2E35"))
+                    v.setTextColor(vista, Color.parseColor(if (prendida == true) "#FFE7A8" else "#C8CCD0"))
+                    v.setOnClickPendingIntent(vista, PendingIntent.getBroadcast(contexto, 20 + i,
+                        Intent(contexto, PizarraWidget::class.java).setAction(ACCION_LUZ).putExtra("luz", alias),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                }
                 v.setOnClickPendingIntent(R.id.actualizar, difusion(contexto, ACCION_ACTUALIZAR, 1))
                 // pizarra-12: ✎ abre Tiempos adentro, en la solapa Pizarra (ahí se
                 // elige qué va y se anota); sin sesión en el widget, los ajustes
@@ -128,6 +147,26 @@ class PizarraWidget : AppWidgetProvider() {
                 } finally {
                     dibujar(contexto)
                     pendiente?.finish()
+                }
+            }
+        }
+
+        /** pizarra-24: prende o apaga una luz de remate y dice cómo quedó. Nunca tira. */
+        private fun cambiarLuz(contexto: Context, alias: String, pendiente: PendingResult) {
+            val cache = Cache(contexto)
+            val nombre = LUCES_WIDGET.firstOrNull { it.first == alias }?.second ?: alias
+            cache.estado = "$nombre: un momento…"
+            dibujar(contexto)
+            thread {
+                try {
+                    val (luz, prendida) = Luces(contexto).cambiar(alias)
+                    cache.estado = "${luz.label}: ${if (prendida) "prendida" else "apagada"} · " + hora()
+                    Bitacora.anotar(contexto, "luz $alias → ${if (prendida) "prendida" else "apagada"}")
+                } catch (e: Throwable) {
+                    cache.estado = (e.message ?: "no se pudo mover la luz") + " · " + hora()
+                } finally {
+                    dibujar(contexto)
+                    pendiente.finish()
                 }
             }
         }

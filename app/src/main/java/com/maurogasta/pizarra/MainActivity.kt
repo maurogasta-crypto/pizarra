@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-18
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-24
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -480,6 +480,7 @@ class MainActivity : Activity() {
         raiz.addView(cuerpo)
         pintarPliegue()
         pintarBodega()
+        pintarLuces()
         raiz.addView(texto("Entraste como ${nube.mail ?: "—"} · $SELLO", 12f, "#6F757B"))
         raiz.addView(boton("🩺 Mandar diagnóstico a Claude") { mandarDiagnostico() })
         raiz.addView(boton("Salir") {
@@ -496,6 +497,42 @@ class MainActivity : Activity() {
        Lo que Termux:API no pudo en este Xiaomi. Tres cosas a la vista: si
        Android le dio el acceso, si está el token, y qué subió por última vez. */
     private var bodegaVista: TextView? = null
+    /* ── pizarra-24: las luces de remate, para los dos botoncitos del widget ── */
+    private fun pintarLuces() {
+        val luces = Luces(this)
+        raiz.addView(subtitulo("💡 Luces de remate (en el widget)"))
+        if (luces.conSesion) {
+            raiz.addView(texto("Entraste con ${luces.mail}. Los botones «Entrada» y «Depósito» de arriba del widget prenden y apagan las luces; cada toque queda en el registro de remate, a tu nombre.", 13f, "#9AA0A6"))
+            val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            fila.addView(boton("Ver cómo están") {
+                decir("Preguntando…")
+                enSegundo({ luces.luces() }) { l ->
+                    decir(l.joinToString(" · ") { "${it.label}: ${when { it.enLinea == false -> "no contesta"; it.encendida == true -> "prendida"; it.encendida == false -> "apagada"; else -> "?" }}" })
+                    PizarraWidget.dibujar(this)
+                }
+            })
+            fila.addView(boton("Salir de remate") { luces.salir(); PizarraWidget.dibujar(this); pintar() })
+            raiz.addView(fila)
+            return
+        }
+        raiz.addView(texto("Para prender las luces desde el widget, entrá con tu cuenta de remate (la de rematetaller.github.io). La contraseña se usa una vez y no queda guardada; tu cuenta tiene que tener el permiso de luces.", 13f, "#9AA0A6"))
+        val mail = campo("Mail de remate", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+        val clave = campo("Contraseña de remate", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        raiz.addView(mail)
+        raiz.addView(conOjo(clave))
+        raiz.addView(boton("Entrar a remate") {
+            val m = mail.text.toString().trim(); val c = clave.text.toString()
+            if (m.isEmpty() || c.isEmpty()) { decir("Falta el mail o la contraseña de remate."); return@boton }
+            decir("Entrando a remate…")
+            enSegundo({ luces.entrar(m, c); luces.luces() }) {
+                Bitacora.anotar(this, "luces: entró a remate")
+                PizarraWidget.dibujar(this)
+                pintar()
+                decir("Listo: las luces responden.")
+            }
+        })
+    }
+
     private fun pintarBodega() {
         raiz.addView(subtitulo("📬 Mensajes de Airbnb → Claude"))
         val estado = texto("", 14f, "#C8CCD0"); bodegaVista = estado

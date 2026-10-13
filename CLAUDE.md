@@ -33,6 +33,7 @@ repositorio, a ningún otro, ni a ningún chat.
 | `CLAVE_WEB` en `Nube.kt` | clave web de Firebase de `tiempos-71d42` | público por diseño (la misma de `firebase-init.js` de Tiempos) | el código | 2026-10-02 |
 | Contraseña de la persona | entrar | dato en runtime | **no se guarda**: se usa una vez | — |
 | `refreshToken` | la sesión | dato en runtime | `SharedPreferences` de la app; fuera de copias de seguridad (`sin_copias.xml`) | 2026-10-02 |
+| `refreshToken` de remate | la segunda sesión, SÓLO para las luces del widget (pizarra-24): la cuenta de remate de la persona | dato en runtime | `SharedPreferences` «luces», fuera de las copias (`sin_copias.xml`); la contraseña se usa una vez | 2026-10-13 |
 | Token de la bodega | escribir `mensajes/` y `latido.json` en `maurogasta-crypto/bodega` (pizarra-9) | credencial de un solo repositorio | lo pega Mauro una vez en la app (el mismo que tenía Termux); `SharedPreferences` «bodega», fuera de las copias (`sin_copias.xml`), nunca se muestra | 2026-10-06 |
 | `FIRMA_JKS` / `FIRMA_STORE_PASS` / `FIRMA_KEY_PASS` / `FIRMA_ALIAS` | firma propia | secreto de infraestructura | GitHub Secrets de este repo, cargados por Mauro. **Una clave propia** (`pizarra.jks`, alias `pizarra`), no la de la Hilux: un secreto de GitHub no se puede leer de vuelta. El `.jks` y la contraseña, en el gestor de Mauro o en `claves/` del panel | cargados por Mauro el 2026-10-06, como Secrets (una primera vez quedaron como Variables, visibles: se borraron, y el keystore se rehízo con una contraseña nueva) |
 
@@ -126,6 +127,14 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   (`urlPieza`: `?abrir=<clave>&dia=`, agenda-16); una alarma, la suya (`sobre`).
   **Si cambia la forma de una clave de pieza en Tiempos, cambia acá.** Un widget sólo admite
   algunas vistas (un `View` suelto lo rompe): el lint lo marca y no se apaga.
+- **Las luces de remate van arriba del widget de la pizarra** (pizarra-24,
+  13-oct, Mauro). `Luces.kt` habla con el MISMO puente que `luces.html` y por
+  la misma puerta: token de remate, ficha activa y permiso de luces; manda el
+  origen del panel de remate (una app no tiene) y anota cada toque en
+  `lucesRegistro`, como el panel. Cada botón CAMBIA la luz: pregunta cómo está
+  y manda lo contrario. **Si cambian los alias de `TUYA_LUCES` o la forma del
+  registro en `luces.html`, cambia acá en la misma tanda** (`LUCES_WIDGET`,
+  `cuerpoRegistroLuz`).
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

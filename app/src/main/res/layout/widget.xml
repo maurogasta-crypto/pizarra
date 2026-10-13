@@ -6,6 +6,37 @@
     android:padding="10dp"
     android:background="@drawable/fondo">
 
+    <!-- pizarra-24: arriba de todo, las luces de remate (Luces.kt). -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="6dp">
+        <TextView
+            android:id="@+id/luz_entrada"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:gravity="center"
+            android:background="#2A2E35"
+            android:text="💡 Entrada"
+            android:textColor="#C8CCD0"
+            android:textSize="13sp"
+            android:contentDescription="Prender o apagar la luz de la entrada" />
+        <TextView
+            android:id="@+id/luz_deposito"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:background="#2A2E35"
+            android:text="💡 Depósito"
+            android:textColor="#C8CCD0"
+            android:textSize="13sp"
+            android:contentDescription="Prender o apagar la luz del depósito" />
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
