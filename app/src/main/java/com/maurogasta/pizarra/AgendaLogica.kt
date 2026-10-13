@@ -5,7 +5,7 @@ import org.json.JSONObject
 import java.time.LocalDate
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AgendaLogica.kt — La agenda de la semana, para el widget. Sello: pizarra-22
+// AgendaLogica.kt — La agenda de la semana, para el widget. Sello: pizarra-29
 //
 // Pedido de Mauro, 12-oct-2026: «quiero dos widgets en la Pizarra: uno para la
 // pizarra y otro para la agenda semanal de ese usuario». Lo que muestra es la
@@ -20,6 +20,11 @@ import java.time.LocalDate
 //   · sus alarmas y recordatorios — `alertas/` (pizarra-21, Mauro: «que el
 //                         widget de agenda muestre las alarmas»), en su día y a
 //                         su hora, como renglón propio con ⏰ o 🔔
+// pizarra-29 (13-oct, Mauro: «sigue viéndose así… ¿por qué?»): una alarma
+// que es DE una pieza (`sobre` = su clave, como las que arma «⏰ Avisarme» y,
+// desde sugerir-20, el pedido a la IA) va adentro del renglón de esa pieza y
+// no en uno aparte; la nota de la pieza se ve; y el horario va en dos líneas
+// («16:00» / «17:00») porque «16:00–17:00» no entra en la columna.
 // Lo de Casa Verde (`cv:`) vive en la base de Casa Verde, y el widget entra
 // sólo a la de Tiempos: no va, y la pantalla lo dice.
 //
@@ -84,7 +89,9 @@ fun eventoEnDia(e: EventoChicos, iso: String): Boolean {
 }
 
 private fun hhmm(t: String): String = if (t.length >= 16) t.substring(11, 16) else ""
-private fun rango(desde: String, hasta: String) = if (desde.isNotEmpty() && hasta.isNotEmpty()) "$desde–$hasta" else desde
+private fun rango(desde: String, hasta: String) = if (desde.isNotEmpty() && hasta.isNotEmpty()) "$desde\n$hasta" else desde
+/** Los renglones de abajo del título: la clase y el lugar, y la nota si hay. */
+private fun sub(vararg lineas: String) = lineas.filter { it.isNotEmpty() }.joinToString("\n")
 
 /**
  * La semana desde `hoy`, día por día. `agenda` son los `fields` del documento
@@ -106,7 +113,8 @@ fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChico
             val hf = txt(a, "hf")
             meter(d, FilaAgenda(d, rango(hhmm(txt(a, "desde")), if (hf.isEmpty()) "" else hhmm(txt(a, "hasta"))),
                 txt(a, "titulo").ifEmpty { "Actividad" }.take(120),
-                listOf(NOMBRE_CLASE[txt(a, "tipo")].orEmpty(), txt(a, "lugar")).filter { it.isNotEmpty() }.joinToString(" · "), "act", clave = "act:$id"))
+                sub(listOf(NOMBRE_CLASE[txt(a, "tipo")].orEmpty(), txt(a, "lugar")).filter { it.isNotEmpty() }.joinToString(" · "),
+                    txt(a, "nota").take(120).let { if (it.isEmpty()) "" else "📝 $it" }), "act", clave = "act:$id"))
         }
     }
     mapa(agenda, "items")?.let { items ->
@@ -120,7 +128,8 @@ fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChico
             val d = if (flota) hoy else dia
             val padre = t.parentId?.let { porId[it]?.titulo }
             meter(d, FilaAgenda(d, rango(txt(m, "hora"), txt(m, "hasta")), if (padre != null) "$padre › ${t.titulo}" else t.titulo,
-                listOf("Tarea", txt(m, "lugar"), if (flota) "sin día" else "").filter { it.isNotEmpty() }.joinToString(" · "), "tarea", clave = clave))
+                sub(listOf("Tarea", txt(m, "lugar"), if (flota) "sin día" else "").filter { it.isNotEmpty() }.joinToString(" · "),
+                    txt(m, "nota").take(120).let { if (it.isEmpty()) "" else "📝 $it" }), "tarea", clave = clave))
         }
     }
     for (i in 0 until dias) {
@@ -130,9 +139,20 @@ fun agendaDeLaSemana(hoy: String, agenda: JSONObject?, eventos: List<EventoChico
                 listOf("Con los chicos", e.lugar).filter { it.isNotEmpty() }.joinToString(" · "), "chicos", clave = "ev:${e.id}|$d"))
     }
 
-    for (a in alertas)
-        meter(a.dia, FilaAgenda(a.dia, a.hora, (if (a.tipo == "alarma") "⏰ " else "🔔 ") + a.texto,
+    for (a in alertas) {
+        val icono = if (a.tipo == "alarma") "⏰ " else "🔔 "
+        // pizarra-29: la de una pieza que está en la semana va en su renglón.
+        val lista = if (a.sobre.isEmpty()) null else porDia.values.firstOrNull { l -> l.any { it.clave == a.sobre } }
+        if (lista != null) {
+            val i = lista.indexOfFirst { it.clave == a.sobre }
+            val f = lista[i]
+            val cuando = (if (a.dia != f.dia) nombreDia(a.dia) + " " else "") + a.hora
+            lista[i] = f.copy(sub = sub(f.sub, "$icono$cuando · ${a.texto}"))
+            continue
+        }
+        meter(a.dia, FilaAgenda(a.dia, a.hora, icono + a.texto,
             if (a.tipo == "alarma") "Alarma" else "Recordatorio", "alerta", clave = a.sobre))
+    }
 
     val out = mutableListOf<FilaAgenda>()
     for (i in 0 until dias) {

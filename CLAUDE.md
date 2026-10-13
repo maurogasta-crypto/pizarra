@@ -125,6 +125,8 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   actividad, una tarea agendada o un evento, cambia acá en la misma tanda.** Es
   de lectura: tocar abre Tiempos en la Agenda con ESA pieza abierta
   (`urlPieza`: `?abrir=<clave>&dia=`, agenda-16); una alarma, la suya (`sobre`).
+  **Desde pizarra-29 la alarma de una pieza va en el renglón de su pieza** y
+  no aparte (Mauro, 13-oct: «sigue viéndose así»), y la pieza muestra su nota.
   **Si cambia la forma de una clave de pieza en Tiempos, cambia acá.** Un widget sólo admite
   algunas vistas (un `View` suelto lo rompe): el lint lo marca y no se apaga.
 - **Las luces de remate van arriba del widget de la pizarra** (pizarra-24,

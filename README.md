@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-28` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-29` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -60,6 +60,9 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    la Agenda con **esa pieza abierta** para editarla (`?abrir=`, agenda-16 /
    pizarra-22), y tocar una alarma abre la pieza a la que pertenece; una
    alarma suelta o el encabezado de un día llevan a ese día.
+   **Desde pizarra-29** la alarma de una pieza va DENTRO de su renglón
+   («⏰ 15:30 · Salir para…», con el día si suena otro), no aparte; la pieza
+   muestra su nota (📝); y el horario va en dos líneas para que entre.
    Lo de Casa Verde no aparece: vive en la base de Casa Verde y el widget entra
    sólo a la de Tiempos. Se pone al día con ⟳, al salir de Tiempos, cada media
    hora y con el trabajo de cada hora.

@@ -70,12 +70,12 @@ class AgendaTest {
         val lunes = l.filter { it.dia == hoy && it.clase != "dia" }
         // La psicóloga se repite los lunes; la tarea sin día flota en hoy, sin hora, al final.
         assertEquals(listOf("Psicóloga", "Gimnasio", "Llamar al plomero"), lunes.map { it.titulo })
-        assertEquals("18:00–19:00", lunes[1].hora)
+        assertEquals("18:00\n19:00", lunes[1].hora)
         assertEquals("Personal · Club", lunes[1].sub)
         assertTrue(lunes[2].sub.contains("sin día"))
         val miercoles = l.filter { it.dia == "2026-10-14" && it.clase != "dia" }
         assertEquals(listOf("Santa fe › Cortinas", "Odontólogo"), miercoles.map { it.titulo })
-        assertEquals("09:00–11:00", miercoles[0].hora)
+        assertEquals("09:00\n11:00", miercoles[0].hora)
         assertEquals("chicos", miercoles[1].clase)
         // Una noche sin vuelta: sólo la hora de salida.
         assertEquals("21:00", l.first { it.titulo == "Cena afuera" }.hora)
@@ -113,7 +113,9 @@ class AgendaTest {
         assertEquals("act:a1", l.first { it.titulo == "Gimnasio" }.clave)
         assertEquals("f:t1", l.first { it.titulo == "Santa fe › Cortinas" }.clave)
         assertEquals("ev:e1|2026-10-12", l.first { it.titulo == "Psicóloga" && it.dia == hoy }.clave)
-        assertEquals("ev:e2|2026-10-14", l.first { it.titulo == "⏰ Odontólogo" }.clave)
+        // pizarra-29: la alarma de una pieza va en el renglón de la pieza, no aparte.
+        assertFalse(l.any { it.titulo == "⏰ Odontólogo" })
+        assertTrue(l.first { it.titulo == "Odontólogo" }.sub.endsWith("⏰ 18:30 · Odontólogo"))
         assertEquals("", l.first { it.titulo == "🔔 Suelto" }.clave)
         assertEquals("https://maurogasta-crypto.github.io/tiempos/?solapa=agenda&dia=2026-10-14&abrir=ev%3Ae2%7C2026-10-14",
             urlPieza("2026-10-14", "ev:e2|2026-10-14"))
@@ -123,6 +125,22 @@ class AgendaTest {
         val doc = JSONObject().put("name", "$BASE_DOCS/alertas/z").put("fields", JSONObject().put("tipo", s("alarma"))
             .put("texto", s("x")).put("dia", s("2026-10-14")).put("hora", s("10:00")).put("sobre", s("act:a1")))
         assertEquals("act:a1", alertaDe(doc)!!.sobre)
+    }
+
+    @Test fun laAlarmaVaEnSuPiezaConLaNota() {
+        // El caso del 13-oct: una actividad con nota y su alarma de salir.
+        val ag = JSONObject().put("actividades", m("r1" to m("titulo" to s("Atención · Aguada"), "dia" to s("2026-10-13"),
+            "desde" to s("2026-10-13T16:00"), "hasta" to s("2026-10-13T17:00"), "hf" to s("17:00"), "tipo" to s("personal"),
+            "lugar" to s("Aguada"), "nota" to s("Serie C, número 1"))))
+        val al = listOf(Alerta("x1", "alarma", "Salir para Aguada", "2026-10-13", "15:30", sobre = "act:r1"),
+            Alerta("x2", "recordatorio", "El día antes", "2026-10-12", "20:00", sobre = "act:r1"),
+            Alerta("x3", "alarma", "De otra cosa", "2026-10-13", "09:00", sobre = "act:noesta"))
+        val l = agendaDeLaSemana(hoy, ag, emptyList(), emptyList(), alertas = al)
+        val f = l.first { it.clave == "act:r1" }
+        assertEquals("16:00\n17:00", f.hora)
+        assertEquals("Personal · Aguada\n📝 Serie C, número 1\n🔔 lunes 12/10 20:00 · El día antes\n⏰ 15:30 · Salir para Aguada".split("\n").toSet(), f.sub.split("\n").toSet())
+        assertEquals(1, l.count { it.clave == "act:r1" })
+        assertTrue("la que no tiene su pieza en la semana va aparte", l.any { it.titulo == "⏰ De otra cosa" })
     }
 
     @Test fun sinAgendaTodaviaSeVeLaSemanaLibre() {
