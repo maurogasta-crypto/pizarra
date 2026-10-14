@@ -63,6 +63,14 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   decide (`que`: tachar o abrir) y se cierra. Es una Activity porque Android no
   deja abrir una pantalla desde una difusión en segundo plano. Abre `urlTarea`
   (`?solapa=tareas&abrir=f:<id>`, app-34 de Tiempos).
+- **El ＋ del widget agrega una tarea en el acto** (pizarra-30, 14-oct-2026,
+  Mauro: «tiene que haber un más que permita agregar un ítem rápidamente»).
+  Abre `AgregarActivity`, una ventanita sobre el inicio; lo escrito va a
+  `tareas/` con `cuerpoNuevaTarea`: la MISMA forma que la tarea que crea el
+  plan del sitio (personal, de quien escribe, `pizarra.<uid>: true`), que la
+  regla de `tareas` acepta, y `exists: false` para no pisar nunca otra. Si
+  cambia cómo el sitio crea una tarea, cambia acá en la misma tanda. El título
+  no va a la bitácora.
 - **El widget no espera a la red para tachar**, y si la base dice que no, la
   fila vuelve. Nunca queda tachado algo que la base no tiene tachado.
 - **`posiblesDelDia` está dos veces**: en `Logica.kt` y en `nucleo.js` de

@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-27
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-30
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -107,6 +107,10 @@ class PizarraWidget : AppWidgetProvider() {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 }
                 v.setOnClickPendingIntent(R.id.actualizar, difusion(contexto, ACCION_ACTUALIZAR, 1))
+                // pizarra-30: ＋ agrega una tarea a MI pizarra sin abrir la app.
+                v.setOnClickPendingIntent(R.id.agregar, PendingIntent.getActivity(contexto, 3,
+                    Intent(contexto, AgregarActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 // pizarra-12: ✎ abre Tiempos adentro, en la solapa Pizarra (ahí se
                 // elige qué va y se anota); sin sesión en el widget, los ajustes
                 // para entrar. pizarra-19: era uno de DOS lápices que abrían lo

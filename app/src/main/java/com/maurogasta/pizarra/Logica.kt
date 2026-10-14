@@ -126,6 +126,33 @@ private fun escritura(id: String, campos: JSONObject, mascara: List<String>): JS
             JSONObject().put("fieldPath", "actualizadoEn").put("setToServerValue", "REQUEST_TIME")))
         .put("currentDocument", JSONObject().put("exists", true))
 
+/**
+ * pizarra-30 (14-oct-2026, Mauro: «en la pizarra del widget tiene que haber un
+ * más que permita agregar un ítem rápidamente»). Una tarea NUEVA con la misma
+ * forma que la que crea el plan del sitio (`agendarPrecarga` de sugerir.js):
+ * personal, de quien la escribe, ya marcada para SU pizarra. La regla de
+ * `tareas` pide dueño = quien escribe, alcance, tipo válido y un título de 1 a
+ * 120 letras; `currentDocument.exists=false` hace que nunca pise otra.
+ */
+fun cuerpoNuevaTarea(id: String, titulo: String, uid: String): JSONObject {
+    fun s(v: String) = JSONObject().put("stringValue", v)
+    val nulo = JSONObject().put("nullValue", JSONObject.NULL)
+    val campos = JSONObject()
+        .put("titulo", s(tituloNuevo(titulo)))
+        .put("tipo", s("personal")).put("alcance", s("personal")).put("duenio", s(uid))
+        .put("parentId", nulo).put("meta", nulo).put("hecho", JSONObject().put("booleanValue", false))
+        .put("encargados", JSONObject().put("arrayValue", JSONObject().put("values", JSONArray().put(s(uid)))))
+        .put("detalle", s("")).put("origen", s("pizarra"))
+        .put("pizarra", JSONObject().put("mapValue", JSONObject().put("fields", JSONObject().put(uid, JSONObject().put("booleanValue", true)))))
+    return JSONObject().put("writes", JSONArray().put(JSONObject()
+        .put("update", JSONObject().put("name", "$BASE_DOCS/tareas/$id").put("fields", campos))
+        .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "creadoEn").put("setToServerValue", "REQUEST_TIME")))
+        .put("currentDocument", JSONObject().put("exists", false))))
+}
+
+/** El título como lo acepta la regla: sin espacios de más y hasta 120 letras. */
+fun tituloNuevo(t: String): String = t.trim().replace(Regex("""\s+"""), " ").take(120)
+
 /** Tachar (hecho) o destachar (pendiente). Igual que los botones del sitio. */
 fun cuerpoTachar(id: String, hecho: Boolean, uid: String): JSONObject {
     val campos = JSONObject().put("hecho", JSONObject().put("booleanValue", hecho))

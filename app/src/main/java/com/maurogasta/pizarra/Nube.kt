@@ -190,6 +190,13 @@ class Nube(contexto: Context) {
 
     fun tachar(id: String, hecho: Boolean) = commit(cuerpoTachar(id, hecho, deTiempos()))
 
+    /** pizarra-30: una tarea nueva, mía y en mi pizarra. Devuelve su id. */
+    fun agregar(titulo: String): String {
+        val id = idNuevo()
+        commit(cuerpoNuevaTarea(id, titulo, deTiempos()))
+        return id
+    }
+
     fun fijar(id: String, fijar: Boolean) = commit(cuerpoFijar(id, fijar, deTiempos()))
 
     private fun commit(cuerpo: JSONObject) {

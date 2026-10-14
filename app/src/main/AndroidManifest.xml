@@ -111,6 +111,15 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- pizarra-30: el ＋ del widget. Una ventanita encima del inicio. -->
+        <activity
+            android:name=".AgregarActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:windowSoftInputMode="stateVisible|adjustResize"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" />
+
         <activity
             android:name=".AlarmaPantalla"
             android:exported="false"
