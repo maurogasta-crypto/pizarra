@@ -1,115 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- pizarra-31 (14-oct-2026, Mauro: «que aparezcan al menos 8 ítems… los
+     botones de las luces, el + y el lápiz en un costado para que la lista
+     pueda ser más larga; para las luces, sólo la inicial»). La lista ocupa
+     todo el alto; los botones van en una columna angosta a la derecha. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="10dp"
+    android:orientation="horizontal"
+    android:padding="8dp"
     android:background="@drawable/fondo">
 
-    <!-- pizarra-24: arriba de todo, las luces de remate (Luces.kt). -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="6dp">
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/estado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#8A8F98"
+            android:textSize="10sp"
+            android:maxLines="1" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="2dp">
+            <ListView
+                android:id="@+id/lista"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="#22FFFFFF"
+                android:dividerHeight="1dp" />
+            <TextView
+                android:id="@+id/vacia"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:textColor="#8A8F98"
+                android:textSize="13sp" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- La columna de botones: E y D (luces de remate), ＋, ⟳ y ✎. -->
+    <LinearLayout
+        android:layout_width="34dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="6dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
         <TextView
             android:id="@+id/luz_entrada"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="4dp"
             android:gravity="center"
             android:background="#2A2E35"
-            android:text="💡 Entrada"
+            android:text="E"
             android:textColor="#C8CCD0"
-            android:textSize="13sp"
+            android:textSize="14sp"
+            android:textStyle="bold"
             android:contentDescription="Prender o apagar la luz de la entrada" />
         <TextView
             android:id="@+id/luz_deposito"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="10dp"
             android:gravity="center"
             android:background="#2A2E35"
-            android:text="💡 Depósito"
+            android:text="D"
             android:textColor="#C8CCD0"
-            android:textSize="13sp"
+            android:textSize="14sp"
+            android:textStyle="bold"
             android:contentDescription="Prender o apagar la luz del depósito" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Pizarra"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/estado"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#8A8F98"
-                android:textSize="11sp"
-                android:maxLines="1" />
-        </LinearLayout>
-
         <TextView
             android:id="@+id/agregar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:gravity="center"
             android:text="＋"
             android:textColor="#FFFFFF"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:contentDescription="Agregar a la pizarra" />
         <TextView
-            android:id="@+id/actualizar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:gravity="center"
-            android:text="⟳"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:contentDescription="Actualizar" />
-        <TextView
             android:id="@+id/editar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:gravity="center"
             android:text="✎"
             android:textColor="#FFFFFF"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:contentDescription="Elegir tareas" />
-    </LinearLayout>
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="6dp">
-        <ListView
-            android:id="@+id/lista"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:divider="#22FFFFFF"
-            android:dividerHeight="1dp" />
         <TextView
-            android:id="@+id/vacia"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:id="@+id/actualizar"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:gravity="center"
-            android:textColor="#8A8F98"
-            android:textSize="13sp" />
-    </FrameLayout>
+            android:text="⟳"
+            android:textColor="#FFFFFF"
+            android:textSize="17sp"
+            android:contentDescription="Actualizar" />
+    </LinearLayout>
 </LinearLayout>

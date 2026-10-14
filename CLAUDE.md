@@ -71,6 +71,12 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   regla de `tareas` acepta, y `exists: false` para no pisar nunca otra. Si
   cambia cómo el sitio crea una tarea, cambia acá en la misma tanda. El título
   no va a la bitácora.
+- **La lista de la pizarra ocupa todo el alto y los botones van a un costado**
+  (pizarra-31, 14-oct, Mauro: «al menos 8 ítems… los botones de las luces, el
+  + y el lápiz en un costado… para las luces sólo la inicial»). Columna a la
+  derecha: E y D (las luces; prendida = color ámbar), ＋, ✎ y ⟳; renglones de
+  30 dp con dos líneas como mucho. El encabezado es una sola línea chica
+  («Pizarra · al día 08:55»).
 - **El widget no espera a la red para tachar**, y si la base dice que no, la
   fila vuelve. Nunca queda tachado algo que la base no tiene tachado.
 - **`posiblesDelDia` está dos veces**: en `Logica.kt` y en `nucleo.js` de

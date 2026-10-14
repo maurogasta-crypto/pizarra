@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-30` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-31` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -50,6 +50,11 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    manda el mail (pizarra-28). Lo que pasa al entrar se lee ahí mismo, debajo
    de los botones. Cada toque queda en el registro
    de luces de remate, a tu nombre.
+5 ter. **El widget de la pizarra, más alto** (pizarra-31): la lista ocupa todo el
+   alto (entran ocho renglones o más) y los botones van en una columna a la
+   derecha: **E** y **D** para las luces de la entrada y el depósito
+   (ámbar = prendida), ＋, ✎ y ⟳. Si el widget ya estaba puesto, agrandalo
+   un renglón manteniéndolo apretado.
 5 bis. **El ＋ del widget de la pizarra** (pizarra-30): agrega una tarea sin abrir
    la app. Se escribe o se dicta con el micrófono del teclado, «Agregar», y
    queda en Tiempos —personal, tuya— y en tu pizarra; la ventanita queda

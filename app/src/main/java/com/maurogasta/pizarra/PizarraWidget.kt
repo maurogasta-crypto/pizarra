@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-30
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-31
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -92,14 +92,15 @@ class PizarraWidget : AppWidgetProvider() {
                 v.setTextViewText(R.id.vacia,
                     if (Nube(contexto).conSesion) "Nada en la pizarra.\nTocá ✎ para elegir tareas."
                     else "Tocá ✎ y entrá con tu cuenta de Tiempos.")
-                v.setTextViewText(R.id.estado, cache.estado)
+                v.setTextViewText(R.id.estado, "Pizarra · " + cache.estado)
                 // pizarra-24: las luces, con el color de cómo estaban la última vez.
                 val luces = Luces(contexto)
                 for ((i, par) in LUCES_WIDGET.withIndex()) {
                     val (alias, nombre) = par
                     val vista = if (alias == "entrada") R.id.luz_entrada else R.id.luz_deposito
                     val prendida = luces.ultimo(alias)
-                    v.setTextViewText(vista, (if (prendida == true) "💡 " else "○ ") + nombre)
+                    // pizarra-31: sólo la inicial (E, D); prendida se ve por el color.
+                    v.setTextViewText(vista, nombre.take(1).uppercase())
                     v.setInt(vista, "setBackgroundColor", Color.parseColor(if (prendida == true) "#5A4A1E" else "#2A2E35"))
                     v.setTextColor(vista, Color.parseColor(if (prendida == true) "#FFE7A8" else "#C8CCD0"))
                     v.setOnClickPendingIntent(vista, PendingIntent.getBroadcast(contexto, 20 + i,
@@ -108,7 +109,7 @@ class PizarraWidget : AppWidgetProvider() {
                 }
                 v.setOnClickPendingIntent(R.id.actualizar, difusion(contexto, ACCION_ACTUALIZAR, 1))
                 // pizarra-30: ＋ agrega una tarea a MI pizarra sin abrir la app.
-                v.setOnClickPendingIntent(R.id.agregar, PendingIntent.getActivity(contexto, 3,
+                v.setOnClickPendingIntent(R.id.agregar, PendingIntent.getActivity(contexto, 4,
                     Intent(contexto, AgregarActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 // pizarra-12: ✎ abre Tiempos adentro, en la solapa Pizarra (ahí se
