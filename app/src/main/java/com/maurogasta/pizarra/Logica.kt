@@ -350,6 +350,11 @@ const val TIEMPOS_URL = "https://maurogasta-crypto.github.io/tiempos/"
 fun urlTarea(id: String): String =
     TIEMPOS_URL + "?solapa=tareas&abrir=" + java.net.URLEncoder.encode("f:$id", "UTF-8")
 
+/** pizarra-32: el gasto de Tiempos (plata-16), con la foto de la factura ya
+    subida a nuestra cuenta de Cloudinary; otra dirección no viaja. */
+fun urlGasto(imagen: String = ""): String =
+    TIEMPOS_URL + "?gasto=1" + (if (esImagenNuestra(imagen)) "&imagen=" + java.net.URLEncoder.encode(imagen, "UTF-8") else "")
+
 fun urlDictado(texto: String, imagen: String = ""): String =
     TIEMPOS_URL + "?dictar=" + java.net.URLEncoder.encode(texto.trim().take(2000), "UTF-8") +
         (if (esImagenNuestra(imagen)) "&imagen=" + java.net.URLEncoder.encode(imagen, "UTF-8") else "")

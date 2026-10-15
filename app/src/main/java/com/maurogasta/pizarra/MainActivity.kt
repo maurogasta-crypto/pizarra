@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-28
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-32
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -262,10 +262,14 @@ class MainActivity : Activity() {
     private var alertasVista: TextView? = null
 
     private fun pintarTiempos() {
-        raiz.addView(subtitulo("✨ Pedile a la IA"))
-        raiz.addView(texto("Lo que sea, dictado o escrito: un gasto, algo de los chicos, mover o sacar algo de tu agenda, una alarma, un deseo, una compra. Tiempos arma el plan y vos marcás qué va.", 13f, "#9AA0A6"))
+        // pizarra-32 (15-oct-2026, sugerir-22 de Tiempos): la IA sólo CONTESTA.
+        // Mauro: «quiero que sea para hacer una consulta, como qué día tengo
+        // odontólogo… no fue bueno editando». Lo escrito es una pregunta; la
+        // foto de una factura abre el gasto de Tiempos (plata-16).
+        raiz.addView(subtitulo("❓ Preguntale a la IA"))
+        raiz.addView(texto("Escribí o dictá una pregunta: qué día tenés algo, qué tienen los chicos, cuánto se gastó. Con la foto de una factura, Tiempos abre el gasto y la IA lo llena.", 13f, "#9AA0A6"))
         val caja = EditText(this).apply {
-            hint = "Ej.: gasté 850 en la farmacia · el básquet pasa a las 18 · mañana alarma 7:30"
+            hint = "Ej.: ¿qué día tengo el odontólogo? · ¿qué tienen los chicos el jueves?"
             minLines = 2
             setTextColor(Color.WHITE)
             setHintTextColor(Color.parseColor("#6F757B"))
@@ -274,7 +278,7 @@ class MainActivity : Activity() {
         raiz.addView(caja)
         compartidoPendiente?.let { caja.setText(it); compartidoPendiente = null }
         val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        fila.addView(boton("📷 Captura") { elegirCaptura() })
+        fila.addView(boton("📷 Foto de factura") { elegirCaptura() })
         raiz.addView(fila)
         capturaVista = texto("", 12f, "#9AA0A6")
         raiz.addView(capturaVista)
@@ -321,15 +325,15 @@ class MainActivity : Activity() {
         if (!nube.conSesion) { decir("Entrá con tu cuenta y lo compartido queda en la caja del dictado."); return }
         val links = linksDe(t)
         decir(when {
-            links.isNotEmpty() && captura == null && links.any { redDe(it) != "la web" } ->
-                "${redDe(links[0])} no deja leer sus publicaciones desde afuera: agregá una 📷 Captura del reel o del flyer, y si querés dictá qué te interesa."
-            else -> "Corregí o agregá lo que quieras y tocá ✨ Seguir en Tiempos."
+            captura != null -> "Factura lista: tocá ✨ Seguir en Tiempos y se abre el gasto."
+            links.isNotEmpty() -> "La IA de Tiempos sólo contesta preguntas. Para guardar esto como deseo: Tiempos → Tareas → Deseos, ＋ Agregar."
+            else -> "Escribí tu pregunta y tocá ✨ Seguir en Tiempos."
         })
     }
 
     private fun elegirCaptura() {
         val i = Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE)
-        try { @Suppress("DEPRECATION") startActivityForResult(Intent.createChooser(i, "Captura del reel o del flyer"), PEDIDO_CAPTURA) }
+        try { @Suppress("DEPRECATION") startActivityForResult(Intent.createChooser(i, "Foto de la factura"), PEDIDO_CAPTURA) }
         catch (e: ActivityNotFoundException) { decir("No hay dónde elegir una imagen en este teléfono.") }
     }
 
@@ -348,22 +352,25 @@ class MainActivity : Activity() {
 
     private fun pintarCaptura() {
         val v = capturaVista ?: return
-        v.text = if (captura != null) "📷 Captura lista · se sube al tocar Seguir  (tocá acá para sacarla)" else ""
+        v.text = if (captura != null) "🧾 Factura lista · al tocar Seguir se sube y abre el gasto  (tocá acá para sacarla)" else ""
         v.visibility = if (captura != null) View.VISIBLE else View.GONE
         v.setOnClickListener { captura = null; pintarCaptura() }
     }
 
     private fun seguir() {
         val caja = dictado ?: return
-        val t = caja.text.toString().trim().ifEmpty { if (captura != null) "Lo de la captura." else "" }
-        if (t.isEmpty()) { decir("Escribí o agregá una captura primero."); return }
+        val t = caja.text.toString().trim()
         val c = captura
-        if (c == null) { abrir(urlDictado(t)); caja.setText(""); return }
-        decir("Subiendo la captura…")
+        if (c == null) {
+            if (t.isEmpty()) { decir("Escribí una pregunta o agregá la foto de una factura."); return }
+            abrir(urlDictado(t)); caja.setText(""); return
+        }
+        // Con una factura, el gasto: se sube acá y Tiempos la lee sin volver a subirla.
+        decir("Subiendo la factura…")
         enSegundo({ Imagenes.subir(this, c) }) { url ->
-            Bitacora.anotar(this, "captura subida")
-            abrir(urlDictado(t, url))
-            caja.setText(""); captura = null; pintarCaptura(); decir("")
+            Bitacora.anotar(this, "factura subida")
+            abrir(urlGasto(url))
+            captura = null; pintarCaptura(); decir("")
         }
     }
 

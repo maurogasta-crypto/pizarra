@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-31` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-32` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -50,6 +50,11 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    manda el mail (pizarra-28). Lo que pasa al entrar se lee ahí mismo, debajo
    de los botones. Cada toque queda en el registro
    de luces de remate, a tu nombre.
+5 quater. **El $ del widget y la foto de factura** (pizarra-32): **$** abre el
+   gasto de Tiempos con la foto primero (la IA lee la factura y llena todo). En
+   la app, «📷 Foto de factura» —o una imagen que llega por Compartir— se sube y
+   abre ese mismo gasto. Lo que se escribe en la caja es una **pregunta**: la IA
+   de Tiempos ya no agrega ni cambia nada, sólo contesta.
 5 ter. **El widget de la pizarra, más alto** (pizarra-31): la lista ocupa todo el
    alto (entran ocho renglones o más) y los botones van en una columna a la
    derecha: **E** y **D** para las luces de la entrada y el depósito
@@ -98,6 +103,9 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
   (deseos-1). Se editan en Tiempos.
 
 No escribe nada nuevo en la base: alertas y deseos sólo se leen.
+
+**Desde pizarra-32 (15-oct-2026) es «❓ Preguntale a la IA»: sólo pregunta**
+(sugerir-22 de Tiempos); lo de abajo es historia.
 
 **Desde pizarra-15 (10-oct-2026) el cuadro de arriba es «✨ Pedile a la IA»**
 y no «Para la agenda»: lo que se escribe ahí puede ser cualquier cosa que

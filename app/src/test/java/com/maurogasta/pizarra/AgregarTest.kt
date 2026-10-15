@@ -73,5 +73,6 @@ class AgregarTest {
         shadowOf(AppWidgetManager.getInstance(app)).createWidget(PizarraWidget::class.java, R.layout.widget)
         PizarraWidget.dibujar(app)   // arma el ＋ sin romper
         assertTrue(R.id.agregar != 0)
+        assertTrue("pizarra-32: el $ del gasto", R.id.gasto != 0)
     }
 }

@@ -77,6 +77,15 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   derecha: E y D (las luces; prendida = color ámbar), ＋, ✎ y ⟳; renglones de
   30 dp con dos líneas como mucho. El encabezado es una sola línea chica
   («Pizarra · al día 08:55»).
+- **La IA sólo CONTESTA y el $ carga un gasto** (pizarra-32, 15-oct-2026,
+  sugerir-22 y plata-16 de Tiempos). Mauro: «quiero que sea para hacer una
+  consulta… no fue bueno editando» y «claro y fácil cargar un gasto». La caja
+  de la app es «❓ Preguntale a la IA» (`urlDictado` lleva una PREGUNTA); la
+  «📷 Foto de factura» —o una imagen que llega por Compartir— se sube y abre el
+  gasto de Tiempos con `urlGasto` (`?gasto=1&imagen=`, sólo de nuestra cuenta
+  de Cloudinary), que la lee sin volver a subirla. El widget suma un **$** en
+  la columna, entre ＋ y ✎, que abre ese gasto. Lo que se comparte con un link
+  ya no arma un plan: la app dice dónde guardarlo como deseo.
 - **El widget no espera a la red para tachar**, y si la base dice que no, la
   fila vuelve. Nunca queda tachado algo que la base no tiene tachado.
 - **`posiblesDelDia` está dos veces**: en `Logica.kt` y en `nucleo.js` de

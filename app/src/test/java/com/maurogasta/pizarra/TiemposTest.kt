@@ -129,6 +129,14 @@ class TiemposTest {
         assertEquals("", textoCompartido(null, null))
     }
 
+    // pizarra-32: la factura abre el gasto de Tiempos; sólo de nuestra cuenta.
+    @Test fun laFactura_abreElGasto() {
+        assertEquals(TIEMPOS_URL + "?gasto=1", urlGasto())
+        val nuestra = "https://res.cloudinary.com/dnwfu8ffn/image/upload/v1/tiempos/f.jpg"
+        assertTrue(urlGasto(nuestra).endsWith("&imagen=" + java.net.URLEncoder.encode(nuestra, "UTF-8")))
+        assertEquals(TIEMPOS_URL + "?gasto=1", urlGasto("https://evil.example/a.jpg"))
+    }
+
     @Test fun laCaptura_viajaSóloSiEsDeNuestraCuentaDeCloudinary() {
         val nuestra = "https://res.cloudinary.com/$CLOUDINARY_CUENTA/image/upload/v1/tiempos/a.jpg"
         assertTrue(urlDictado("x", nuestra).contains("&imagen=" + java.net.URLEncoder.encode(nuestra, "UTF-8")))

@@ -19,7 +19,7 @@ import java.util.Locale
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-31
+// PizarraWidget.kt — La pizarra en la pantalla de inicio. Sello: pizarra-32
 //
 // Pedido de Mauro, 2-oct-2026: «una pizarra de pendientes en una de mis
 // pantallas de Android, como widget, que cargue de mis listas de tareas de
@@ -111,6 +111,14 @@ class PizarraWidget : AppWidgetProvider() {
                 // pizarra-30: ＋ agrega una tarea a MI pizarra sin abrir la app.
                 v.setOnClickPendingIntent(R.id.agregar, PendingIntent.getActivity(contexto, 4,
                     Intent(contexto, AgregarActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                // pizarra-32: $ abre el gasto de Tiempos con la foto primero
+                // (plata-15, Mauro: «claro y fácil cargar un gasto»). Sin sesión,
+                // los ajustes para entrar.
+                val gasto = if (Nube(contexto).conSesion) Intent(contexto, TiemposActivity::class.java).putExtra(EXTRA_URL, urlGasto())
+                    else Intent(contexto, MainActivity::class.java)
+                v.setOnClickPendingIntent(R.id.gasto, PendingIntent.getActivity(contexto, 5,
+                    gasto.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 // pizarra-12: ✎ abre Tiempos adentro, en la solapa Pizarra (ahí se
                 // elige qué va y se anota); sin sesión en el widget, los ajustes

@@ -94,7 +94,7 @@ class AppTest {
     }
 
     // pizarra-15: la pizarra arranca plegada; un toque la abre y otro la cierra.
-    // Y el cuadro de arriba es neutro: «Pedile a la IA», no «Para la agenda».
+    // Y el cuadro de arriba pregunta (pizarra-32): «Preguntale a la IA».
     @Test fun laPizarra_arrancaPlegada_yUnToqueLaAbre() {
         conSesion()
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
@@ -105,7 +105,8 @@ class AppTest {
             else -> emptyList()
         }
         val todos = textos(a.window.decorView)
-        assertTrue(todos.any { it.text.contains("Pedile a la IA") })
+        assertTrue(todos.any { it.text.contains("Preguntale a la IA") })
+        assertTrue(todos.none { it.text.contains("Pedile a la IA") })
         assertTrue(todos.none { it.text.contains("Para la agenda") })
         val titulo = todos.first { it.text.contains("La pizarra") }
         val actualizar = botones(a.window.decorView).first { it.text.contains("Actualizar") }
@@ -185,7 +186,7 @@ class AppTest {
         }
         val texto = cajas(a.window.decorView).first().text.toString()
         assertTrue(texto, texto.contains("Link (Instagram): https://www.instagram.com/reel/ABC/"))
-        assertTrue(botones(a.window.decorView).any { it.text.contains("Captura") })
+        assertTrue(botones(a.window.decorView).any { it.text.contains("Foto de factura") })
     }
 
     // tiempos:A13 — la alarma de las 7:26 del 5-oct: Android la demoró, Mauro

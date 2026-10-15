@@ -84,6 +84,16 @@
             android:textSize="20sp"
             android:contentDescription="Agregar a la pizarra" />
         <TextView
+            android:id="@+id/gasto"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:text="$"
+            android:textColor="#FFFFFF"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:contentDescription="Cargar un gasto" />
+        <TextView
             android:id="@+id/editar"
             android:layout_width="32dp"
             android:layout_height="32dp"
