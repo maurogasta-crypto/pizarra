@@ -346,6 +346,13 @@ fun posiblesDelDia(deseos: List<Deseo>, iso: String): List<Deseo> {
    lo precarga con su IA (app-14). La dirección no lleva nada más. */
 const val TIEMPOS_URL = "https://maurogasta-crypto.github.io/tiempos/"
 
+/** pizarra-33: Tiempos en la solapa Pizarra. El ✎ del widget abría Tiempos sin
+    decir dónde, y como la actividad se reusa (singleTop) mostraba la última
+    solapa que había quedado —la Agenda, si se había entrado por ese widget—.
+    Mauro, 15-oct-2026: «cuando hago clic en la pizarra del widget me lleva a
+    tiempos agenda… debería ir a pizarra». */
+const val URL_PIZARRA = TIEMPOS_URL + "?solapa=pizarra"
+
 /** pizarra-23: Tiempos en Tareas con la ficha de esa tarea abierta (app-34). */
 fun urlTarea(id: String): String =
     TIEMPOS_URL + "?solapa=tareas&abrir=" + java.net.URLEncoder.encode("f:$id", "UTF-8")

@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-32` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-33` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -50,6 +50,9 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    manda el mail (pizarra-28). Lo que pasa al entrar se lee ahí mismo, debajo
    de los botones. Cada toque queda en el registro
    de luces de remate, a tu nombre.
+5 quinquies. **El ✎ y el título del widget abren la solapa Pizarra de Tiempos**
+   (pizarra-33). Antes abrían Tiempos sin decir dónde y aparecía la última solapa
+   que había quedado, casi siempre la Agenda.
 5 quater. **El $ del widget y la foto de factura** (pizarra-32): **$** abre el
    gasto de Tiempos con la foto primero (la IA lee la factura y llena todo). En
    la app, «📷 Foto de factura» —o una imagen que llega por Compartir— se sube y

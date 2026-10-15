@@ -131,6 +131,9 @@ class TiemposTest {
 
     // pizarra-32: la factura abre el gasto de Tiempos; sólo de nuestra cuenta.
     @Test fun laFactura_abreElGasto() {
+        // pizarra-33: el ✎ y el título del widget van a la solapa Pizarra, que Tiempos sabe abrir.
+        assertEquals(TIEMPOS_URL + "?solapa=pizarra", URL_PIZARRA)
+        assertTrue(esDeTiempos(URL_PIZARRA))
         assertEquals(TIEMPOS_URL + "?gasto=1", urlGasto())
         val nuestra = "https://res.cloudinary.com/dnwfu8ffn/image/upload/v1/tiempos/f.jpg"
         assertTrue(urlGasto(nuestra).endsWith("&imagen=" + java.net.URLEncoder.encode(nuestra, "UTF-8")))

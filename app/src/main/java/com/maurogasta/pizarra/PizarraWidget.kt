@@ -124,9 +124,16 @@ class PizarraWidget : AppWidgetProvider() {
                 // elige qué va y se anota); sin sesión en el widget, los ajustes
                 // para entrar. pizarra-19: era uno de DOS lápices que abrían lo
                 // mismo (Mauro, 12-oct); el ✏️ se fue y queda éste.
-                val editar = if (Nube(contexto).conSesion) Intent(contexto, TiemposActivity::class.java) else Intent(contexto, MainActivity::class.java)
-                v.setOnClickPendingIntent(R.id.editar, PendingIntent.getActivity(contexto, 2, editar,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                // pizarra-33: con la dirección de la solapa Pizarra, siempre (antes
+                // iba sin dirección y mostraba la última solapa: la Agenda). Y el
+                // título del widget hace lo mismo.
+                val editar = if (Nube(contexto).conSesion) Intent(contexto, TiemposActivity::class.java).putExtra(EXTRA_URL, URL_PIZARRA)
+                    else Intent(contexto, MainActivity::class.java)
+                val abrirPizarra = PendingIntent.getActivity(contexto, 2,
+                    editar.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                v.setOnClickPendingIntent(R.id.editar, abrirPizarra)
+                v.setOnClickPendingIntent(R.id.estado, abrirPizarra)
                 // La plantilla de cada fila: MUTABLE porque la fila le agrega
                 // qué tarea es y qué se tocó. pizarra-23: va a ToqueActivity,
                 // que tacha (el ☐) o abre la tarea en Tiempos (el texto).
