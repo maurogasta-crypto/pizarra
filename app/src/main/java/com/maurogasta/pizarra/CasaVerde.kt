@@ -179,6 +179,18 @@ class CuentaCasaVerde(contexto: Context) {
         pedidosDeConsulta(pedir("https://firestore.googleapis.com/v1/${cv.docs}:runQuery",
             cuerpoConsultaNuevos().toString(), "application/json", token()))
 
+    /** pizarra-40: cuántos cambios de reservas esperan que alguien los confirme. */
+    fun cambiosPendientes(): Int {
+        val q = JSONObject().put("structuredQuery", JSONObject()
+            .put("from", JSONArray().put(JSONObject().put("collectionId", "cambios_reserva")))
+            .put("where", JSONObject().put("fieldFilter", JSONObject()
+                .put("field", JSONObject().put("fieldPath", "estado")).put("op", "EQUAL")
+                .put("value", JSONObject().put("stringValue", "pendiente"))))
+            .put("limit", 100))
+        val a = JSONArray(pedir("https://firestore.googleapis.com/v1/${cv.docs}:runQuery", q.toString(), "application/json", token()))
+        return (0 until a.length()).count { a.optJSONObject(it)?.has("document") == true }
+    }
+
     /** «Respondido» o «descartado», a nombre de quien entró en este teléfono. */
     fun marcar(id: String, estado: String) {
         pedir("https://firestore.googleapis.com/v1/${cv.docs}:commit",

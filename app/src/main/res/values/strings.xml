@@ -3,4 +3,5 @@
     <string name="app_name">Tiempos</string>
     <string name="descripcion">Las tareas de Tiempos que elegiste, para tachar desde la pantalla.</string>
     <string name="descripcion_agenda">Tu agenda de Tiempos de los próximos siete días: actividades, tareas agendadas y lo de los chicos.</string>
+    <string name="descripcion_mensajes">Los mensajes entre Mauro y Florencia (con el teléfono de cada uno), los avisos de Claude y lo que espera en Casa Verde.</string>
 </resources>

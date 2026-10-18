@@ -132,6 +132,38 @@ class Nube(contexto: Context) {
         return yo
     }
 
+    /** pizarra-40: los mensajes de la charla de Tiempos, los más nuevos primero. */
+    fun mensajes(): List<Mensaje> {
+        deTiempos()
+        return mensajesDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
+            consultaMensajes().toString(), "application/json", token())))
+    }
+
+    /** Mi nombre, de mi ficha de `miembros/` (se guarda: no cambia). */
+    fun miNombre(): String {
+        prefs.getString("nombre", null)?.let { if (it.isNotBlank()) return it }
+        val yo = deTiempos()
+        val n = try {
+            val c = java.net.URL("https://firestore.googleapis.com/v1/$BASE_DOCS/miembros/$yo").openConnection() as HttpURLConnection
+            try {
+                c.setRequestProperty("Authorization", "Bearer " + token()); c.setRequestProperty("Referer", REFERER)
+                c.connectTimeout = 10_000; c.readTimeout = 15_000
+                if (c.responseCode !in 200..299) "" else JSONObject(c.inputStream.bufferedReader().use { it.readText() })
+                    .optJSONObject("fields")?.optJSONObject("nombre")?.optString("stringValue").orEmpty()
+            } finally { c.disconnect() }
+        } catch (e: Exception) { "" }
+        val nombre = n.ifBlank { mail?.substringBefore('@').orEmpty() }.take(40)
+        if (n.isNotBlank()) prefs.edit().putString("nombre", nombre).apply()
+        return nombre
+    }
+
+    fun mandarMensaje(texto: String, dispositivo: String) {
+        if (Nube.sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")
+        val yo = deTiempos()
+        if (texto.isBlank()) throw ErrorNube("El mensaje está vacío.")
+        commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, texto))
+    }
+
     /** Mis avisos del ecosistema, de la base del sitio con el que entré (pizarra-14). */
     fun avisos(): List<Aviso> {
         val yo = uid ?: throw ErrorNube("Entrá con tu cuenta.", true)

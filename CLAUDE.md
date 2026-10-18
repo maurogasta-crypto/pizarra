@@ -137,6 +137,13 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   `enlace`/`buscar`, y marca `respondido` (`cuerpoMarcar`: sólo `estado`,
   `atendidoPor`, `atendidoEn`, lo que deja la regla). **Publicar en Facebook
   sigue siendo de la persona**: eso es lo que no hace bloquear la cuenta.
+- **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):
+  `mensajes/` de Tiempos (reglas v15) con `de`, `nombre`, `dispositivo` y
+  `texto`, con la forma exacta de la regla (`cuerpoMensaje`; el banco la
+  compara si `tiempos` está al lado). El widget «Mensajes y novedades» junta
+  mensajes, avisos de Claude y lo que espera en Casa Verde, sin copiar nada.
+  Se pregunta cada 10 minutos de 8 a 23 (`Charla.agendar`, la cuenta de
+  Tibio): no hay servidor que empuje.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:
