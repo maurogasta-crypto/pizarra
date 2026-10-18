@@ -206,8 +206,9 @@ nada, y en Android 16 / HyperOS 3 su lector nunca se conectó
   `mensajes/<fecha UTC>.json` de la bodega privada con **el mismo formato y la
   misma huella** que Termux: la ronda, los borradores y las reservas no
   cambiaron una línea. El banco compara la huella contra la de Node.
-- **El latido** (`latido.json`) va cada 12 horas desde el trabajo de cada
-  hora, con `falla` si Android no le dio el acceso. La ronda avisa a las 26 h.
+- **El latido** (`latido.json`) va cada 6 horas (12 hasta pizarra-38) desde el
+  trabajo de cada hora, con `falla` si Android no le dio el acceso. La ronda lo
+  controla con `datos/herramientas/latido.mjs`.
 - **En la app, «📬 Mensajes de Airbnb → Claude»**: si puede leer, si está el
   token, el último envío y el último problema; «Dar acceso a notificaciones»
   lleva al renglón exacto de la Pizarra; «Subir ahora» la reconecta y late.
