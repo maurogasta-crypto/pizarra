@@ -16,7 +16,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-39
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-41
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -314,6 +314,16 @@ class Bodega(contexto: Context) {
         fun alDia(c: Context) {
             val b = Bodega(c)
             if (!b.conToken) return
+            // pizarra-41: con el permiso puesto y el lector sin escuchar hace más de
+            // 6 horas (o nunca), se destraba solo, una vez cada 6 horas.
+            try {
+                val e = escucha(c); val ahora = System.currentTimeMillis()
+                val p = c.getSharedPreferences("escucha", Context.MODE_PRIVATE)
+                if (tieneAcceso(c) && (e.ultima == 0L || ahora - e.ultima > 6 * 3600_000L) && ahora - p.getLong("destrabe", 0) > 6 * 3600_000L) {
+                    p.edit().putLong("destrabe", ahora).apply()
+                    LectorAirbnb.reconectar(c)
+                }
+            } catch (x: Throwable) { }
             try {
                 if (b.latir(fallaActual(c))) Bitacora.anotar(c, "bodega: latido")
                 b.ultimoError = ""
@@ -400,7 +410,20 @@ class LectorAirbnb : NotificationListenerService() {
     companion object {
         /** «Subir ahora» desde la pantalla: pide a Android que lo reconecte, y él barre al conectarse. */
         fun reconectar(c: Context) {
-            if (Build.VERSION.SDK_INT >= 24) requestRebind(ComponentName(c, LectorAirbnb::class.java))
+            val comp = ComponentName(c, LectorAirbnb::class.java)
+            // pizarra-41: en el 13C Android dio el permiso y NUNCA conectó el lector,
+            // ni reiniciando (el latido decía `conectado: ""`). El destrabe conocido:
+            // apagar y prender el propio componente, que obliga al sistema a volver a
+            // atarlo; recién después, el pedido de reconexión.
+            try {
+                val pm = c.packageManager
+                pm.setComponentEnabledSetting(comp, android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED, android.content.pm.PackageManager.DONT_KILL_APP)
+                pm.setComponentEnabledSetting(comp, android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED, android.content.pm.PackageManager.DONT_KILL_APP)
+                Bitacora.anotar(c, "bodega: lector apagado y prendido para que Android lo vuelva a atar")
+            } catch (e: Throwable) {
+                Bitacora.anotar(c, "bodega: no se pudo apagar y prender el lector: ${e.javaClass.simpleName}")
+            }
+            if (Build.VERSION.SDK_INT >= 24) requestRebind(comp)
         }
     }
 }

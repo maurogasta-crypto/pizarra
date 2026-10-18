@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-40
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-41
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -652,6 +652,7 @@ class MainActivity : Activity() {
         bodegaVista?.text = listOf(
             if (acceso) "✔ Puede leer las notificaciones." else "✖ Todavía no puede leer las notificaciones. Si el interruptor sale gris: Ajustes → Aplicaciones → Pizarra → ⋮ → «Permitir ajustes restringidos», y volvé a tocar el botón.",
             if (b.conToken) "✔ Token de la bodega guardado." else "✖ Falta el token de la bodega (en Termux: cat ~/.config/bodega/token).",
+            Bodega.escucha(this).let { e -> if (!acceso) "" else if (e.ultima == 0L) "✖ Android todavía no conectó el lector: tocá «Subir ahora» (lo apaga y lo prende para destrabarlo)." else "✔ Escucha: última notificación ${horaCorta(isoUtc(e.ultima))}, ${e.hoy} hoy." },
             "Último envío: " + b.ultimaSubida.ifEmpty { "todavía nada" },
             if (b.ultimoError.isNotEmpty()) "Último problema: ${b.ultimoError}" else "",
         ).filter { it.isNotEmpty() }.joinToString("\n")

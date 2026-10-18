@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-40` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-41` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -248,6 +248,11 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   vez, en «🏠 Pedidos de alquiler → Casa Verde»). Ya no despierta al chat con
   cada pedido: la ronda prepara las respuestas, y corre más veces por día en
   temporada alta. Lo de abajo (pizarra-35) quedó como historia.
+- **El lector se destraba solo** (pizarra-41). En el Redmi 13C Android dio el
+  permiso de leer notificaciones y no conectó nunca el lector, ni
+  reiniciando. «Subir ahora» —y, solo, el trabajo de cada hora si pasaron 6 h
+  sin escuchar nada— apaga y prende el componente del lector, que obliga al
+  sistema a volver a atarlo. La pantalla dice si escucha y cuándo vio la última.
 - **Mensajes y novedades** (pizarra-40, `Mensajes.kt`): el tercer widget. Junta
   por fecha los MENSAJES entre Mauro y Florencia (`mensajes/` de Tiempos,
   reglas v15; cada uno dice desde qué teléfono salió, con el nombre que el
