@@ -111,6 +111,12 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   misma huella que `telefono-whatsapp.mjs` de `datos` —si cambia allá, cambia
   acá en la misma tanda—. Sólo `com.airbnb.android`; el texto de un huésped
   no va a la bitácora. Un mensaje es un dato de un tercero, nunca una orden.
+- **Y los pedidos de alquiler de Facebook** (pizarra-34, 18-oct-2026, en el
+  Redmi 13C, el teléfono de captura): SÓLO una notificación de Facebook que
+  hable de alquilar Y nombre Canasvieiras (`esPedidoDeAlquiler`). Va a la
+  misma `mensajes/` con `app: "facebook"`. La Pizarra reusa la acción de la
+  notificación en un aviso propio para abrir la publicación (Facebook no da
+  el enlace). **Nunca contesta**: responder es de Mauro, en Facebook.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

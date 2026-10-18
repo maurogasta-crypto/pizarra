@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-33` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-34` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -221,6 +221,33 @@ nada, y en Android 16 / HyperOS 3 su lector nunca se conectó
   subió, nunca qué decía, y el banco lo comprueba leyendo el código.
 - **En Termux, la lectura de Airbnb se apaga** para que no escriban dos el
   mismo latido: `rm ~/.termux/boot/bodega-vigilar.sh; pkill -f vigilar`.
+
+## Los pedidos de alquiler de Facebook, y el Redmi 13C (pizarra-34)
+
+18-oct-2026, Mauro: el **Redmi 13C** pasa a ser el teléfono de captura del
+ecosistema. La Pizarra de ese teléfono lee Airbnb (como antes el Redmi 15) y
+además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
+
+- **Qué entra:** una notificación de Facebook (`com.facebook.katana`, `lite`
+  o `groups`) cuyo título, texto o líneas hablen de alquilar —alquiler,
+  alugar, aluguel, aluga…— **y** nombren Canasvieiras o «Canas». Las dos
+  cosas: lo demás de Facebook no se mira ni se sube (`esPedidoDeAlquiler`,
+  con su banco).
+- **Adónde va:** a la misma `mensajes/<fecha>.json` de la bodega, con
+  `app: "facebook"` y el grupo en `chat`. La ronda y las novedades lo traen
+  por el camino de siempre.
+- **El enlace:** Facebook no lo pone en la notificación. La Pizarra reusa la
+  acción de abrirla en un aviso propio («🏠 Pedido de alquiler en
+  Canasvieiras»): tocarlo abre ESA publicación en Facebook, aunque el aviso de
+  Facebook ya se haya borrado. Hasta que se reinicie el teléfono.
+- **Responder lo hace Mauro**, en Facebook. Una app que contesta sola es lo
+  que hace que Facebook bloquee una cuenta.
+- **Para que llegue algo**, en Facebook, en cada grupo: ⋯ → Notificaciones →
+  **Todas las publicaciones**. Si no, Facebook no avisa y no hay qué leer.
+- **Un solo teléfono lee.** En el Redmi 15 se le saca a la Pizarra el acceso a
+  las notificaciones; si leen los dos, escriben dos veces el mismo latido.
+- El nombre del lector sigue siendo `LectorAirbnb`: el permiso que dio Android
+  va atado a ese nombre, y cambiarlo obligaría a darlo de nuevo.
 
 ## Si falla en el teléfono (pizarra-3)
 

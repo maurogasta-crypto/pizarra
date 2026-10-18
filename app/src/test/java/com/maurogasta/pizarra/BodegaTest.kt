@@ -82,4 +82,39 @@ class BodegaTest {
     @Test fun elTokenVaAUnRepositorioSolo() {
         assertEquals("maurogasta-crypto/bodega", REPO_BODEGA)
     }
+
+    // pizarra-34: los pedidos de alquiler en Canasvieiras de los grupos de Facebook.
+    @Test fun facebook_sóloSiPideAlquilarEnCanasvieiras() {
+        val fb = "com.facebook.katana"
+        val p = pedidoDeFacebook(fb, "Aluguel Floripa", "Ana publicó: Busco aluguel em Canasvieiras para janeiro", emptyList(), 7)!!
+        assertEquals("facebook", p.app)
+        assertEquals("Aluguel Floripa", p.chat)
+        // Las dos cosas, en cualquier idioma y con o sin acento.
+        assertTrue(esPedidoDeAlquiler("ALQUILER en Canasvieiras"))
+        assertTrue(esPedidoDeAlquiler("Alguém aluga casa em Canas?"))
+        assertTrue(esPedidoDeAlquiler("Quero alugar perto de CANASVIEIRAS"))
+        assertTrue(esPedidoDeAlquiler("alquilo depto, Canas, enero"))
+        // Una sola no alcanza.
+        assertFalse(esPedidoDeAlquiler("Fotos de Canasvieiras al atardecer"))
+        assertFalse(esPedidoDeAlquiler("Busco alquiler en Ingleses"))
+        // «canasta» no es Canas.
+        assertFalse(esPedidoDeAlquiler("alquilo canastas para eventos"))
+        // Lo que no es de Facebook no pasa por acá, y lo de Facebook no pasa por Airbnb.
+        assertNull(pedidoDeFacebook("com.whatsapp", "x", "alquiler en Canasvieiras", emptyList(), 1))
+        assertNull(mensajeDe(fb, "x", "alquiler en Canasvieiras", emptyList(), 1))
+        assertNull(pedidoDeFacebook(fb, "Grupo", "", emptyList(), 1))
+        // El grupo puede venir en el título y el pedido en las líneas.
+        assertEquals("facebook", pedidoDeFacebook("com.facebook.lite", "Canasvieiras · alquileres", "Nueva publicación",
+            listOf("Busco alquiler 2 personas"), 1)!!.app)
+    }
+
+    @Test fun facebook_mismaHuellaQueUnMensaje_peroOtraApp() {
+        val fb = pedidoDeFacebook("com.facebook.katana", "Grupo", "aluguel Canasvieiras", emptyList(), 1)!!
+        assertEquals(huellaMensaje("facebook", "Grupo", "aluguel Canasvieiras", emptyList()), fb.id)
+        val j = mensajeAJson(fb, "2026-10-18T00:00:00.000Z")
+        assertEquals("facebook", j.getString("app"))
+        // El de Airbnb no cambió (la ronda lo reconoce por la misma huella).
+        assertEquals("airbnb", mensajeDe(PAQUETE_AIRBNB, "Juan", "Hola", emptyList(), 5)!!.app)
+        assertEquals("facebook", JSONObject(latidoJson("x")).getJSONArray("lee").getString(1))
+    }
 }

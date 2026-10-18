@@ -1,6 +1,7 @@
 package com.maurogasta.pizarra
 
 import android.app.Notification
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
@@ -16,7 +17,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-13
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-34
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -41,16 +42,55 @@ import kotlin.concurrent.thread
 //
 // LO QUE NO SE ANOTA: el texto de un mensaje es de un tercero (un huésped).
 // La bitácora dice cuántos y si subió, nunca qué decían.
+//
+// FACEBOOK (pizarra-34, 18-oct-2026, Mauro: «al detectar información sobre
+// pedido de alquiler en Canasvieiras guarde la información del grupo de
+// facebook y de ser posible el link al anuncio»). Lo hace el Redmi 13C, el
+// teléfono de captura. Se lee SÓLO lo que cumple las dos: habla de alquilar
+// (alquiler, alugar, aluguel…) Y nombra Canasvieiras (o «Canas»). Lo demás de
+// Facebook no se mira ni se sube. Va a la MISMA `mensajes/<fecha>.json` con
+// `app: "facebook"`, así la ronda y las novedades lo traen sin otro camino.
+//
+// EL ENLACE: Facebook no lo pone en la notificación. Lo que sí trae es la
+// acción de abrirla (`contentIntent`), y la Pizarra la reusa en un aviso
+// propio, «Pedido de alquiler en Canasvieiras», que al tocarlo abre ESA
+// publicación en la app de Facebook aunque la de Facebook ya se haya borrado.
+// Dura hasta que se reinicia el teléfono; después queda el grupo y el texto.
+// RESPONDER lo hace Mauro, en Facebook: una app que contesta sola es lo que
+// hace que Facebook bloquee una cuenta.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val PAQUETE_AIRBNB = "com.airbnb.android"
+val PAQUETES_FACEBOOK = setOf("com.facebook.katana", "com.facebook.lite", "com.facebook.groups")
+const val CANAL_FACEBOOK = "facebook-pedidos"
 const val REPO_BODEGA = "maurogasta-crypto/bodega"
 private const val CADA_LATIDO = 12 * 3600_000L
 
 /** Un mensaje de Airbnb, con la forma de `mensajesDe` de telefono-whatsapp.mjs. */
-data class MensajeAirbnb(val chat: String, val texto: String, val lineas: List<String>, val cuando: String) {
-    val app = "airbnb"
+data class MensajeAirbnb(val chat: String, val texto: String, val lineas: List<String>, val cuando: String, val app: String = "airbnb") {
     val id: String get() = huellaMensaje(app, chat, texto, lineas)
+}
+
+private fun sinAcentos(s: String): String =
+    java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").lowercase()
+
+private val ALQUILAR = Regex("\\b(alquil\\w*|alug\\w*)")
+private val CANASVIEIRAS = Regex("\\b(canasvieiras|canas)\\b")
+
+/** Un pedido de alquiler en Canasvieiras: las DOS cosas, como pidió Mauro. */
+fun esPedidoDeAlquiler(texto: String): Boolean {
+    val t = sinAcentos(texto)
+    return ALQUILAR.containsMatchIn(t) && CANASVIEIRAS.containsMatchIn(t)
+}
+
+/** De una notificación de Facebook, el pedido — o null si no es de Facebook o no es un pedido. */
+fun pedidoDeFacebook(paquete: String?, titulo: String?, texto: String?, lineas: List<String>, cuando: Long): MensajeAirbnb? {
+    if (paquete !in PAQUETES_FACEBOOK) return null
+    val t = titulo.orEmpty(); val x = texto.orEmpty()
+    if (x.isBlank() && lineas.isEmpty()) return null
+    if (!esPedidoDeAlquiler((listOf(t, x) + lineas).joinToString(" "))) return null
+    return MensajeAirbnb(t.take(120), x.take(4000), lineas.map { it.take(1000) }.take(20),
+        if (cuando > 0) cuando.toString() else "", app = "facebook")
 }
 
 /** La tapa del grupo de notificaciones no es un mensaje (`esResumen`). */
@@ -92,7 +132,7 @@ fun unirMensajes(previos: JSONArray, nuevos: List<MensajeAirbnb>, captado: Strin
 fun limpiarToken(t: String): String = t.filterNot { it.isWhitespace() || it == '\u200B' }
 
 fun latidoJson(ahoraIso: String, falla: String = ""): String {
-    val j = JSONObject().put("ultimo", ahoraIso).put("lee", JSONArray().put("airbnb")).put("desde", SELLO)
+    val j = JSONObject().put("ultimo", ahoraIso).put("lee", JSONArray().put("airbnb").put("facebook")).put("desde", SELLO)
     if (falla.isNotBlank()) j.put("falla", falla.take(200))
     return j.toString(1) + "\n"
 }
@@ -196,7 +236,8 @@ class Bodega(contexto: Context) {
         if (nv.isEmpty()) return 0
         val iso = isoUtc(ahora)
         var subidos = 0
-        escribir("mensajes/${iso.take(10)}.json", "Airbnb: ${nv.size} mensajes (Pizarra)") { actual ->
+        val cuales = nv.map { it.app }.distinct().joinToString(" y ") { if (it == "facebook") "Facebook" else "Airbnb" }
+        escribir("mensajes/${iso.take(10)}.json", "$cuales: ${nv.size} mensajes (Pizarra)") { actual ->
             val previos = try { JSONArray(actual ?: "[]") } catch (e: Exception) { JSONArray() }
             val (todo, n) = unirMensajes(previos, nv, iso)
             subidos = n
@@ -258,7 +299,27 @@ class LectorAirbnb : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         val m = sbn?.let { leer(it) } ?: return
+        if (m.app == "facebook") avisarPedido(sbn, m)
         mandar(listOf(m))
+    }
+
+    /** El aviso propio del pedido, con la acción de Facebook adentro: tocarlo abre la publicación. */
+    private fun avisarPedido(sbn: StatusBarNotification, m: MensajeAirbnb) {
+        try {
+            val nm = getSystemService(NotificationManager::class.java) ?: return
+            nm.createNotificationChannel(NotificationChannel(CANAL_FACEBOOK, "Pedidos de alquiler (Facebook)",
+                NotificationManager.IMPORTANCE_HIGH).apply { description = "Alguien pide alquilar en Canasvieiras en un grupo." })
+            val b = Notification.Builder(this, CANAL_FACEBOOK)
+                .setSmallIcon(android.R.drawable.ic_dialog_email)
+                .setContentTitle("🏠 Pedido de alquiler en Canasvieiras")
+                .setContentText(m.chat)
+                .setStyle(Notification.BigTextStyle().bigText("${m.chat}\n${m.texto}"))
+                .setAutoCancel(true)
+            sbn.notification?.contentIntent?.let { b.setContentIntent(it) }
+            nm.notify(("fb:" + m.id).hashCode(), b.build())
+        } catch (e: Throwable) {
+            Bitacora.anotar(this, "bodega: no se pudo avisar el pedido de Facebook: ${e.javaClass.simpleName}")
+        }
     }
 
     /** Lo que ya está en la barra (al conectarse, o con «Subir ahora»). */
@@ -268,12 +329,13 @@ class LectorAirbnb : NotificationListenerService() {
     }
 
     private fun leer(sbn: StatusBarNotification): MensajeAirbnb? {
-        if (sbn.packageName != PAQUETE_AIRBNB) return null
+        if (sbn.packageName != PAQUETE_AIRBNB && sbn.packageName !in PAQUETES_FACEBOOK) return null
         val e = sbn.notification?.extras ?: return null
         val titulo = e.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         val texto = (e.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: e.getCharSequence(Notification.EXTRA_TEXT))?.toString()
         val lineas = e.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.map { it.toString() }.orEmpty()
         return mensajeDe(sbn.packageName, titulo, texto, lineas, sbn.notification.`when`)
+            ?: pedidoDeFacebook(sbn.packageName, titulo, texto, lineas, sbn.notification.`when`)
     }
 
     private fun mandar(ms: List<MensajeAirbnb>, latirYa: Boolean = false) {
@@ -283,7 +345,9 @@ class LectorAirbnb : NotificationListenerService() {
             if (!b.conToken) { Bitacora.anotar(app, "bodega: hay ${ms.size} para subir pero falta el token"); return@thread }
             try {
                 val n = b.subir(ms)
-                if (n > 0) Bitacora.anotar(app, "bodega: $n mensajes de Airbnb subidos")
+                // Sólo de qué apps eran: el texto de un tercero no va a la bitácora.
+                val apps = ms.map { it.app }.distinct().joinToString()
+                if (n > 0) Bitacora.anotar(app, "bodega: $n mensajes subidos ($apps)")
                 b.latir("", forzar = latirYa && b.ultimoLatido == 0L)
                 b.ultimoError = ""
             } catch (e: Throwable) {
