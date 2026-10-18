@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-35` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-36` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -242,7 +242,12 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   Facebook ya se haya borrado. Hasta que se reinicie el teléfono.
 - **Responder lo hace Mauro**, en Facebook. Una app que contesta sola es lo
   que hace que Facebook bloquee una cuenta.
-- **Y despierta al chat en el acto** (pizarra-35). Después de subirlo, la
+- **Y va directo a la lista «Pedidos de alquiler» de Casa Verde** (pizarra-36,
+  `CasaVerde.kt`), con la cuenta de Casa Verde de ese teléfono (se entra una
+  vez, en «🏠 Pedidos de alquiler → Casa Verde»). Ya no despierta al chat con
+  cada pedido: la ronda prepara las respuestas, y corre más veces por día en
+  temporada alta. Lo de abajo (pizarra-35) quedó como historia.
+- **Despertaba al chat en el acto** (pizarra-35, hasta pizarra-36). Después de subirlo, la
   Pizarra lo deja como un pedido en `reportes/` de Tiempos (`pagina:
   "facebook-pedido"`, urgencia alta, con el texto: la sesión que despierta no
   tiene la bodega) y llama a `avisar-claude`, como el globo del sitio, con la

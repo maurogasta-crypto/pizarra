@@ -34,6 +34,7 @@ repositorio, a ningún otro, ni a ningún chat.
 | Contraseña de la persona | entrar | dato en runtime | **no se guarda**: se usa una vez | — |
 | `refreshToken` | la sesión | dato en runtime | `SharedPreferences` de la app; fuera de copias de seguridad (`sin_copias.xml`) | 2026-10-02 |
 | `refreshToken` de remate | la segunda sesión, SÓLO para las luces del widget (pizarra-24): la cuenta de remate de la persona | dato en runtime | `SharedPreferences` «luces», fuera de las copias (`sin_copias.xml`); la contraseña se usa una vez | 2026-10-13 |
+| `refreshToken` de Casa Verde | la tercera sesión, SÓLO para cargar los pedidos de alquiler de Facebook en `pedidos_alquiler/` (pizarra-36): la cuenta de Casa Verde de la persona, en el teléfono de captura | dato en runtime | `SharedPreferences` «casaverde», fuera de las copias (`sin_copias.xml`); la contraseña se usa una vez | 2026-10-18 |
 | Token de la bodega | escribir `mensajes/` y `latido.json` en `maurogasta-crypto/bodega` (pizarra-9) | credencial de un solo repositorio | lo pega Mauro una vez en la app (el mismo que tenía Termux); `SharedPreferences` «bodega», fuera de las copias (`sin_copias.xml`), nunca se muestra | 2026-10-06 |
 | `FIRMA_JKS` / `FIRMA_STORE_PASS` / `FIRMA_KEY_PASS` / `FIRMA_ALIAS` | firma propia | secreto de infraestructura | GitHub Secrets de este repo, cargados por Mauro. **Una clave propia** (`pizarra.jks`, alias `pizarra`), no la de la Hilux: un secreto de GitHub no se puede leer de vuelta. El `.jks` y la contraseña, en el gestor de Mauro o en `claves/` del panel | cargados por Mauro el 2026-10-06, como Secrets (una primera vez quedaron como Variables, visibles: se borraron, y el keystore se rehízo con una contraseña nueva) |
 
@@ -117,11 +118,15 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   misma `mensajes/` con `app: "facebook"`. La Pizarra reusa la acción de la
   notificación en un aviso propio para abrir la publicación (Facebook no da
   el enlace). **Nunca contesta**: responder es de Mauro, en Facebook.
-  **Y despierta al chat** (pizarra-35): lo deja como pedido en `reportes/` de
-  Tiempos (`cuerpoPedidoFacebook`, con la forma del globo de `sugerir.js`) y
-  llama a `avisar-claude` con la base, el id y el origen de Tiempos
-  (`cuerpoAvisarClaude`, `ORIGEN_TIEMPOS`). Si cambia el globo o la función,
-  cambia acá en la misma tanda; el banco los compara si están al lado.
+  **Y va directo a la lista de Casa Verde** (pizarra-36, `CasaVerde.kt`):
+  con la cuenta de Casa Verde de ese teléfono crea `pedidos_alquiler/{huella}`
+  en casaverde-20 con la forma EXACTA que deja la regla (`CAMPOS_PEDIDO`,
+  `cuerpoPedidoCasaVerde`), sin pisar uno que ya esté. **No despierta al
+  chat** (pizarra-35 lo hacía con cada pedido; Mauro: «no quiero que se
+  despierte cada vez»): las respuestas las prepara la ronda, que corre más
+  veces por día en temporada alta. La búsqueda de Facebook (`enlaceBusqueda`)
+  es la misma que la de `datos/herramientas/facebook.mjs`: si cambia una,
+  cambia la otra; el banco compara la regla si el sitio está al lado.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

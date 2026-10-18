@@ -118,35 +118,39 @@ class BodegaTest {
         assertEquals("facebook", JSONObject(latidoJson("x")).getJSONArray("lee").getString(1))
     }
 
-    // pizarra-35: el pedido despierta al chat. El reporte lleva el texto (la
-    // sesión en vivo no tiene la bodega); el disparo, sólo la base y el id.
-    @Test fun pedidoDeFacebook_despiertaAlChat_conElTextoEnElReporteYNuncaEnElDisparo() {
-        val m = pedidoDeFacebook("com.facebook.katana", "Aluguel Floripa", "Busco aluguel em Canasvieiras", listOf("2 pessoas"), 1)!!
-        val c = cuerpoPedidoFacebook("abc", "u1", "m@x", m)
-        val w = c.getJSONArray("writes").getJSONObject(0)
+    // pizarra-36: el pedido va directo a pedidos_alquiler/ de Casa Verde, con
+    // la forma exacta que deja crear la regla, y sin pisar uno que ya esté.
+    @Test fun pedidoDeFacebook_vaALaListaDeCasaVerde_conLaFormaDeLaRegla() {
+        val m = pedidoDeFacebook("com.facebook.katana", "Aluguel Floripa", "Ana publicou: Busco aluguel em Canasvieiras para janeiro, 4 pessoas!", listOf("Somos 2"), 1792300000000)!!
+        val docs = "projects/casaverde-20/databases/(default)/documents"
+        val w = cuerpoPedidoCasaVerde(docs, "u1", m, 5).getJSONArray("writes").getJSONObject(0)
+        assertEquals("$docs/$COLECCION_PEDIDOS/${m.id}", w.getJSONObject("update").getString("name"))
         val f = w.getJSONObject("update").getJSONObject("fields")
-        assertEquals("pedido", f.getJSONObject("tipo").getString("stringValue"))
+        // Sólo los campos que la regla deja crear (creadoEn va por la transformación).
+        assertTrue(CAMPOS_PEDIDO.containsAll(f.keys().asSequence().toList()))
         assertEquals("nuevo", f.getJSONObject("estado").getString("stringValue"))
         assertEquals("u1", f.getJSONObject("uid").getString("stringValue"))
-        assertEquals(PAGINA_FACEBOOK, f.getJSONObject("pagina").getString("stringValue"))
-        assertEquals(m.id, f.getJSONObject("bodegaId").getString("stringValue"))
-        val texto = f.getJSONObject("texto").getString("stringValue")
-        assertTrue(texto.contains("Aluguel Floripa") && texto.contains("Busco aluguel") && texto.contains("2 pessoas"))
-        assertFalse(f.has("gravedad"))   // un pedido tiene urgencia, nunca gravedad
+        assertEquals("1792300000000", f.getJSONObject("cuando").getString("integerValue"))
+        assertTrue(f.getJSONObject("texto").getString("stringValue").endsWith("Somos 2"))
         assertEquals(false, w.getJSONObject("currentDocument").getBoolean("exists"))
-        // El texto entra en la regla de Tiempos: de 1 a 2000.
-        val largo = pedidoDeFacebook("com.facebook.katana", "G", "alquiler Canasvieiras " + "x".repeat(5000), List(20) { "y".repeat(900) }, 1)!!
-        assertTrue(textoPedidoFacebook(largo).length <= 2000)
-        // El disparo: la base y el id, nada que haya escrito nadie.
-        val d = JSONObject(cuerpoAvisarClaude("abc"))
-        assertEquals(setOf("base", "reporteId"), d.keys().asSequence().toSet())
-        assertEquals("tiempos", d.getString("base"))
+        // Sin hora en la notificación, la de ahora.
+        val sinHora = pedidoDeFacebook("com.facebook.katana", "G", "alquiler Canasvieiras", emptyList(), 0)!!
+        assertEquals("5", cuerpoPedidoCasaVerde(docs, "u1", sinHora, 5).getJSONArray("writes").getJSONObject(0)
+            .getJSONObject("update").getJSONObject("fields").getJSONObject("cuando").getString("integerValue"))
     }
 
-    @Test fun elOrigen_estáEnLaListaDeLaFunción_siElSitioEstáAlLado() {
-        val f = java.io.File("../../casaverdecanas/netlify/functions/avisar-claude.mjs")
+    // La MISMA búsqueda que enlaceBusqueda de datos/herramientas/facebook.mjs.
+    @Test fun laBusqueda_esLaMismaQueLaDeDatos() {
+        val u = enlaceBusqueda("Ana publicou: Busco aluguel em Canasvieiras para janeiro, 4 pessoas!")
+        assertEquals("https://www.facebook.com/search/posts/?q=Busco%20aluguel%20em%20Canasvieiras%20para%20janeiro%204%20pessoas", u)
+        assertEquals("", enlaceBusqueda("!!!"))
+        assertEquals(12, java.net.URLDecoder.decode(enlaceBusqueda("a ".repeat(40)).substringAfter("q="), "UTF-8").split(" ").size)
+    }
+
+    @Test fun laRegla_deCasaVerde_dejaCrearEsosCampos_siElSitioEstáAlLado() {
+        val f = java.io.File("../../casaverdecanas/interno/firestore.rules")
         if (!f.exists()) return
-        assertTrue(f.readText().contains("\"$ORIGEN_TIEMPOS\""))
-        assertTrue(java.io.File("../../tiempos/sugerir.js").let { !it.exists() || it.readText().contains(AVISAR_CLAUDE) })
+        val bloque = f.readText().substringAfter("match /pedidos_alquiler/{id}").substringBefore("\n    }")
+        for (c in CAMPOS_PEDIDO) assertTrue("la regla no nombra «$c»", bloque.contains("'$c'"))
     }
 }

@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-33
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-36
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -487,6 +487,7 @@ class MainActivity : Activity() {
         raiz.addView(cuerpo)
         pintarPliegue()
         pintarBodega()
+        pintarCasaVerde()
         pintarLuces()
         raiz.addView(texto("Entraste como ${nube.mail ?: "—"} · $SELLO", 12f, "#6F757B"))
         raiz.addView(boton("🩺 Mandar diagnóstico a Claude") { mandarDiagnostico() })
@@ -565,6 +566,52 @@ class MainActivity : Activity() {
             if (m.isEmpty()) { mostrar("Escribí tu mail de remate arriba y tocá de nuevo.", true); return@boton }
             mostrar("Pidiendo el mail…")
             enFondo { luces.restablecer(m); mostrar("Te mandamos un mail a $m para elegir una contraseña nueva de remate. Mirá también en spam.") }
+        })
+        raiz.addView(dice)
+    }
+
+    /* ── pizarra-36: la cuenta de Casa Verde, para la lista de pedidos de alquiler ──
+       Sólo hace falta en el teléfono de captura (el Redmi 13C). Mismo molde que
+       la de remate: el resultado se dice AL LADO de los botones. */
+    private fun pintarCasaVerde() {
+        val cv = CuentaCasaVerde(this)
+        raiz.addView(subtitulo("🏠 Pedidos de alquiler → Casa Verde"))
+        val dice = texto("", 14f, "#E8D3A2").apply { visibility = View.GONE }
+        fun mostrar(t: String, error: Boolean = false) = runOnUiThread {
+            dice.text = t; dice.visibility = View.VISIBLE
+            dice.setTextColor(Color.parseColor(if (error) "#E08B8B" else "#E8D3A2"))
+        }
+        fun enFondo(trabajo: () -> Unit) = thread {
+            try { trabajo() } catch (e: Throwable) {
+                Bitacora.anotar(this, "casaverde: " + (e.message ?: e.toString()))
+                mostrar(e.message ?: "Algo salió mal.", error = true)
+            }
+        }
+        if (cv.conSesion) {
+            raiz.addView(texto("Entraste con ${cv.mail}. Cada pedido de alquiler en Canasvieiras que llegue de Facebook va a la lista «Pedidos de alquiler» de Casa Verde, que ve todo el equipo." +
+                (if (cv.ultimo.isNotEmpty()) "\nÚltimo: ${cv.ultimo}" else ""), 13f, "#9AA0A6"))
+            raiz.addView(boton("Salir de Casa Verde") { cv.salir(); pintar() })
+            return
+        }
+        raiz.addView(texto("Sólo en el teléfono que lee Facebook: entrá con tu cuenta de Casa Verde (la de casaverdecanas.com.br) para que los pedidos de alquiler vayan a su lista. La contraseña se usa una vez y no queda guardada.", 13f, "#9AA0A6"))
+        val mail = campo("Mail de Casa Verde", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+        val clave = campo("Contraseña de Casa Verde", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        raiz.addView(mail)
+        raiz.addView(conOjo(clave))
+        raiz.addView(boton("Entrar a Casa Verde") {
+            val m = mail.text.toString().trim(); val c = clave.text.toString()
+            if (m.isEmpty() || c.isEmpty()) { mostrar("Falta el mail o la contraseña de Casa Verde.", true); return@boton }
+            mostrar("Entrando a Casa Verde…")
+            enFondo {
+                cv.entrar(m, c)
+                runOnUiThread { Bitacora.anotar(this, "casaverde: entró"); pintar(); decir("Listo: los pedidos van a la lista de Casa Verde.") }
+            }
+        })
+        raiz.addView(boton("Olvidé la contraseña de Casa Verde") {
+            val m = mail.text.toString().trim()
+            if (m.isEmpty()) { mostrar("Escribí tu mail de Casa Verde arriba y tocá de nuevo.", true); return@boton }
+            mostrar("Pidiendo el mail…")
+            enFondo { cv.restablecer(m); mostrar("Te mandamos un mail a $m para elegir una contraseña nueva de Casa Verde. Mirá también en spam.") }
         })
         raiz.addView(dice)
     }

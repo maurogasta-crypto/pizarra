@@ -17,7 +17,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-35
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-36
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -59,14 +59,12 @@ import kotlin.concurrent.thread
 // RESPONDER lo hace Mauro, en Facebook: una app que contesta sola es lo que
 // hace que Facebook bloquee una cuenta.
 //
-// Y DESPIERTA AL CHAT (pizarra-35, 18-oct-2026, Mauro: «hacé que el pedido de
-// Facebook despierte al chat»). Después de subirlo a la bodega, la Pizarra lo
-// deja como un PEDIDO en `reportes/` de Tiempos —con la sesión de Tiempos de
-// ese teléfono; la regla deja leerlo sólo a su dueño y al agente, no a
-// Florencia— y llama a `avisar-claude` del Netlify de Casa Verde, igual que el
-// globo del sitio: la función verifica la sesión y dispara la rutina «Consulta
-// en vivo» con la base y el id, NUNCA el texto. La sesión en vivo no tiene la
-// bodega (es privada): por eso el texto del pedido va en el reporte.
+// Y VA DIRECTO A LA LISTA DE CASA VERDE (pizarra-36, 18-oct-2026). Hasta
+// pizarra-35 cada pedido despertaba al chat; Mauro: que la lista se llene sin
+// despertarlo cada vez, y que el chat se despierte unas veces por día —más en
+// temporada alta—. Ahora la Pizarra lo crea en `pedidos_alquiler/` de
+// casaverde-20 con la cuenta de Casa Verde de ese teléfono (CasaVerde.kt), y
+// las respuestas las prepara la ronda.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val PAQUETE_AIRBNB = "com.airbnb.android"
@@ -135,33 +133,6 @@ fun unirMensajes(previos: JSONArray, nuevos: List<MensajeAirbnb>, captado: Strin
     for (m in nuevos) if (ya.add(m.id)) { out.put(mensajeAJson(m, captado)); n++ }
     return out to n
 }
-
-/** El texto del reporte que despierta al chat: el grupo y lo que dice la publicación. */
-fun textoPedidoFacebook(m: MensajeAirbnb): String =
-    (listOf("Pedido de alquiler en Canasvieiras (Facebook). Grupo: ${m.chat}.", m.texto) + m.lineas)
-        .filter { it.isNotBlank() }.joinToString("\n").take(2000)
-
-/** El reporte, con la forma del globo de Tiempos: un pedido, nuevo, de quien escribe. */
-fun cuerpoPedidoFacebook(id: String, uid: String, mail: String, m: MensajeAirbnb): JSONObject {
-    fun s(v: String) = JSONObject().put("stringValue", v)
-    val campos = JSONObject()
-        .put("uid", s(uid)).put("email", s(mail)).put("nombre", s(""))
-        .put("tipo", s("pedido")).put("estado", s("nuevo")).put("urgencia", s("alta"))
-        .put("pagina", s(PAGINA_FACEBOOK)).put("origenApp", s(SELLO)).put("bodegaId", s(m.id))
-        .put("texto", s(textoPedidoFacebook(m)))
-    return JSONObject().put("writes", JSONArray().put(JSONObject()
-        .put("update", JSONObject().put("name", "$BASE_DOCS/reportes/$id").put("fields", campos))
-        .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "creadoEn").put("setToServerValue", "REQUEST_TIME")))
-        .put("currentDocument", JSONObject().put("exists", false))))
-}
-
-const val PAGINA_FACEBOOK = "facebook-pedido"
-const val AVISAR_CLAUDE = "https://serene-scone-76bd4e.netlify.app/.netlify/functions/avisar-claude"
-/** El origen de Tiempos, que está en la lista blanca de la función (una app no tiene uno). */
-const val ORIGEN_TIEMPOS = "https://maurogasta-crypto.github.io"
-
-/** Lo que se le manda a la función: la base y el id, nada más. */
-fun cuerpoAvisarClaude(reporteId: String): String = JSONObject().put("base", "tiempos").put("reporteId", reporteId).toString()
 
 /** Un token de GitHub no lleva espacios ni saltos de línea: lo que venga
  *  pegado de la pantalla de Termux, partido en renglones, se junta. */
@@ -392,13 +363,17 @@ class LectorAirbnb : NotificationListenerService() {
                 if (n > 0) Bitacora.anotar(app, "bodega: $n mensajes subidos ($apps)")
                 b.latir("", forzar = latirYa && b.ultimoLatido == 0L)
                 b.ultimoError = ""
-                // pizarra-35: cada pedido de Facebook nuevo despierta al chat.
+                // pizarra-36: cada pedido de Facebook nuevo, a la lista de Casa Verde.
+                val cv = CuentaCasaVerde(app)
                 for (p in b.nuevos.filter { it.app == "facebook" }) {
                     try {
-                        Nube(app).avisarPedidoFacebook(p)
-                        Bitacora.anotar(app, "bodega: pedido de Facebook enviado a Claude")
+                        if (!cv.conSesion) { cv.ultimo = "falta entrar con la cuenta de Casa Verde"; break }
+                        val nuevo = cv.crearPedido(p)
+                        cv.ultimo = isoUtc(System.currentTimeMillis()).take(16) + (if (nuevo) " · pedido cargado" else " · ya estaba")
+                        Bitacora.anotar(app, "bodega: pedido de Facebook a Casa Verde" + if (nuevo) "" else " (ya estaba)")
                     } catch (e: Throwable) {
-                        Bitacora.anotar(app, "bodega: el pedido de Facebook no despertó a Claude: ${e.message ?: e.javaClass.simpleName}")
+                        cv.ultimo = "no se pudo cargar: " + (e.message ?: e.javaClass.simpleName)
+                        Bitacora.anotar(app, "bodega: el pedido de Facebook no llegó a Casa Verde: ${e.message ?: e.javaClass.simpleName}")
                     }
                 }
             } catch (e: Throwable) {
