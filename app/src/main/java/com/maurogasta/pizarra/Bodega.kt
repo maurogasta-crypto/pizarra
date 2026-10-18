@@ -16,7 +16,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-38
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-39
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -71,7 +71,7 @@ const val PAQUETE_AIRBNB = "com.airbnb.android"
 val PAQUETES_FACEBOOK = setOf("com.facebook.katana", "com.facebook.lite", "com.facebook.groups")
 const val CANAL_FACEBOOK = "facebook-pedidos"
 const val REPO_BODEGA = "maurogasta-crypto/bodega"
-private const val CADA_LATIDO = 12 * 3600_000L
+private const val CADA_LATIDO = 6 * 3600_000L   // pizarra-39: con la ronda tres veces por día
 
 /** Un mensaje de Airbnb, con la forma de `mensajesDe` de telefono-whatsapp.mjs. */
 data class MensajeAirbnb(val chat: String, val texto: String, val lineas: List<String>, val cuando: String, val app: String = "airbnb") {
@@ -140,9 +140,20 @@ fun limpiarToken(t: String): String = t.filterNot { it.isWhitespace() || it == '
 
 /** pizarra-38: el latido dice DE QUÉ TELÉFONO viene (marca y modelo, nada
  *  personal): con dos teléfonos latiendo no se sabía cuál fallaba. */
-fun latidoJson(ahoraIso: String, falla: String = "", telefono: String = ""): String {
+/** pizarra-39: lo que prueba que el lector ESCUCHA, no sólo que tiene el
+ *  permiso: cuándo lo conectó Android, cuándo vio la última notificación de
+ *  CUALQUIER app (sólo la hora: ni qué app ni qué decía) y cuántas vio hoy.
+ *  Un teléfono en uso recibe notificaciones todo el día; si `ultima` se queda
+ *  quieta horas con el permiso puesto, el lector está desconectado. */
+data class Escucha(val conectado: Long, val ultima: Long, val hoy: Int)
+
+fun latidoJson(ahoraIso: String, falla: String = "", telefono: String = "", escucha: Escucha? = null): String {
     val j = JSONObject().put("ultimo", ahoraIso).put("lee", JSONArray().put("airbnb").put("facebook")).put("desde", SELLO)
     if (telefono.isNotBlank()) j.put("telefono", telefono.take(60))
+    if (escucha != null) j.put("escucha", JSONObject()
+        .put("conectado", if (escucha.conectado > 0) isoUtc(escucha.conectado) else "")
+        .put("ultima", if (escucha.ultima > 0) isoUtc(escucha.ultima) else "")
+        .put("hoy", escucha.hoy))
     if (falla.isNotBlank()) j.put("falla", falla.take(200))
     return j.toString(1) + "\n"
 }
@@ -268,13 +279,26 @@ class Bodega(contexto: Context) {
     @Synchronized fun latir(falla: String, forzar: Boolean = false, ahora: Long = System.currentTimeMillis()): Boolean {
         if (!forzar && ahora - ultimoLatido < CADA_LATIDO) return false
         escribir("latido.json", if (falla.isBlank()) "Latido del teléfono (Pizarra)" else "Latido del teléfono: NO puede leer (Pizarra)") {
-            latidoJson(isoUtc(ahora), falla, "${Build.MANUFACTURER} ${Build.MODEL}")
+            latidoJson(isoUtc(ahora), falla, "${Build.MANUFACTURER} ${Build.MODEL}", escucha(c))
         }
         ultimoLatido = ahora
         return true
     }
 
     companion object {
+        private fun pe(c: Context) = c.getSharedPreferences("escucha", Context.MODE_PRIVATE)
+        fun conectado(c: Context) { pe(c).edit().putLong("conectado", System.currentTimeMillis()).apply() }
+        /** Una notificación de cualquier app: sólo la hora y la cuenta del día. */
+        fun vista(c: Context, ahora: Long = System.currentTimeMillis()) {
+            val p = pe(c); val dia = isoUtc(ahora).take(10)
+            val hoy = if (p.getString("dia", "") == dia) p.getInt("hoy", 0) + 1 else 1
+            p.edit().putLong("ultima", ahora).putString("dia", dia).putInt("hoy", hoy).apply()
+        }
+        fun escucha(c: Context): Escucha {
+            val p = pe(c); val dia = isoUtc(System.currentTimeMillis()).take(10)
+            return Escucha(p.getLong("conectado", 0), p.getLong("ultima", 0), if (p.getString("dia", "") == dia) p.getInt("hoy", 0) else 0)
+        }
+
         /** ¿Android le dio a la Pizarra el acceso a las notificaciones? */
         fun tieneAcceso(c: Context): Boolean {
             val nm = c.getSystemService(NotificationManager::class.java) ?: return false
@@ -304,6 +328,7 @@ class Bodega(contexto: Context) {
 /** El que lee. Android lo conecta cuando la persona le da el acceso. */
 class LectorAirbnb : NotificationListenerService() {
     override fun onListenerConnected() {
+        Bodega.conectado(this)
         Bitacora.anotar(this, "bodega: lector CONECTADO")
         barrer()
     }
@@ -314,6 +339,7 @@ class LectorAirbnb : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        if (sbn != null && !sbn.isOngoing) Bodega.vista(this)
         val m = sbn?.let { leer(it) } ?: return
         if (m.app == "facebook") avisarPedido(sbn, m)
         mandar(listOf(m))
@@ -349,7 +375,7 @@ class LectorAirbnb : NotificationListenerService() {
                 // Sólo de qué apps eran: el texto de un tercero no va a la bitácora.
                 val apps = ms.map { it.app }.distinct().joinToString()
                 if (n > 0) Bitacora.anotar(app, "bodega: $n mensajes subidos ($apps)")
-                b.latir("", forzar = latirYa && b.ultimoLatido == 0L)
+                b.latir("", forzar = latirYa)   // pizarra-39: al conectarse y con «Subir ahora», el latido sale ya: es la prueba a mano
                 b.ultimoError = ""
                 // pizarra-36: cada pedido de Facebook nuevo, a la lista de Casa Verde.
                 val cv = CuentaCasaVerde(app)

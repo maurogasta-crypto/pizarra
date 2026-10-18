@@ -201,4 +201,14 @@ class BodegaTest {
         assertEquals("Xiaomi 23100RN82L", JSONObject(latidoJson("x", "", "Xiaomi 23100RN82L")).getString("telefono"))
         assertTrue(!JSONObject(latidoJson("x")).has("telefono"))
     }
+
+    // pizarra-39: el latido prueba que el lector escucha, sin decir qué escuchó.
+    @Test fun elLatido_llevaLaEscucha_sinContenido() {
+        val j = JSONObject(latidoJson("x", "", "T", Escucha(1792300000000, 1792300060000, 7))).getJSONObject("escucha")
+        assertEquals(isoUtc(1792300000000), j.getString("conectado"))
+        assertEquals(isoUtc(1792300060000), j.getString("ultima"))
+        assertEquals(7, j.getInt("hoy"))
+        assertEquals(setOf("conectado", "ultima", "hoy"), j.keys().asSequence().toSet())
+        assertEquals("", JSONObject(latidoJson("x", "", "T", Escucha(0, 0, 0))).getJSONObject("escucha").getString("ultima"))
+    }
 }

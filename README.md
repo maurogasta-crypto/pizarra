@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-38` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-39` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -247,6 +247,12 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   vez, en «🏠 Pedidos de alquiler → Casa Verde»). Ya no despierta al chat con
   cada pedido: la ronda prepara las respuestas, y corre más veces por día en
   temporada alta. Lo de abajo (pizarra-35) quedó como historia.
+- **El latido prueba que el lector ESCUCHA** (pizarra-39): cada 6 horas, y
+  al instante con «Subir ahora». Lleva `escucha`: cuándo Android conectó el
+  lector, la hora de la última notificación de cualquier app (sólo la hora) y
+  cuántas vio hoy. Tener el permiso no alcanza: un lector desconectado se ve
+  igual que un día sin mensajes. La ronda lo controla con
+  `datos/herramientas/latido.mjs`.
 - **El latido dice de qué teléfono viene** (pizarra-38): marca y modelo, para
   saber cuál falla si hay dos. Y «🩺 Mandar diagnóstico» pone arriba el estado
   (si lee, el token, el último envío, Casa Verde) y abajo lo MÁS NUEVO de la
