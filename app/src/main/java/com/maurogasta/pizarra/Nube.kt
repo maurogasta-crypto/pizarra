@@ -188,6 +188,17 @@ class Nube(contexto: Context) {
         commit(cuerpoFalla(idNuevo(), yo, mail.orEmpty(), texto, gravedad))
     }
 
+    /** pizarra-35: un pedido de alquiler de Facebook, como pedido en `reportes/`
+     *  de Tiempos, y la función que despierta al chat. Si la función no
+     *  contesta, el reporte ya quedó: la ronda lo trae igual. */
+    fun avisarPedidoFacebook(m: MensajeAirbnb): String {
+        val yo = deTiempos()
+        val id = idNuevo()
+        commit(cuerpoPedidoFacebook(id, yo, mail.orEmpty(), m))
+        pedir(AVISAR_CLAUDE, cuerpoAvisarClaude(id), "application/json", token(), origen = ORIGEN_TIEMPOS)
+        return id
+    }
+
     fun tachar(id: String, hecho: Boolean) = commit(cuerpoTachar(id, hecho, deTiempos()))
 
     /** pizarra-30: una tarea nueva, mía y en mi pizarra. Devuelve su id. */
@@ -203,7 +214,7 @@ class Nube(contexto: Context) {
         pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:commit", cuerpo.toString(), "application/json", token())
     }
 
-    private fun pedir(url: String, cuerpo: String, tipo: String, bearer: String?): String {
+    private fun pedir(url: String, cuerpo: String, tipo: String, bearer: String?, origen: String? = null): String {
         if (sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")
         val c = URL(url).openConnection() as HttpURLConnection
         try {
@@ -214,6 +225,7 @@ class Nube(contexto: Context) {
             c.setRequestProperty("Content-Type", tipo)
             c.setRequestProperty("Referer", sitio.referer.ifEmpty { REFERER })
             if (bearer != null) c.setRequestProperty("Authorization", "Bearer $bearer")
+            if (origen != null) c.setRequestProperty("Origin", origen)
             c.outputStream.use { it.write(cuerpo.toByteArray(Charsets.UTF_8)) }
             val codigo = c.responseCode
             val texto = (if (codigo in 200..299) c.inputStream else c.errorStream)

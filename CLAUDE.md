@@ -117,6 +117,11 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   misma `mensajes/` con `app: "facebook"`. La Pizarra reusa la acción de la
   notificación en un aviso propio para abrir la publicación (Facebook no da
   el enlace). **Nunca contesta**: responder es de Mauro, en Facebook.
+  **Y despierta al chat** (pizarra-35): lo deja como pedido en `reportes/` de
+  Tiempos (`cuerpoPedidoFacebook`, con la forma del globo de `sugerir.js`) y
+  llama a `avisar-claude` con la base, el id y el origen de Tiempos
+  (`cuerpoAvisarClaude`, `ORIGEN_TIEMPOS`). Si cambia el globo o la función,
+  cambia acá en la misma tanda; el banco los compara si están al lado.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

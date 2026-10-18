@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-34` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-35` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -242,6 +242,16 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   Facebook ya se haya borrado. Hasta que se reinicie el teléfono.
 - **Responder lo hace Mauro**, en Facebook. Una app que contesta sola es lo
   que hace que Facebook bloquee una cuenta.
+- **Y despierta al chat en el acto** (pizarra-35). Después de subirlo, la
+  Pizarra lo deja como un pedido en `reportes/` de Tiempos (`pagina:
+  "facebook-pedido"`, urgencia alta, con el texto: la sesión que despierta no
+  tiene la bodega) y llama a `avisar-claude`, como el globo del sitio, con la
+  base y el id y el origen de Tiempos. La consulta en vivo arma la respuesta y
+  la deja en el **buzón de Mauro**: llega a la Pizarra como aviso de Claude.
+  Hace falta que la Pizarra del 13C esté con la cuenta de **Tiempos** de Mauro;
+  con otra cuenta, el pedido sube igual pero no despierta a nadie, y la
+  bitácora lo dice. La regla de `reportes/` deja leerlo sólo a su dueño y al
+  agente: Florencia no lo ve.
 - **Para que llegue algo**, en Facebook, en cada grupo: ⋯ → Notificaciones →
   **Todas las publicaciones**. Si no, Facebook no avisa y no hay qué leer.
 - **Un solo teléfono lee.** En el Redmi 15 se le saca a la Pizarra el acceso a

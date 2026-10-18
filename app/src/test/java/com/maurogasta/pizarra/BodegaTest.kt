@@ -117,4 +117,36 @@ class BodegaTest {
         assertEquals("airbnb", mensajeDe(PAQUETE_AIRBNB, "Juan", "Hola", emptyList(), 5)!!.app)
         assertEquals("facebook", JSONObject(latidoJson("x")).getJSONArray("lee").getString(1))
     }
+
+    // pizarra-35: el pedido despierta al chat. El reporte lleva el texto (la
+    // sesión en vivo no tiene la bodega); el disparo, sólo la base y el id.
+    @Test fun pedidoDeFacebook_despiertaAlChat_conElTextoEnElReporteYNuncaEnElDisparo() {
+        val m = pedidoDeFacebook("com.facebook.katana", "Aluguel Floripa", "Busco aluguel em Canasvieiras", listOf("2 pessoas"), 1)!!
+        val c = cuerpoPedidoFacebook("abc", "u1", "m@x", m)
+        val w = c.getJSONArray("writes").getJSONObject(0)
+        val f = w.getJSONObject("update").getJSONObject("fields")
+        assertEquals("pedido", f.getJSONObject("tipo").getString("stringValue"))
+        assertEquals("nuevo", f.getJSONObject("estado").getString("stringValue"))
+        assertEquals("u1", f.getJSONObject("uid").getString("stringValue"))
+        assertEquals(PAGINA_FACEBOOK, f.getJSONObject("pagina").getString("stringValue"))
+        assertEquals(m.id, f.getJSONObject("bodegaId").getString("stringValue"))
+        val texto = f.getJSONObject("texto").getString("stringValue")
+        assertTrue(texto.contains("Aluguel Floripa") && texto.contains("Busco aluguel") && texto.contains("2 pessoas"))
+        assertFalse(f.has("gravedad"))   // un pedido tiene urgencia, nunca gravedad
+        assertEquals(false, w.getJSONObject("currentDocument").getBoolean("exists"))
+        // El texto entra en la regla de Tiempos: de 1 a 2000.
+        val largo = pedidoDeFacebook("com.facebook.katana", "G", "alquiler Canasvieiras " + "x".repeat(5000), List(20) { "y".repeat(900) }, 1)!!
+        assertTrue(textoPedidoFacebook(largo).length <= 2000)
+        // El disparo: la base y el id, nada que haya escrito nadie.
+        val d = JSONObject(cuerpoAvisarClaude("abc"))
+        assertEquals(setOf("base", "reporteId"), d.keys().asSequence().toSet())
+        assertEquals("tiempos", d.getString("base"))
+    }
+
+    @Test fun elOrigen_estáEnLaListaDeLaFunción_siElSitioEstáAlLado() {
+        val f = java.io.File("../../casaverdecanas/netlify/functions/avisar-claude.mjs")
+        if (!f.exists()) return
+        assertTrue(f.readText().contains("\"$ORIGEN_TIEMPOS\""))
+        assertTrue(java.io.File("../../tiempos/sugerir.js").let { !it.exists() || it.readText().contains(AVISAR_CLAUDE) })
+    }
 }
