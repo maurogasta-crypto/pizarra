@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-37
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-38
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -108,7 +108,16 @@ class MainActivity : Activity() {
     }
 
     private fun mandarDiagnostico() {
-        val texto = "Diagnóstico pedido a mano desde la app.\n\n" + Bitacora.ultimos(this, 40).joinToString("\n")
+        val b = Bodega(this); val cv = CuentaCasaVerde(this)
+        val estado = listOf(
+            "${Build.MANUFACTURER} ${Build.MODEL} · $SELLO",
+            "Bodega: " + (if (Bodega.tieneAcceso(this)) "lee notificaciones" else "NO puede leer notificaciones") +
+                (if (b.conToken) " · token sí" else " · SIN token") + " · último envío: " + b.ultimaSubida.ifEmpty { "nada" } +
+                (if (b.ultimoError.isNotEmpty()) " · problema: ${b.ultimoError}" else ""),
+            "Casa Verde: " + (if (cv.conSesion) "con sesión" else "sin sesión") +
+                (if (cv.ultimo.isNotEmpty()) " · pedidos: ${cv.ultimo}" else "") +
+                (if (cv.respuestas.isNotEmpty()) " · respuestas: ${cv.respuestas}" else ""))
+        val texto = Bitacora.armarDiagnostico(estado, Bitacora.ultimos(this, 120))
         decir("Mandando…")
         enSegundo({ nube.mandarFalla(texto, "traba") }) { decir("Mandado a Claude. Contale en el chat qué estabas tocando.") }
     }

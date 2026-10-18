@@ -186,4 +186,19 @@ class BodegaTest {
         for (c in campos) assertTrue("la regla no deja tocar «$c»", update.contains("'$c'"))
         assertTrue(update.contains("'respondido'") && update.contains("'descartado'"))
     }
+
+    // pizarra-38: el diagnóstico guarda lo MÁS NUEVO y el estado arriba.
+    @Test fun elDiagnostico_entraEnElTope_conLoMasNuevo() {
+        val renglones = (1..200).map { "18/10 renglón número $it con algo de texto para que ocupe" }
+        val t = Bitacora.armarDiagnostico(listOf("Xiaomi X · pizarra-38", "Bodega: lee"), renglones)
+        assertTrue(t.length <= 1950)
+        assertTrue(t.contains("Bodega: lee"))
+        assertTrue(t.trimEnd().endsWith("número 200 con algo de texto para que ocupe"))
+        assertTrue(!t.contains("número 1 con"))
+    }
+
+    @Test fun elLatido_diceDeQueTelefono() {
+        assertEquals("Xiaomi 23100RN82L", JSONObject(latidoJson("x", "", "Xiaomi 23100RN82L")).getString("telefono"))
+        assertTrue(!JSONObject(latidoJson("x")).has("telefono"))
+    }
 }

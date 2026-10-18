@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-37` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-38` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -247,6 +247,10 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   vez, en «🏠 Pedidos de alquiler → Casa Verde»). Ya no despierta al chat con
   cada pedido: la ronda prepara las respuestas, y corre más veces por día en
   temporada alta. Lo de abajo (pizarra-35) quedó como historia.
+- **El latido dice de qué teléfono viene** (pizarra-38): marca y modelo, para
+  saber cuál falla si hay dos. Y «🩺 Mandar diagnóstico» pone arriba el estado
+  (si lee, el token, el último envío, Casa Verde) y abajo lo MÁS NUEVO de la
+  bitácora: hasta pizarra-37 el tope de 2000 cortaba justo eso.
 - **Responder con un toque** (pizarra-37, `Responder.kt`). Cada hora la
   Pizarra trae de Casa Verde los pedidos sin atender. Cuando uno ya tiene la
   respuesta de la ronda, su aviso pasa a «✍️ Respuesta lista», con la

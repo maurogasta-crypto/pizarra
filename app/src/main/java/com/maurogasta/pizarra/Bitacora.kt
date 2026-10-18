@@ -13,7 +13,7 @@ import java.util.Date
 import java.util.Locale
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bitacora.kt — Que la app diga sola qué le pasó. Sello: pizarra-13
+// Bitacora.kt — Que la app diga sola qué le pasó. Sello: pizarra-38
 //
 // 5-oct-2026: pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro
 // «se traba, no deja ningún botón». El informe de fallos que ofreció HyperOS
@@ -40,7 +40,7 @@ class App : Application() {
     }
 }
 
-const val SELLO = "pizarra-37"
+const val SELLO = "pizarra-38"
 
 object Bitacora {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("bitacora", Context.MODE_PRIVATE)
@@ -54,6 +54,20 @@ object Bitacora {
         val e = p.edit().putString("anillo", JSONArray(l.takeLast(80)).toString())
         if (ya) e.commit() else e.apply()
         Unit
+    }
+
+    /** pizarra-38: el diagnóstico entra en el tope del reporte (2000) con el
+     *  ESTADO arriba y los renglones MÁS NUEVOS. Hasta pizarra-37 iban los 40
+     *  últimos de viejo a nuevo y el tope cortaba justo lo más reciente. */
+    fun armarDiagnostico(estado: List<String>, renglones: List<String>, tope: Int = 1950): String {
+        val cab = "Diagnóstico pedido a mano desde la app.\n" + estado.filter { it.isNotBlank() }.joinToString("\n") + "\n\nLo último:\n"
+        val quedan = mutableListOf<String>()
+        var largo = cab.length
+        for (r in renglones.asReversed()) {
+            if (largo + r.length + 1 > tope) break
+            quedan.add(0, r); largo += r.length + 1
+        }
+        return cab + quedan.joinToString("\n")
     }
 
     fun ultimos(c: Context, n: Int = 25): List<String> = renglones(prefs(c).getString("anillo", null)).takeLast(n)

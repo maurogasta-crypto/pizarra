@@ -16,7 +16,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-37
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-38
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -138,8 +138,11 @@ fun unirMensajes(previos: JSONArray, nuevos: List<MensajeAirbnb>, captado: Strin
  *  pegado de la pantalla de Termux, partido en renglones, se junta. */
 fun limpiarToken(t: String): String = t.filterNot { it.isWhitespace() || it == '\u200B' }
 
-fun latidoJson(ahoraIso: String, falla: String = ""): String {
+/** pizarra-38: el latido dice DE QUÉ TELÉFONO viene (marca y modelo, nada
+ *  personal): con dos teléfonos latiendo no se sabía cuál fallaba. */
+fun latidoJson(ahoraIso: String, falla: String = "", telefono: String = ""): String {
     val j = JSONObject().put("ultimo", ahoraIso).put("lee", JSONArray().put("airbnb").put("facebook")).put("desde", SELLO)
+    if (telefono.isNotBlank()) j.put("telefono", telefono.take(60))
     if (falla.isNotBlank()) j.put("falla", falla.take(200))
     return j.toString(1) + "\n"
 }
@@ -265,7 +268,7 @@ class Bodega(contexto: Context) {
     @Synchronized fun latir(falla: String, forzar: Boolean = false, ahora: Long = System.currentTimeMillis()): Boolean {
         if (!forzar && ahora - ultimoLatido < CADA_LATIDO) return false
         escribir("latido.json", if (falla.isBlank()) "Latido del teléfono (Pizarra)" else "Latido del teléfono: NO puede leer (Pizarra)") {
-            latidoJson(isoUtc(ahora), falla)
+            latidoJson(isoUtc(ahora), falla, "${Build.MANUFACTURER} ${Build.MODEL}")
         }
         ultimoLatido = ahora
         return true
