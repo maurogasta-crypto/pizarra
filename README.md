@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-36` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-37` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -247,6 +247,15 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   vez, en «🏠 Pedidos de alquiler → Casa Verde»). Ya no despierta al chat con
   cada pedido: la ronda prepara las respuestas, y corre más veces por día en
   temporada alta. Lo de abajo (pizarra-35) quedó como historia.
+- **Responder con un toque** (pizarra-37, `Responder.kt`). Cada hora la
+  Pizarra trae de Casa Verde los pedidos sin atender. Cuando uno ya tiene la
+  respuesta de la ronda, su aviso pasa a «✍️ Respuesta lista», con la
+  respuesta a la vista. **«Copiar y abrir»** copia la respuesta, abre ESA
+  publicación en Facebook y la marca respondida en la lista (si después no la
+  mandaste, en la lista se vuelve a «sin atender»). Queda tocar «Comentar»,
+  mantener apretado, Pegar y Publicar. «Descartar» la saca de la lista. Lo
+  que alguien atendió desde la lista se va solo de la barra. También está
+  «Traer respuestas ahora» en los ajustes.
 - **Despertaba al chat en el acto** (pizarra-35, hasta pizarra-36). Después de subirlo, la
   Pizarra lo deja como un pedido en `reportes/` de Tiempos (`pagina:
   "facebook-pedido"`, urgencia alta, con el texto: la sesión que despierta no

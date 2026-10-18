@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-36
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-37
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -589,8 +589,15 @@ class MainActivity : Activity() {
         }
         if (cv.conSesion) {
             raiz.addView(texto("Entraste con ${cv.mail}. Cada pedido de alquiler en Canasvieiras que llegue de Facebook va a la lista «Pedidos de alquiler» de Casa Verde, que ve todo el equipo." +
-                (if (cv.ultimo.isNotEmpty()) "\nÚltimo: ${cv.ultimo}" else ""), 13f, "#9AA0A6"))
+                (if (cv.ultimo.isNotEmpty()) "\nÚltimo: ${cv.ultimo}" else "") +
+                "\nCuando Claude deja la respuesta, el aviso del pedido pasa a «✍️ Respuesta lista»: «Copiar y abrir» la copia, abre la publicación y lo marca respondido. Las respuestas se traen cada hora." +
+                (if (cv.respuestas.isNotEmpty()) "\nRespuestas: ${cv.respuestas}" else ""), 13f, "#9AA0A6"))
+            raiz.addView(boton("Traer respuestas ahora") {
+                mostrar("Trayendo…")
+                enFondo { val n = Responder.sincronizar(this); mostrar(if (n > 0) "$n respuestas nuevas: están en la barra de avisos." else "Nada nuevo. ${cv.respuestas}") }
+            })
             raiz.addView(boton("Salir de Casa Verde") { cv.salir(); pintar() })
+            raiz.addView(dice)
             return
         }
         raiz.addView(texto("Sólo en el teléfono que lee Facebook: entrá con tu cuenta de Casa Verde (la de casaverdecanas.com.br) para que los pedidos de alquiler vayan a su lista. La contraseña se usa una vez y no queda guardada.", 13f, "#9AA0A6"))

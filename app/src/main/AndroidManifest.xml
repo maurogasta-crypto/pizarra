@@ -111,6 +111,16 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- pizarra-37: el toque en el aviso de un pedido de Facebook: copia la
+             respuesta y abre la publicación. Invisible, como la de arriba. -->
+        <activity
+            android:name=".ResponderActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- pizarra-30: el ＋ del widget. Una ventanita encima del inicio. -->
         <activity
             android:name=".AgregarActivity"

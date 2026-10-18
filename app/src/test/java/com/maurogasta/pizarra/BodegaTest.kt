@@ -153,4 +153,37 @@ class BodegaTest {
         val bloque = f.readText().substringAfter("match /pedidos_alquiler/{id}").substringBefore("\n    }")
         for (c in CAMPOS_PEDIDO) assertTrue("la regla no nombra «$c»", bloque.contains("'$c'"))
     }
+
+    // pizarra-37: trae los pedidos sin atender y marca con lo que deja la regla.
+    @Test fun lasRespuestas_seTraenDeLosSinAtender() {
+        val q = cuerpoConsultaNuevos().getJSONObject("structuredQuery")
+        assertEquals(COLECCION_PEDIDOS, q.getJSONArray("from").getJSONObject(0).getString("collectionId"))
+        val ff = q.getJSONObject("where").getJSONObject("fieldFilter")
+        assertEquals("estado", ff.getJSONObject("field").getString("fieldPath"))
+        assertEquals("nuevo", ff.getJSONObject("value").getString("stringValue"))
+        assertTrue("sin orderBy: no pide índice", !q.has("orderBy"))
+        val r = """[{"document":{"name":"projects/p/databases/(default)/documents/pedidos_alquiler/abc","fields":{
+            "grupo":{"stringValue":"Aluguel Floripa"},"texto":{"stringValue":"Busco"},"respuesta":{"stringValue":" Oi! \n"},
+            "buscar":{"stringValue":"https://x"}}}},{"readTime":"2026"}]"""
+        val l = pedidosDeConsulta(r)
+        assertEquals(1, l.size)
+        assertEquals("abc", l[0].id); assertEquals("Oi!", l[0].respuesta); assertEquals("", l[0].enlace)
+        assertEquals(0, pedidosDeConsulta("[{\"readTime\":\"x\"}]").size)
+        assertEquals(0, pedidosDeConsulta("no es json").size)
+    }
+
+    @Test fun marcar_tocaSóloLoQueDejaLaRegla() {
+        val w = cuerpoMarcar("D", "abc", "respondido", "m (Pizarra)").getJSONArray("writes").getJSONObject(0)
+        assertEquals("D/$COLECCION_PEDIDOS/abc", w.getJSONObject("update").getString("name"))
+        val campos = w.getJSONObject("update").getJSONObject("fields").keys().asSequence().toList() +
+            w.getJSONArray("updateTransforms").getJSONObject(0).getString("fieldPath")
+        assertEquals(setOf("estado", "atendidoPor", "atendidoEn"), campos.toSet())
+        assertEquals(true, w.getJSONObject("currentDocument").getBoolean("exists"))
+        val f = java.io.File("../../casaverdecanas/interno/firestore.rules")
+        if (!f.exists()) return
+        val bloque = f.readText().substringAfter("match /pedidos_alquiler/{id}").substringBefore("\n    }")
+        val update = bloque.substringAfter("allow update")
+        for (c in campos) assertTrue("la regla no deja tocar «$c»", update.contains("'$c'"))
+        assertTrue(update.contains("'respondido'") && update.contains("'descartado'"))
+    }
 }

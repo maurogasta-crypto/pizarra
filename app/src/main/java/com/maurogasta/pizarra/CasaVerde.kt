@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CasaVerde.kt — Los pedidos de alquiler de Facebook, directo a la lista de
-// Casa Verde. Sello: pizarra-36
+// Casa Verde. Sello: pizarra-37
 //
 // 18-oct-2026, Mauro: que la lista de pedidos se llene sin despertar al chat
 // cada vez que aparece una notificación; el chat se despierta unas veces por
@@ -23,6 +23,13 @@ import java.net.URLEncoder
 // con la forma exacta que deja crear la regla (`camposPedido`): nunca pisa uno
 // que ya está (`exists: false`), así que el mismo pedido visto dos veces es el
 // mismo renglón. Lo que escribió un tercero no va a la bitácora.
+//
+// Y TRAE LAS RESPUESTAS (pizarra-37, 18-oct-2026, Mauro: «llegar lo más
+// directamente posible al mensaje en cuestión a responder… la menor
+// intervención del humano»). Cada hora lee los pedidos sin atender
+// (`nuevos`); los que ya tienen la respuesta de la ronda los avisa
+// Responder.kt, y al tocar «Copiar y abrir» se marcan respondidos (`marcar`,
+// sólo los campos que la regla deja tocar).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val COLECCION_PEDIDOS = "pedidos_alquiler"
@@ -59,6 +66,39 @@ fun cuerpoPedidoCasaVerde(docs: String, uid: String, m: MensajeAirbnb, ahora: Lo
         .put("currentDocument", JSONObject().put("exists", false))))
 }
 
+/** Un pedido sin atender, como lo necesita el aviso (nunca va a la bitácora). */
+data class PedidoCV(val id: String, val grupo: String, val texto: String, val respuesta: String, val buscar: String, val enlace: String)
+
+/** La consulta de los pedidos sin atender. Sin `orderBy`, para no pedir un índice compuesto. */
+fun cuerpoConsultaNuevos(): JSONObject = JSONObject().put("structuredQuery", JSONObject()
+    .put("from", JSONArray().put(JSONObject().put("collectionId", COLECCION_PEDIDOS)))
+    .put("where", JSONObject().put("fieldFilter", JSONObject()
+        .put("field", JSONObject().put("fieldPath", "estado"))
+        .put("op", "EQUAL")
+        .put("value", JSONObject().put("stringValue", "nuevo"))))
+    .put("limit", 200))
+
+/** La respuesta de `runQuery`: un renglón por documento (y uno sin documento si no hay ninguno). */
+fun pedidosDeConsulta(texto: String): List<PedidoCV> {
+    val a = try { JSONArray(texto) } catch (e: Exception) { return emptyList() }
+    return (0 until a.length()).mapNotNull { i ->
+        val d = a.optJSONObject(i)?.optJSONObject("document") ?: return@mapNotNull null
+        val f = d.optJSONObject("fields") ?: JSONObject()
+        fun s(k: String) = f.optJSONObject(k)?.optString("stringValue").orEmpty()
+        PedidoCV(d.optString("name").substringAfterLast('/'), s("grupo"), s("texto"), s("respuesta").trim(), s("buscar"), s("enlace"))
+    }
+}
+
+/** Marca un pedido: sólo `estado`, `atendidoPor` y `atendidoEn`, que es lo que la regla deja a una persona. */
+fun cuerpoMarcar(docs: String, id: String, estado: String, quien: String): JSONObject =
+    JSONObject().put("writes", JSONArray().put(JSONObject()
+        .put("update", JSONObject().put("name", "$docs/$COLECCION_PEDIDOS/$id").put("fields", JSONObject()
+            .put("estado", JSONObject().put("stringValue", estado))
+            .put("atendidoPor", JSONObject().put("stringValue", quien))))
+        .put("updateMask", JSONObject().put("fieldPaths", JSONArray().put("estado").put("atendidoPor")))
+        .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "atendidoEn").put("setToServerValue", "REQUEST_TIME")))
+        .put("currentDocument", JSONObject().put("exists", true))))
+
 class CuentaCasaVerde(contexto: Context) {
     private val prefs = contexto.getSharedPreferences("casaverde", Context.MODE_PRIVATE)
     private val cv: Sitio = SITIOS.first { it.id == "casaverde" }
@@ -72,6 +112,10 @@ class CuentaCasaVerde(contexto: Context) {
     var ultimo: String
         get() = prefs.getString("ultimo", "").orEmpty()
         set(v) { prefs.edit().putString("ultimo", v).apply() }
+    /** Cuándo trajo las respuestas por última vez (pizarra-37). */
+    var respuestas: String
+        get() = prefs.getString("respuestas", "").orEmpty()
+        set(v) { prefs.edit().putString("respuestas", v).apply() }
 
     fun entrar(mail: String, clave: String) {
         val j = JSONObject(try {
@@ -128,6 +172,17 @@ class CuentaCasaVerde(contexto: Context) {
             if (e.message?.contains("ALREADY_EXISTS") == true || e.message?.contains("FAILED_PRECONDITION") == true ||
                 e.message?.contains("already exists", ignoreCase = true) == true) false else throw e
         }
+    }
+
+    /** Los pedidos sin atender de la lista (todos, no sólo los de este teléfono). */
+    fun nuevos(): List<PedidoCV> =
+        pedidosDeConsulta(pedir("https://firestore.googleapis.com/v1/${cv.docs}:runQuery",
+            cuerpoConsultaNuevos().toString(), "application/json", token()))
+
+    /** «Respondido» o «descartado», a nombre de quien entró en este teléfono. */
+    fun marcar(id: String, estado: String) {
+        pedir("https://firestore.googleapis.com/v1/${cv.docs}:commit",
+            cuerpoMarcar(cv.docs, id, estado, "$mail (Pizarra)").toString(), "application/json", token())
     }
 
     private fun pedir(url: String, cuerpo: String, tipo: String, bearer: String?): String {

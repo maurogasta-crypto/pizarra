@@ -229,7 +229,8 @@ class AlarmaReceptor : BroadcastReceiver() {
 class SincroTrabajo : JobService() {
     override fun onStartJob(p: JobParameters): Boolean {
         // pizarra-9: de paso, el latido de la bodega si toca (cada 12 h).
-        kotlin.concurrent.thread { try { Bodega.alDia(this) } catch (e: Throwable) {} }
+        // pizarra-37: y las respuestas a los pedidos de Facebook, si este teléfono entró a Casa Verde.
+        kotlin.concurrent.thread { try { Bodega.alDia(this) } catch (e: Throwable) {}; Responder.alDia(this) }
         // pizarra-20: y la agenda de la semana, si su widget está puesto.
         AgendaWidget.actualizar(this, null)
         Alarmas.sincronizar(this) { jobFinished(p, false) }

@@ -1,7 +1,6 @@
 package com.maurogasta.pizarra
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
@@ -17,7 +16,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-36
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-37
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -56,6 +55,7 @@ import kotlin.concurrent.thread
 // propio, «Pedido de alquiler en Canasvieiras», que al tocarlo abre ESA
 // publicación en la app de Facebook aunque la de Facebook ya se haya borrado.
 // Dura hasta que se reinicia el teléfono; después queda el grupo y el texto.
+// Desde pizarra-37 ese aviso es también el de la respuesta (Responder.kt).
 // RESPONDER lo hace Mauro, en Facebook: una app que contesta sola es lo que
 // hace que Facebook bloquee una cuenta.
 //
@@ -316,24 +316,9 @@ class LectorAirbnb : NotificationListenerService() {
         mandar(listOf(m))
     }
 
-    /** El aviso propio del pedido, con la acción de Facebook adentro: tocarlo abre la publicación. */
-    private fun avisarPedido(sbn: StatusBarNotification, m: MensajeAirbnb) {
-        try {
-            val nm = getSystemService(NotificationManager::class.java) ?: return
-            nm.createNotificationChannel(NotificationChannel(CANAL_FACEBOOK, "Pedidos de alquiler (Facebook)",
-                NotificationManager.IMPORTANCE_HIGH).apply { description = "Alguien pide alquilar en Canasvieiras en un grupo." })
-            val b = Notification.Builder(this, CANAL_FACEBOOK)
-                .setSmallIcon(android.R.drawable.ic_dialog_email)
-                .setContentTitle("🏠 Pedido de alquiler en Canasvieiras")
-                .setContentText(m.chat)
-                .setStyle(Notification.BigTextStyle().bigText("${m.chat}\n${m.texto}"))
-                .setAutoCancel(true)
-            sbn.notification?.contentIntent?.let { b.setContentIntent(it) }
-            nm.notify(("fb:" + m.id).hashCode(), b.build())
-        } catch (e: Throwable) {
-            Bitacora.anotar(this, "bodega: no se pudo avisar el pedido de Facebook: ${e.javaClass.simpleName}")
-        }
-    }
+    /** El aviso propio del pedido, con la acción de Facebook adentro (Responder.kt, pizarra-37). */
+    private fun avisarPedido(sbn: StatusBarNotification, m: MensajeAirbnb) =
+        Responder.avisarLlegada(this, m.id, m.chat, m.texto, sbn.notification?.contentIntent)
 
     /** Lo que ya está en la barra (al conectarse, o con «Subir ahora»). */
     private fun barrer() {

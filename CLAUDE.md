@@ -127,6 +127,16 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   veces por día en temporada alta. La búsqueda de Facebook (`enlaceBusqueda`)
   es la misma que la de `datos/herramientas/facebook.mjs`: si cambia una,
   cambia la otra; el banco compara la regla si el sitio está al lado.
+  **Y responde con un toque** (pizarra-37, `Responder.kt`, Mauro: «llegar lo
+  más directamente posible al mensaje… sin el riesgo de que pueda ser
+  denunciada y bloqueada la cuenta»): cada hora trae los pedidos `nuevo` de
+  Casa Verde (`cuerpoConsultaNuevos`), y el que tiene `respuesta` pasa a
+  «✍️ Respuesta lista»; «Copiar y abrir» copia, abre la publicación con la
+  acción de Facebook guardada en el MISMO aviso (`accionDeFacebook`: un
+  `PendingIntent` no se puede guardar en un archivo) o, si se perdió, con
+  `enlace`/`buscar`, y marca `respondido` (`cuerpoMarcar`: sólo `estado`,
+  `atendidoPor`, `atendidoEn`, lo que deja la regla). **Publicar en Facebook
+  sigue siendo de la persona**: eso es lo que no hace bloquear la cuenta.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:
