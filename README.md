@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-41` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-42` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -297,6 +297,30 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
 - El nombre del lector sigue siendo `LectorAirbnb`: el permiso que dio Android
   va atado a ese nombre, y cambiarlo obligaría a darlo de nuevo.
 
+## TODAS las notificaciones del 13C, para que Claude las clasifique (pizarra-42)
+
+19-oct-2026, Mauro: «que lea todo… y que la ronda lo clasifique y descarte en
+caso que no cuadre a ninguna de las aplicaciones o agendas, pizarra, etc».
+
+- **Qué entra:** cada notificación con algo escrito, de cualquier app —WhatsApp,
+  bancos, Gmail, lo que sea—, menos las fijas (música, descargas), la tapa de
+  un grupo y las de la propia Pizarra (`Notificaciones.leer`, `notifDe`).
+- **Lo que no sale nunca: un código de verificación.** En una notificación que
+  habla de códigos («código», «code», «senha», «PIN»…), un número de 4 a 8
+  cifras se tapa ACÁ, antes de subir: «Tu código es 48••••»
+  (`taparCodigos`, con su banco, que también prueba que un monto o una hora no
+  se tocan).
+- **Adónde va:** a `notificaciones/` de la base de **Casa Verde**, con la misma
+  cuenta de Casa Verde de los pedidos de alquiler. NO a la bodega: es git y lo
+  que entra ahí no se olvida. Nadie del equipo la lee desde un sitio; la lee
+  Claude en la ronda, usa lo que sirve y borra lo demás. Vence a los 7 días.
+- **Si no hay señal:** queda en una cola (hasta 400) y se reintenta cada hora.
+- **La pantalla** dice cuántas subieron hoy y si hay alguna esperando, en
+  «🏠 Pedidos de alquiler → Casa Verde» y en el diagnóstico.
+- **Hace falta publicar `interno/firestore.rules` de Casa Verde** (entra el
+  bloque de `notificaciones`): hasta entonces la base dice que no y quedan en
+  la cola.
+
 ## Si falla en el teléfono (pizarra-3)
 
 pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro se trababa. El
@@ -341,6 +365,7 @@ informe de fallos de HyperOS se va a Xiaomi, no a nosotros. Desde pizarra-3:
 | Tachar | `hecho: true`, `hechoPor: <uid>`, `actualizadoEn` | «✔ Hecha» |
 | Destachar | `hecho: false`, `actualizadoEn` | «Volver a pendiente» |
 | Fijar / sacar | `pizarra.<uid>: true` / se borra | campo nuevo, por persona |
+| Una notificación del 13C (pizarra-42) | `notificaciones/{huella}` de Casa Verde: `app`, `titulo`, `texto`, `lineas`, `cuando`, `fecha`, `telefono`, `uid`, `creadoEn` | — (la crea sólo la Pizarra; regla nueva en Casa Verde) |
 
 Ninguna regla nueva: la de `tareas` ya deja tocar una común a cualquiera de
 los dos y una personal a su dueño. Todo con `currentDocument.exists`, para no

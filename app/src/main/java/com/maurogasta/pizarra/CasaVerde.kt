@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CasaVerde.kt — Los pedidos de alquiler de Facebook, directo a la lista de
-// Casa Verde. Sello: pizarra-37
+// Casa Verde. Sello: pizarra-42
 //
 // 18-oct-2026, Mauro: que la lista de pedidos se llene sin despertar al chat
 // cada vez que aparece una notificación; el chat se despierta unas veces por
@@ -167,6 +167,18 @@ class CuentaCasaVerde(contexto: Context) {
         return try {
             pedir("https://firestore.googleapis.com/v1/${cv.docs}:commit",
                 cuerpoPedidoCasaVerde(cv.docs, uid, m, ahora).toString(), "application/json", token())
+            true
+        } catch (e: ErrorNube) {
+            if (e.message?.contains("ALREADY_EXISTS") == true || e.message?.contains("FAILED_PRECONDITION") == true ||
+                e.message?.contains("already exists", ignoreCase = true) == true) false else throw e
+        }
+    }
+
+    /** pizarra-42: una notificación del teléfono a `notificaciones/`. False si ya estaba (no es un error). */
+    fun crearNotificacion(n: Notif, telefono: String, ahora: Long = System.currentTimeMillis()): Boolean {
+        return try {
+            pedir("https://firestore.googleapis.com/v1/${cv.docs}:commit",
+                cuerpoNotificacion(cv.docs, uid, n, telefono, ahora).toString(), "application/json", token())
             true
         } catch (e: ErrorNube) {
             if (e.message?.contains("ALREADY_EXISTS") == true || e.message?.contains("FAILED_PRECONDITION") == true ||

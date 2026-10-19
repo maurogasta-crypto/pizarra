@@ -137,6 +137,19 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   `enlace`/`buscar`, y marca `respondido` (`cuerpoMarcar`: sólo `estado`,
   `atendidoPor`, `atendidoEn`, lo que deja la regla). **Publicar en Facebook
   sigue siendo de la persona**: eso es lo que no hace bloquear la cuenta.
+- **El 13C manda TODAS sus notificaciones** (pizarra-42, `Notificaciones.kt`,
+  19-oct-2026, Mauro: «que lea todo… y que la ronda lo clasifique y descarte»).
+  Cada una —de cualquier app, WhatsApp incluido, menos las fijas, la tapa de un
+  grupo y las de la propia Pizarra— va a `notificaciones/{huella}` de
+  casaverde-20 con la sesión de Casa Verde del teléfono y la forma exacta de la
+  regla (`CAMPOS_NOTIFICACION`, `cuerpoNotificacion`; el banco la compara si el
+  sitio está al lado), sin pisar. **Los códigos de verificación se tapan acá,
+  antes de salir** (`taparCodigos`: un número de 4 a 8 cifras en una
+  notificación que habla de códigos queda «48••••»), y eso no se afloja: es la
+  regla de oro. NO va a la bodega (git no olvida): la ronda la clasifica y
+  borra lo que no sirve. Lo que no pudo subir queda en una cola con techo y se
+  reintenta cada hora. La bitácora dice cuántas y de qué apps, nunca el texto.
+  Airbnb y Facebook siguen además por su camino de siempre.
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):
   `mensajes/` de Tiempos (reglas v15) con `de`, `nombre`, `dispositivo` y
   `texto`, con la forma exacta de la regla (`cuerpoMensaje`; el banco la

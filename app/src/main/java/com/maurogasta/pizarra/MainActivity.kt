@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-41
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-42
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -116,7 +116,8 @@ class MainActivity : Activity() {
                 (if (b.ultimoError.isNotEmpty()) " · problema: ${b.ultimoError}" else ""),
             "Casa Verde: " + (if (cv.conSesion) "con sesión" else "sin sesión") +
                 (if (cv.ultimo.isNotEmpty()) " · pedidos: ${cv.ultimo}" else "") +
-                (if (cv.respuestas.isNotEmpty()) " · respuestas: ${cv.respuestas}" else ""))
+                (if (cv.respuestas.isNotEmpty()) " · respuestas: ${cv.respuestas}" else ""),
+            "Notificaciones a Casa Verde: " + Notificaciones.estado(this))
         val texto = Bitacora.armarDiagnostico(estado, Bitacora.ultimos(this, 120))
         decir("Mandando…")
         enSegundo({ nube.mandarFalla(texto, "traba") }) { decir("Mandado a Claude. Contale en el chat qué estabas tocando.") }
@@ -600,7 +601,9 @@ class MainActivity : Activity() {
             raiz.addView(texto("Entraste con ${cv.mail}. Cada pedido de alquiler en Canasvieiras que llegue de Facebook va a la lista «Pedidos de alquiler» de Casa Verde, que ve todo el equipo." +
                 (if (cv.ultimo.isNotEmpty()) "\nÚltimo: ${cv.ultimo}" else "") +
                 "\nCuando Claude deja la respuesta, el aviso del pedido pasa a «✍️ Respuesta lista»: «Copiar y abrir» la copia, abre la publicación y lo marca respondido. Las respuestas se traen cada hora." +
-                (if (cv.respuestas.isNotEmpty()) "\nRespuestas: ${cv.respuestas}" else ""), 13f, "#9AA0A6"))
+                (if (cv.respuestas.isNotEmpty()) "\nRespuestas: ${cv.respuestas}" else "") +
+                "\nTodas las notificaciones de este teléfono van también a Casa Verde, con los códigos tapados, para que Claude las revise en la ronda: " +
+                Notificaciones.estado(this), 13f, "#9AA0A6"))
             raiz.addView(boton("Traer respuestas ahora") {
                 mostrar("Trayendo…")
                 enFondo { val n = Responder.sincronizar(this); mostrar(if (n > 0) "$n respuestas nuevas: están en la barra de avisos." else "Nada nuevo. ${cv.respuestas}") }

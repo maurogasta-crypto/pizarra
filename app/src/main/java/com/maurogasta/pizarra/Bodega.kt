@@ -16,7 +16,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-41
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-42
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -148,7 +148,7 @@ fun limpiarToken(t: String): String = t.filterNot { it.isWhitespace() || it == '
 data class Escucha(val conectado: Long, val ultima: Long, val hoy: Int)
 
 fun latidoJson(ahoraIso: String, falla: String = "", telefono: String = "", escucha: Escucha? = null): String {
-    val j = JSONObject().put("ultimo", ahoraIso).put("lee", JSONArray().put("airbnb").put("facebook")).put("desde", SELLO)
+    val j = JSONObject().put("ultimo", ahoraIso).put("lee", JSONArray().put("airbnb").put("facebook").put("todas")).put("desde", SELLO)
     if (telefono.isNotBlank()) j.put("telefono", telefono.take(60))
     if (escucha != null) j.put("escucha", JSONObject()
         .put("conectado", if (escucha.conectado > 0) isoUtc(escucha.conectado) else "")
@@ -312,6 +312,7 @@ class Bodega(contexto: Context) {
 
         /** Desde el trabajo de cada hora: el latido, si toca. Nunca tira. */
         fun alDia(c: Context) {
+            Notificaciones.alDia(c)          // pizarra-42: lo que no pudo subir, de nuevo
             val b = Bodega(c)
             if (!b.conToken) return
             // pizarra-41: con el permiso puesto y el lector sin escuchar hace más de
@@ -350,6 +351,8 @@ class LectorAirbnb : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn != null && !sbn.isOngoing) Bodega.vista(this)
+        // pizarra-42: TODAS, a Casa Verde, antes del filtro de Airbnb y Facebook.
+        if (sbn != null) try { Notificaciones.leer(this, sbn)?.let { Notificaciones.mandar(this, listOf(it)) } } catch (t: Throwable) { }
         val m = sbn?.let { leer(it) } ?: return
         if (m.app == "facebook") avisarPedido(sbn, m)
         mandar(listOf(m))
@@ -362,6 +365,7 @@ class LectorAirbnb : NotificationListenerService() {
     /** Lo que ya está en la barra (al conectarse, o con «Subir ahora»). */
     private fun barrer() {
         val todas = try { activeNotifications?.toList().orEmpty() } catch (e: Throwable) { emptyList() }
+        try { Notificaciones.mandar(this, todas.mapNotNull { Notificaciones.leer(this, it) }) } catch (t: Throwable) { }
         mandar(todas.mapNotNull { leer(it) }, latirYa = true)
     }
 
