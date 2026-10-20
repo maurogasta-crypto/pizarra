@@ -21,7 +21,8 @@ class DisponibilidadTest {
         o("c2", "2027-01-03", "2027-01-12"), o("c2", "2027-01-12", "2027-01-21"), o("c2", "2027-02-01", "2027-02-09"),
         o("c3", "2026-12-20", "2026-12-28"), o("c3", "2026-12-28", "2027-01-03"), o("c3", "2027-01-14", "2027-01-29"),
         o("c3", "2027-02-01", "2027-02-09"))
-    private val cabanas = listOf(CabanaCV("c1", 8), CabanaCV("c2", 7), CabanaCV("c3", 5))
+    private val cond = "con extra por persona y en situaciones especiales"
+    private val cabanas = listOf(CabanaCV("c1", 8, 6, cond), CabanaCV("c2", 7, 5, cond), CabanaCV("c3", 5, 4, cond))
     private fun lugar(t: String, personas: Int = cuantasPersonas(t)) = lugarPara(t, personas, ocup, cabanas, hoy)
 
     @Test fun las_fechas_se_leen_como_las_escribe_la_gente() {
@@ -65,6 +66,20 @@ class DisponibilidadTest {
         assertTrue(lugar("Busco casa en Canasvieiras") is Lugar.SinFechas)
     }
 
+    // pizarra-52: se ofrece con la BASE; el máximo, sólo si hace falta y con su condición.
+    @Test fun primero_la_base_y_el_máximo_con_extra() {
+        val siete = lugar("Somos 7, buscamos del 15 al 27 de febrero") as Lugar.Hay
+        assertEquals(listOf("c1", "c2"), siete.cabanas.map { it.id }); assertFalse(siete.conExtra)   // 6 + 5 sin extra, antes que una con extra
+        val seis = lugar("Somos 6, del 15 al 27 de febrero") as Lugar.Hay
+        assertEquals(listOf("c1"), seis.cabanas.map { it.id }); assertFalse(seis.conExtra)
+        val dieciocho = lugar("Somos 18 personas, buscamos del 15 al 20 de marzo") as Lugar.Hay
+        assertTrue(dieciocho.conExtra)                                                  // la base suma 15
+        val r = respuestaRapida("", "Somos 18 personas, buscamos del 15 al 20 de marzo", Encaje(true, "", 18), 0, dieciocho)
+        assertTrue(r, r.contains("3 cabañas juntas para los 18, con un adicional por persona"))
+        val p = pedidoDeLaElegida(Publicacion("", "Somos 18 personas, del 15 al 20 de marzo"), 1, Busqueda(), ocup, cabanas, hoy)
+        assertTrue(tituloDeEleccion(p), tituloDeEleccion(p).contains("pasa la base: $cond"))
+    }
+
     @Test fun la_respuesta_dice_las_fechas_y_la_página() {
         val t = "Hola busco alquiler en canas vieiras para la segunda quincena de marzo 2027"
         val r = respuestaRapida("Susana Azzollini", t, Encaje(true, ""), 0, lugar(t, 0))
@@ -88,7 +103,7 @@ class DisponibilidadTest {
         assertTrue(tituloDeEleccion(p).startsWith("⛔ Sin lugar del 13 al 21 de enero"))
         // lo que no alcanza es el cupo: para cuántos sí hay
         val g = pedidoDeLaElegida(Publicacion("", "Somos 25 personas, del 15 al 20 de marzo"), 1, Busqueda(), ocup, cabanas, hoy)
-        assertTrue(g.respuesta, g.respuesta.contains("tenemos lugar para hasta 20 personas"))
+        assertTrue(g.respuesta, g.respuesta.contains("tenemos lugar para 15 personas en Canasvieiras, y hasta 20 con un adicional por persona"))
         // la parte libre de lo pedido: del 10 al 23 de enero para 5 sólo está libre la 3 del 10 al 14
         val parc = alternativa(LocalDate.of(2027, 1, 3), LocalDate.of(2027, 1, 9), 5, ocup, cabanas, hoy)
         assertTrue(parc != null)
@@ -108,7 +123,9 @@ class DisponibilidadTest {
         val c1 = "c1" to JSONObject("""{"capacidad":{"integerValue":"1"},"activa":{"booleanValue":true}}""")
         val c2 = "c2" to JSONObject("""{"capacidad":{"mapValue":{"fields":{"max":{"integerValue":"7"},"base":{"integerValue":"5"}}}}}""")
         val c4 = "c4" to JSONObject("""{"capacidad":{"integerValue":"6"},"activa":{"booleanValue":false}}""")
-        assertEquals(listOf(CabanaCV("c1", 8), CabanaCV("c2", 7)), cabanasDe(listOf(c1, c2, c4)))
+        assertEquals(listOf(CabanaCV("c1", 8, 6), CabanaCV("c2", 7, 5)), cabanasDe(listOf(c1, c2, c4)))
+        val c3 = "c3" to JSONObject("""{"capacidad":{"mapValue":{"fields":{"max":{"integerValue":"5"},"base":{"integerValue":"4"},"condicionMax":{"stringValue":"con extra"}}}}}""")
+        assertEquals(CabanaCV("c3", 5, 4, "con extra"), cabanasDe(listOf(c3)).single())
         val d = "x" to JSONObject("""{"cabanaId":{"stringValue":"c1"},"desde":{"stringValue":"2027-01-14"},"hasta":{"stringValue":"2027-01-24"}}""")
         val mala = "y" to JSONObject("""{"cabanaId":{"stringValue":"c1"},"desde":{"stringValue":"2027-01-24"},"hasta":{"stringValue":"2027-01-14"}}""")
         assertEquals(listOf(o("c1", "2027-01-14", "2027-01-24")), ocupacionesDe(listOf(d, mala)))

@@ -218,9 +218,13 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   hay lugar. **Al abrir el comentario —y sólo ahí— sale UN aviso con ventana**
   (`Responder.avisarEleccion`, `tituloDeEleccion`: «✅ Hay lugar…» o «⛔ Sin
   lugar… · copié lo que sí hay») con la respuesta copiada a la vista; mientras
-  se recorre sigue sin haber ninguno. Los máximos son los de la base (`capacidad.max`): cabaña 1
-  hasta 8, Loft hasta 7, departamento de familias hasta 5 (Mauro, 20-oct; ese día
-  se corrigió la cabaña 1, que decía 1). `CAPACIDAD_SI_FALTA` vale sólo si falta. Si cambian los
+  se recorre sigue sin haber ninguno. **La capacidad se lee de cada espacio** (`capacidad` de
+  `cabanas/`: `base`, `max` y `condicionMax`; pizarra-52, Mauro: «la base son 6,
+  5 y 4; los máximos son con extra por persona y en situaciones especiales…
+  debe quedar registrado en cada espacio y leerlo desde ahí»): se ofrece con la
+  BASE —una cabaña si entra, si no varias— y sólo si no alcanza se llega al
+  máximo, y entonces la respuesta dice «con un adicional por persona» y el aviso
+  muestra la condición. `CAPACIDAD_SI_FALTA` vale sólo si falta. Si cambian los
   valores de la búsqueda en la página o en la regla, cambian acá (el banco los
   compara si el sitio está al lado).
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):

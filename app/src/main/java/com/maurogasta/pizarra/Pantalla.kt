@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-51
+// Sello: pizarra-52
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -162,7 +162,8 @@ fun pedidoDeLaElegida(p: Publicacion, ahora: Long, busqueda: Busqueda, ocup: Lis
 
 /** El título del aviso que sale al abrir el comentario (pizarra-51): hay lugar o no, y qué quedó copiado. */
 fun tituloDeEleccion(p: PedidoPantalla): String = when (val l = p.lugar) {
-    is Lugar.Hay -> "✅ Hay lugar " + rangoEnPalabras(l.desde, l.hasta, false) + (if (l.cabanas.size > 1) " (${l.cabanas.size} cabañas)" else "") + " · respuesta copiada"
+    is Lugar.Hay -> "✅ Hay lugar " + rangoEnPalabras(l.desde, l.hasta, false) + (if (l.cabanas.size > 1) " (${l.cabanas.size} cabañas)" else "") +
+        (if (l.conExtra) " · pasa la base: " + (l.cabanas.firstNotNullOfOrNull { it.condicion.takeIf { c -> c.isNotBlank() } } ?: "con extra por persona") else "") + " · respuesta copiada"
     is Lugar.MesConLugar -> "✅ Hay fechas libres en " + mesEnPalabras(l.mes, false) + " · respuesta copiada"
     is Lugar.Lleno -> "⛔ Sin lugar " + rangoEnPalabras(l.desde, l.hasta, false) + (if (l.alt != null) " · copié lo que sí hay" else " · copié una respuesta")
     is Lugar.MesLleno -> "⛔ " + mesEnPalabras(l.mes, false).replaceFirstChar { it.uppercase() } + " completo" + (if (l.alt != null) " · copié lo que sí hay" else "")

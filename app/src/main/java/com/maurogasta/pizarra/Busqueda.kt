@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busqueda.kt — Qué pedidos de alquiler se buscan AHORA, y si una publicación
-// cuadra. Sello: pizarra-51
+// cuadra. Sello: pizarra-52
 //
 // 20-oct-2026, Mauro: «en la misma aplicación de Casa Verde, para ver los
 // pedidos, tiene que haber una configuración de los parámetros que yo estoy
@@ -133,8 +133,8 @@ fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int, luga
         val ola = listOf("Olá", "Oi", "Olá, tudo bem?")[k] + (if (pila != null) " $pila" else "") + "!"
         val frase = when {
             lugar is Lugar.Lleno || lugar is Lugar.MesLleno -> " " + semLugar(lugar, true)
-            lugar is Lugar.Hay && lugar.cabanas.size > 1 -> " Temos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, true)} em Canasvieiras: ${lugar.cabanas.size} cabanas juntas para os ${e.personas}"
-            lugar is Lugar.Hay -> " Temos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, true)} nas nossas cabanas em Canasvieiras" + (if (e.personas > 0) ", para os ${e.personas}" else "")
+            lugar is Lugar.Hay && lugar.cabanas.size > 1 -> " Temos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, true)} em Canasvieiras: ${lugar.cabanas.size} cabanas juntas para os ${e.personas}" + (if (lugar.conExtra) ", com um adicional por pessoa" else "")
+            lugar is Lugar.Hay -> " Temos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, true)} nas nossas cabanas em Canasvieiras" + (if (e.personas > 0) ", para os ${e.personas}" else "") + (if (lugar.conExtra) ", com um adicional por pessoa" else "")
             lugar is Lugar.MesConLugar -> " Em ${mesEnPalabras(lugar.mes, true)} ainda temos datas livres nas nossas cabanas em Canasvieiras"
             e.personas > 7 -> " Temos cabanas em Canasvieiras e alugamos várias juntas, até 20 pessoas"
             e.personas > 0 -> " Temos cabanas em Canasvieiras com lugar para ${e.personas} pessoas"
@@ -148,8 +148,8 @@ fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int, luga
     val hola = listOf("¡Hola", "Hola", "¡Buenas")[k] + (if (pila != null) " $pila" else "") + "!"
     val frase = when {
         lugar is Lugar.Lleno || lugar is Lugar.MesLleno -> " " + semLugar(lugar, false)
-        lugar is Lugar.Hay && lugar.cabanas.size > 1 -> " Tenemos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, false)} en Canasvieiras: ${lugar.cabanas.size} cabañas juntas para los ${e.personas}"
-        lugar is Lugar.Hay -> " Tenemos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, false)} en nuestras cabañas de Canasvieiras" + (if (e.personas > 0) ", para los ${e.personas}" else "")
+        lugar is Lugar.Hay && lugar.cabanas.size > 1 -> " Tenemos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, false)} en Canasvieiras: ${lugar.cabanas.size} cabañas juntas para los ${e.personas}" + (if (lugar.conExtra) ", con un adicional por persona" else "")
+        lugar is Lugar.Hay -> " Tenemos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, false)} en nuestras cabañas de Canasvieiras" + (if (e.personas > 0) ", para los ${e.personas}" else "") + (if (lugar.conExtra) ", con un adicional por persona" else "")
         lugar is Lugar.MesConLugar -> " En ${mesEnPalabras(lugar.mes, false)} todavía tenemos fechas libres en nuestras cabañas de Canasvieiras"
         e.personas > 7 -> " Tenemos cabañas en Canasvieiras y alquilamos varias juntas, hasta 20 personas"
         e.personas > 0 -> " Tenemos cabañas en Canasvieiras con lugar para ${e.personas}"
@@ -175,6 +175,9 @@ fun semLugar(lugar: Lugar, pt: Boolean): String {
     if (alt == null) return completos + (if (pt) " em Canasvieiras" else " en Canasvieiras")
     val otro = rangoEnPalabras(alt.desde, alt.hasta, pt)
     return when {
+        alt.personas > 0 && alt.personasBase in 1 until alt.personas ->
+            if (pt) "${mayuscula(pedido)} temos lugar para ${alt.personasBase} pessoas em Canasvieiras, e até ${alt.personas} com um adicional por pessoa"
+            else "${mayuscula(pedido)} tenemos lugar para ${alt.personasBase} personas en Canasvieiras, y hasta ${alt.personas} con un adicional por persona"
         alt.personas > 0 -> if (pt) "${mayuscula(pedido)} temos lugar para até ${alt.personas} pessoas em Canasvieiras"
                             else "${mayuscula(pedido)} tenemos lugar para hasta ${alt.personas} personas en Canasvieiras"
         alt.parcial -> if (pt) "$completos, mas temos lugar $otro em Canasvieiras" else "$completos, pero tenemos lugar $otro en Canasvieiras"

@@ -8,7 +8,7 @@ import java.time.YearMonth
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Disponibilidad.kt — Que la respuesta a un pedido de Facebook diga la verdad
-// sobre la ocupación de Casa Verde. Sello: pizarra-51
+// sobre la ocupación de Casa Verde. Sello: pizarra-52
 //
 // 20-oct-2026, Mauro: «tiene que mirar disponibilidad al inicio de las
 // búsquedas, en esa sesión, una sola vez, y buscar que coincida con la
@@ -30,7 +30,10 @@ import java.time.YearMonth
 // ─────────────────────────────────────────────────────────────────────────────
 
 data class Ocupacion(val cabana: String, val desde: LocalDate, val hasta: LocalDate)   // hasta = día de salida
-data class CabanaCV(val id: String, val max: Int)
+/** pizarra-52 (Mauro, 20-oct: «la base son 6, 5 y 4; los máximos son con extra por persona y en
+ *  situaciones especiales… debe quedar registrado en cada espacio y leerlo desde ahí»): `base` es lo
+ *  que se ofrece; llegar a `max` lleva la `condicion` de la cabaña. Se lee de `capacidad` en `cabanas/`. */
+data class CabanaCV(val id: String, val max: Int, val base: Int = max, val condicion: String = "")
 
 /** Lo que pide el texto: un rango de noches, o un mes entero si sólo dice el mes. */
 sealed class Pedido {
@@ -41,11 +44,11 @@ sealed class Pedido {
 /** pizarra-51: lo que SÍ se puede ofrecer cuando lo pedido está ocupado. `parcial`: una parte
  *  de las mismas fechas; si no, otras fechas con las mismas noches. `personas`: para cuántos hay
  *  lugar en esas fechas, cuando lo que no alcanza es el cupo. */
-data class Alternativa(val desde: LocalDate, val hasta: LocalDate, val cabanas: List<CabanaCV>, val parcial: Boolean, val personas: Int = 0)
+data class Alternativa(val desde: LocalDate, val hasta: LocalDate, val cabanas: List<CabanaCV>, val parcial: Boolean, val personas: Int = 0, val personasBase: Int = 0)
 
 /** Lo que se puede ofrecer. */
 sealed class Lugar {
-    data class Hay(val cabanas: List<CabanaCV>, val desde: LocalDate, val hasta: LocalDate) : Lugar()
+    data class Hay(val cabanas: List<CabanaCV>, val desde: LocalDate, val hasta: LocalDate, val conExtra: Boolean = false) : Lugar()
     data class Lleno(val desde: LocalDate, val hasta: LocalDate, val porCupo: Boolean, val alt: Alternativa? = null) : Lugar()
     data class MesConLugar(val mes: YearMonth) : Lugar()
     data class MesLleno(val mes: YearMonth, val alt: Alternativa? = null) : Lugar()
@@ -55,7 +58,7 @@ sealed class Lugar {
 /* Los máximos que dijo Mauro el 20-oct: la cabaña 1 hasta 8, el Loft hasta 7 y el
    departamento de familias hasta 5. Manda lo que dice la base (`capacidad.max`, que
    ese día se corrigió en la cabaña 1, que decía 1); esto vale sólo si falta. */
-private val CAPACIDAD_SI_FALTA = mapOf("c1" to 8, "c2" to 7, "c3" to 5)
+private val CAPACIDAD_SI_FALTA = mapOf("c1" to (6 to 8), "c2" to (5 to 7), "c3" to (4 to 5))   // base a máximo
 
 private fun plano(s: String): String =
     java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").lowercase()
@@ -147,15 +150,22 @@ private fun choca(o: Ocupacion, desde: LocalDate, hasta: LocalDate) = o.desde.is
 fun libres(ocup: List<Ocupacion>, cabanas: List<CabanaCV>, desde: LocalDate, hasta: LocalDate): List<CabanaCV> =
     cabanas.filter { c -> ocup.none { it.cabana == c.id && choca(it, desde, hasta) } }
 
-/** Las que alcanzan para `personas` (0 = no se sabe): una sola si entra, si no, las más grandes primero. */
+/** Las que alcanzan para `personas` (0 = no se sabe): primero con la BASE de cada una —una sola si
+ *  entra, si no las más grandes primero—, y recién si no alcanza, con el máximo (pizarra-52). */
 fun alcanzan(libres: List<CabanaCV>, personas: Int): List<CabanaCV>? {
     if (libres.isEmpty()) return null
-    if (personas <= 0) return listOf(libres.maxByOrNull { it.max }!!)
-    libres.filter { it.max >= personas }.minByOrNull { it.max }?.let { return listOf(it) }
-    val juntas = ArrayList<CabanaCV>()
-    for (c in libres.sortedByDescending { it.max }) { juntas.add(c); if (juntas.sumOf { it.max } >= personas) return juntas }
-    return null
+    if (personas <= 0) return listOf(libres.maxByOrNull { it.base }!!)
+    fun con(cap: (CabanaCV) -> Int): List<CabanaCV>? {
+        libres.filter { cap(it) >= personas }.minByOrNull { cap(it) }?.let { return listOf(it) }
+        val juntas = ArrayList<CabanaCV>()
+        for (c in libres.sortedByDescending { cap(it) }) { juntas.add(c); if (juntas.sumOf { cap(it) } >= personas) return juntas }
+        return null
+    }
+    return con { it.base } ?: con { it.max }
 }
+
+/** ¿Hace falta pasar de la base para que entren? Entonces va con la condición del máximo. */
+fun conExtra(cabanas: List<CabanaCV>, personas: Int): Boolean = personas > cabanas.sumOf { it.base }
 
 private fun noches(d: LocalDate, h: LocalDate) = java.time.temporal.ChronoUnit.DAYS.between(d, h).toInt()
 
@@ -195,10 +205,10 @@ fun lugarPara(texto: String, personas: Int, ocup: List<Ocupacion>, cabanas: List
         null -> Lugar.SinFechas
         is Pedido.Rango -> {
             val l = libres(ocup, cabanas, p.desde, p.hasta)
-            alcanzan(l, personas)?.let { Lugar.Hay(it, p.desde, p.hasta) } ?: run {
+            alcanzan(l, personas)?.let { Lugar.Hay(it, p.desde, p.hasta, conExtra(it, personas)) } ?: run {
                 // Lo que no alcanza es el cupo: se dice para cuántos SÍ hay lugar en esas fechas.
                 val cupo = l.sumOf { it.max }
-                val alt = if (l.isNotEmpty() && personas > cupo) Alternativa(p.desde, p.hasta, l, false, cupo)
+                val alt = if (l.isNotEmpty() && personas > cupo) Alternativa(p.desde, p.hasta, l, false, cupo, l.sumOf { it.base })
                     else alternativa(p.desde, p.hasta, personas, ocup, cabanas, hoy)
                 Lugar.Lleno(p.desde, p.hasta, l.isNotEmpty(), alt)
             }
@@ -206,7 +216,7 @@ fun lugarPara(texto: String, personas: Int, ocup: List<Ocupacion>, cabanas: List
         is Pedido.Mes -> {
             // Hay lugar ese mes si alguna cabaña que alcanza tiene cinco noches seguidas libres.
             val dias = (1..p.mes.lengthOfMonth()).map { p.mes.atDay(it) }
-            val sirven = cabanas.filter { personas <= 0 || it.max >= personas }
+            val sirven = cabanas.filter { personas <= 0 || it.max >= personas }   // una sola, aunque sea con extra
             val hay = sirven.any { c -> dias.windowed(5).any { w -> libres(ocup, listOf(c), w.first(), w.last().plusDays(1)).isNotEmpty() } }
             if (hay) Lugar.MesConLugar(p.mes)
             else Lugar.MesLleno(p.mes, (0..60).asSequence().map { p.mes.plusMonths(1).atDay(1).plusDays(it.toLong()) }
@@ -247,10 +257,12 @@ fun ocupacionesDe(docs: List<Pair<String, JSONObject>>): List<Ocupacion> = docs.
 fun cabanasDe(docs: List<Pair<String, JSONObject>>): List<CabanaCV> = docs.mapNotNull { (id, f) ->
     if (f.optJSONObject("activa")?.optBoolean("booleanValue", true) == false) return@mapNotNull null
     val cap = f.optJSONObject("capacidad")
-    val max = cap?.optJSONObject("mapValue")?.optJSONObject("fields")?.optJSONObject("max")?.optString("integerValue")?.toIntOrNull()
-        ?: cap?.optString("integerValue")?.toIntOrNull()?.takeIf { it > 1 }
-        ?: CAPACIDAD_SI_FALTA[id] ?: return@mapNotNull null
-    CabanaCV(id, max)
+    val campos = cap?.optJSONObject("mapValue")?.optJSONObject("fields")
+    fun n(k: String) = campos?.optJSONObject(k)?.optString("integerValue")?.toIntOrNull()
+    val suelto = cap?.optString("integerValue")?.toIntOrNull()?.takeIf { it > 1 }
+    val max = n("max") ?: suelto ?: CAPACIDAD_SI_FALTA[id]?.second ?: return@mapNotNull null
+    val base = (n("base") ?: suelto ?: CAPACIDAD_SI_FALTA[id]?.first ?: max).coerceAtMost(max)
+    CabanaCV(id, max, base, campos?.optJSONObject("condicionMax")?.optString("stringValue").orEmpty())
 }
 
 /** La ocupación guardada en el teléfono: se trae UNA vez por sesión de Facebook. */
@@ -266,7 +278,7 @@ object Ocupado {
 
     fun cabanas(c: Context): List<CabanaCV> = try {
         val a = JSONArray(p(c).getString("cabanas", "[]"))
-        (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let { CabanaCV(it.getString("id"), it.getInt("max")) } }
+        (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let { CabanaCV(it.getString("id"), it.getInt("max"), it.optInt("base", it.getInt("max")), it.optString("cond")) } }
     } catch (e: Exception) { emptyList() }
 
     fun traida(c: Context): Long = p(c).getLong("en", 0)
@@ -288,7 +300,7 @@ object Ocupado {
             if (cb.isEmpty()) return
             p(c).edit()
                 .putString("ocup", JSONArray(oc.map { JSONObject().put("c", it.cabana).put("d", it.desde.toString()).put("h", it.hasta.toString()) }).toString())
-                .putString("cabanas", JSONArray(cb.map { JSONObject().put("id", it.id).put("max", it.max) }).toString())
+                .putString("cabanas", JSONArray(cb.map { JSONObject().put("id", it.id).put("max", it.max).put("base", it.base).put("cond", it.condicion) }).toString())
                 .putLong("en", System.currentTimeMillis()).apply()
             Bitacora.anotar(c, "disponibilidad: ${oc.size} ocupaciones y ${cb.size} cabañas, al empezar la sesión")
         } catch (t: Throwable) {
