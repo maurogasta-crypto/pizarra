@@ -35,6 +35,8 @@ class DisponibilidadTest {
         assertEquals(Pedido.Rango(LocalDate.of(2027, 1, 5), LocalDate.of(2027, 1, 12)), fechasPedidas("de 5 a 12 de janeiro", hoy))
         assertEquals(Pedido.Mes(YearMonth.of(2027, 2)), fechasPedidas("buscamos casa para febrero", hoy))
         assertEquals(null, fechasPedidas("Busco casa en Canasvieiras, alguien tiene?", hoy))
+        // pizarra-50: un año que ya pasó es un error de tipeo, visto el 20-oct («24/01/24 a 31/01/24»)
+        assertEquals(Pedido.Rango(LocalDate.of(2027, 1, 24), LocalDate.of(2027, 1, 31)), fechasPedidas("para 2 personas para 24/01/24 a 31/01/24", hoy))
     }
 
     @Test fun las_fechas_con_nombre() {

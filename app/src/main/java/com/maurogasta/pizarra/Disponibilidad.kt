@@ -8,7 +8,7 @@ import java.time.YearMonth
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Disponibilidad.kt — Que la respuesta a un pedido de Facebook diga la verdad
-// sobre la ocupación de Casa Verde. Sello: pizarra-49
+// sobre la ocupación de Casa Verde. Sello: pizarra-50
 //
 // 20-oct-2026, Mauro: «tiene que mirar disponibilidad al inicio de las
 // búsquedas, en esa sesión, una sola vez, y buscar que coincida con la
@@ -64,7 +64,8 @@ private const val HASTA = "(?:al|a|hasta|ate|y el|-|–)"
 
 /** El año de un mes sin año: el próximo que todavía no pasó. */
 private fun anio(mes: Int, dia: Int, hoy: LocalDate, explicito: String?): Int {
-    explicito?.toIntOrNull()?.let { return if (it < 100) 2000 + it else it }
+    // Un año escrito que ya pasó es un error de tipeo («24/01/24» en octubre de 2026): manda el próximo.
+    explicito?.toIntOrNull()?.let { val a = if (it < 100) 2000 + it else it; if (a >= hoy.year) return a }
     val esteAnio = runCatching { LocalDate.of(hoy.year, mes, dia.coerceAtMost(YearMonth.of(hoy.year, mes).lengthOfMonth())) }.getOrNull()
     return if (esteAnio != null && esteAnio.isBefore(hoy)) hoy.year + 1 else hoy.year
 }
