@@ -224,7 +224,15 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   debe quedar registrado en cada espacio y leerlo desde ahí»): se ofrece con la
   BASE —una cabaña si entra, si no varias— y sólo si no alcanza se llega al
   máximo, y entonces la respuesta dice «con un adicional por persona» y el aviso
-  muestra la condición. `CAPACIDAD_SI_FALTA` vale sólo si falta. Si cambian los
+  muestra la condición. `CAPACIDAD_SI_FALTA` vale sólo si falta. **pizarra-53**
+  (Mauro: «no proponga responder con el nombre cuando al principio del pedido
+  no figure con claridad la firma de la persona… para no tomar los nombres de
+  las personas que hicieron el comentario»): desde el CUADRO de una publicación
+  abierta la elegida es la PRIMERA (la publicación, no el último comentario);
+  el nombre sale SÓLO del ⋮ de la publicación y sólo si `esNombreDePersona`
+  (nombre y apellido, sin palabras de grupo ni de lugar), si no se saluda sin
+  nombre; y lo elegido que no habla de alojamiento ni de la zona no se guarda
+  (`hablaDeAlojamiento`, aviso «No reconocí un pedido»). Si cambian los
   valores de la búsqueda en la página o en la regla, cambian acá (el banco los
   compara si el sitio está al lado).
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):

@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busqueda.kt — Qué pedidos de alquiler se buscan AHORA, y si una publicación
-// cuadra. Sello: pizarra-52
+// cuadra. Sello: pizarra-53
 //
 // 20-oct-2026, Mauro: «en la misma aplicación de Casa Verde, para ver los
 // pedidos, tiene que haber una configuración de los parámetros que yo estoy

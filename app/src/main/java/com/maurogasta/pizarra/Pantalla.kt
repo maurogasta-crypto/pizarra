@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-52
+// Sello: pizarra-53
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -88,15 +88,32 @@ private const val FOCO = "\u0000foco"
 private val RELLENO = Regex(
     "^(me gusta|comentar|compartir|enviar|responder|seguir|unirte|ver más|ver menos|curtir|comentário|compartilhar|like|comment|share|reply|" +
         "bot[oó]n|bot[aã]o|button|buscar en|pesquisar em|search in|m[aá]s opciones|mais op[cç][oõ]es|more options|foto del perfil|foto do perfil|" +
-        "profile picture|administrar configuraci[oó]n|agregar a amigos|adicionar amigo|add friend)\\b|toca dos veces|toque duas vezes|double.tap",
+        "profile picture|administrar configuraci[oó]n|agregar a amigos|adicionar amigo|add friend|se muestran|mostrando|showing)\\b|toca dos veces|toque duas vezes|double.tap|toca para|toque para|tap to",
     RegexOption.IGNORE_CASE)
 
 /* El autor sale de la etiqueta del botón «⋮» de la tarjeta, que es lo único
    que Facebook rotula con el nombre: «Más opciones para la publicación de Ana». */
+/* pizarra-53 (Mauro, 20-oct: «no proponga responder con el nombre cuando al principio del
+   pedido no figure con claridad la firma de la persona… para no tomar los nombres de las
+   personas que hicieron el comentario»): SÓLO el botón ⋮ de la publicación. «Foto del perfil
+   de…» quedó afuera: también la llevan los comentarios, y de ahí salió el nombre equivocado. */
 private val DE_AUTOR = Regex(
-    "^(?:m[aá]s opciones para la publicaci[oó]n de|mais op[cç][oõ]es para a publica[cç][aã]o de|more options for (?:the )?post by|" +
-        "foto del perfil de|foto do perfil de|profile picture of)\\s+(.{2,80}?)\\.?$",
+    "^(?:m[aá]s opciones para la publicaci[oó]n de|mais op[cç][oõ]es para a publica[cç][aã]o de|more options for (?:the )?post by)\\s+(.{2,80}?)\\.?$",
     RegexOption.IGNORE_CASE)
+
+/* Un grupo o una página también firman con ⋮ («Más opciones para la publicación de Argentinos
+   en Floripa»): eso no es una persona y no va en el saludo. */
+private val NO_ES_PERSONA = Regex(
+    "\\b(alquiler\\w*|aluguel|alugu\\w*|grupo|floripa|florian[oó]polis|brasil|argentinos|uruguayos|paraguayos|chilenos|" +
+        "canasvieiras|ingleses|temporada|hospedaje\\w*|hospedage\\w*|apartamentos?|departamentos?|inmobiliaria|imobili[aá]ria|" +
+        "turismo|viajes?|praia|playa|casa verde|hostel|pousada|posada|en auto|publicidad)\\b", RegexOption.IGNORE_CASE)
+
+/** ¿Es la firma de una persona? Nombre y apellido, con mayúscula, sin palabras de grupo o de lugar. */
+fun esNombreDePersona(n: String): Boolean {
+    val ps = n.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (ps.size !in 2..5 || NO_ES_PERSONA.containsMatchIn(n)) return false
+    return ps.first()[0].isUpperCase() && ps.last()[0].isUpperCase() && ps.all { it.length <= 20 && it.none { c -> c.isDigit() } }
+}
 
 /* Una notificación de la campana de Facebook trae al final hace cuánto y si se
    leyó («… 1 min. No leída»): eso cambia cada minuto y haría que la misma
@@ -123,7 +140,7 @@ fun publicacionesDe(raiz: Nodo): List<Publicacion> {
     return sueltos.map { t ->
         val i = largos.getValue(t)
         val cerca = (i - 1 downTo maxOf(0, i - 8)).map { textos[it].trim() }
-        val autor = cerca.firstNotNullOfOrNull { DE_AUTOR.find(it)?.groupValues?.get(1) }
+        val autor = cerca.firstNotNullOfOrNull { DE_AUTOR.find(it)?.groupValues?.get(1) }?.takeIf { esNombreDePersona(it) }
         val antes = autor ?: cerca.firstOrNull {
             it.length in 3..80 && !RELLENO.containsMatchIn(it) && !Regex("^\\d").containsMatchIn(it)
         }.orEmpty()
@@ -143,8 +160,16 @@ fun publicacionElegida(raiz: Nodo): Publicacion? {
     if (foco < 0) return null
     val pubs = publicacionesDe(raiz)
     val propio = orden.getOrNull(foco + 1)?.first?.let { t -> pubs.firstOrNull { it.pos == foco + 1 && t.length >= LARGO_MINIMO } }
-    return propio ?: pubs.filter { it.pos < foco }.maxByOrNull { it.pos }
+    if (propio != null) return propio
+    val antes = pubs.filter { it.pos < foco }
+    // pizarra-53: desde el CUADRO de texto de una publicación abierta, arriba están la publicación
+    // y después sus comentarios: es la PRIMERA. Desde el botón «Comentar» del inicio, la de arriba
+    // del botón: la ÚLTIMA. El 20-oct se respondió a un comentario en vez de a la publicación.
+    return if (focoEnCuadro(raiz)) antes.minByOrNull { it.pos } else antes.maxByOrNull { it.pos }
 }
+
+/** ¿Lo que se tocó es el cuadro para escribir? */
+fun focoEnCuadro(n: Nodo): Boolean = (n.foco && n.editable) || n.hijos.any { focoEnCuadro(it) }
 
 /** El pedido de la elegida, con la respuesta rápida armada según lo que se busca y, desde
  *  pizarra-49, según la ocupación de Casa Verde que se trajo al empezar la sesión. */
@@ -169,6 +194,16 @@ fun tituloDeEleccion(p: PedidoPantalla): String = when (val l = p.lugar) {
     is Lugar.MesLleno -> "⛔ " + mesEnPalabras(l.mes, false).replaceFirstChar { it.uppercase() } + " completo" + (if (l.alt != null) " · copié lo que sí hay" else "")
     Lugar.SinFechas -> "📋 No dice fechas · respuesta copiada"
 }
+
+/* pizarra-53: lo elegido tiene que hablar de alojarse o de la zona. Un perfil, un botón o una
+   publicidad cualquiera no se guardan aunque se haya tocado «Comentar» cerca. */
+private val DE_ALOJAMIENTO = Regex(
+    "\\b(alquil\\w*|alug\\w*|arriend\\w*|temporada|hosped\\w*|aloja\\w*|vacacion\\w*|ferias|verano|verao|" +
+        "departamento|depto|apartamento|apto|kitnet|kitinete|quarto|habitacion\\w*|cabana\\w*|casa|pousada|posada|diaria\\w*|" +
+        "canasvieiras?|canas|jurere|ingleses|cachoeira|florianopolis|floripa|praia|playa)\\b")
+
+fun hablaDeAlojamiento(texto: String): Boolean =
+    DE_ALOJAMIENTO.containsMatchIn(java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").lowercase())
 
 /* Lo que toca la persona cuando va a responder: el botón «Comentar» (o «Responder») o el cuadro de texto. */
 private val PARA_RESPONDER = Regex("^(comentar|comment|coment[aá]rio|comentario|responder|reply|escrib[ei]|escreva|write)", RegexOption.IGNORE_CASE)
@@ -202,6 +237,7 @@ class LectorPantalla : AccessibilityService() {
             if (!esParaResponder(rotulo, fuente.isEditable)) return
             val raiz = rootInActiveWindow ?: return
             val elegida = publicacionElegida(aNodo(raiz, 0, intArrayOf(0), fuente)) ?: return
+            if (!hablaDeAlojamiento(elegida.texto)) { Responder.noEsPedido(this); return }
             val p = pedidoDeLaElegida(elegida, System.currentTimeMillis(), Buscador.actual(this), Ocupado.ocupaciones(this), Ocupado.cabanas(this))
             if (p.m.id == ultimaElegida) return
             ultimaElegida = p.m.id

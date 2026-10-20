@@ -92,7 +92,7 @@ class PantallaTest {
     @Test fun la_elegida_es_la_publicación_de_arriba_de_lo_que_se_tocó() {
         assertEquals(p1, publicacionElegida(feed(1))!!.texto)
         assertEquals(p2, publicacionElegida(feed(2))!!.texto)
-        assertEquals(p2, publicacionElegida(feed(3))!!.texto)          // el cuadro de abajo es de la última
+        assertEquals(p1, publicacionElegida(feed(3))!!.texto)          // pizarra-53: desde el cuadro, la publicación de arriba de todo
         assertEquals(null, publicacionElegida(feed(0)))                  // sin toque, nada
         // tocar el texto mismo de la publicación también la elige
         val t = Nodo(hijos = listOf(Nodo(texto = p1), Nodo(texto = p2, foco = true)))
@@ -115,6 +115,38 @@ class PantallaTest {
         assertTrue(esParaResponder("Comentário", false)); assertTrue(esParaResponder("", true))
         assertFalse(esParaResponder("Me gusta", false)); assertFalse(esParaResponder("Compartir", false))
         assertFalse(esParaResponder("Ana Souza", false))
+    }
+
+    // pizarra-53: la publicación abierta, con un comentario debajo y el cuadro al final (20-oct).
+    private val pedidoAbierto = "Hola soy de buenos aires y busco alquiler en Canasvieiras, me gustaría saber precios y como es la cosa alla ?"
+    private val comentario = "Seu refúgio pertinho do mar! Apartamento a apenas 200 metros da praia dos Ingleses em Florianópolis, com garagem"
+    private fun abierta(firma: String?) = Nodo(hijos = listOfNotNull(
+        Nodo(texto = "Argentinos en Floripa"), firma?.let { Nodo(desc = "Más opciones para la publicación de $it") }, Nodo(texto = "11 oct"),
+        Nodo(texto = pedidoAbierto), Nodo(texto = "Me gusta"),
+        Nodo(desc = "Foto del perfil de Ana Lucía Pereira"), Nodo(texto = "Ana Lucía Pereira"), Nodo(texto = "1 sem"), Nodo(texto = comentario),
+        Nodo(texto = "Escribe un comentario público…", editable = true, foco = true)))
+
+    @Test fun desde_el_cuadro_se_responde_la_publicación_y_no_el_comentario() {
+        val e = publicacionElegida(abierta(null))!!
+        assertEquals(pedidoAbierto, e.texto); assertFalse(e.esAutor)
+        val r = pedidoDeLaElegida(e, 1, Busqueda()).respuesta
+        assertTrue(r, r.startsWith("¡Hola!") || r.startsWith("Hola!") || r.startsWith("¡Buenas!"))  // sin nombre, y en castellano
+        assertFalse(r.contains("Ana")); assertFalse(r.contains("Argentinos"))
+    }
+
+    @Test fun los_textos_de_los_botones_y_lo_que_no_es_alojamiento_no_se_eligen() {
+        val p = publicacionesDe(Nodo(hijos = listOf(Nodo(texto = "Se muestran Más relevantes comentarios. Toca para cambiar el filtro de comentarios."))))
+        assertTrue(p.isEmpty())
+        assertFalse(hablaDeAlojamiento("Musicien, Pianiste, Guitariste, Chanteur en un grupo de rock de la ciudad"))
+        assertTrue(hablaDeAlojamiento(pedidoAbierto))
+    }
+
+    @Test fun el_nombre_sólo_si_firma_una_persona() {
+        assertTrue(publicacionElegida(abierta("Rocío Gómez"))!!.esAutor)
+        assertFalse(publicacionElegida(abierta("Argentinos en Floripa"))!!.esAutor)   // un grupo no es una persona
+        assertTrue(esNombreDePersona("Juan Darío Aquino")); assertTrue(esNombreDePersona("Maria da Silva"))
+        assertFalse(esNombreDePersona("Canasvieiras Hospedagens")); assertFalse(esNombreDePersona("Rocío"))
+        assertFalse(esNombreDePersona("EN AUTO A FLORIPA Alquileres")); assertFalse(esNombreDePersona("Alquiler en Florianópolis"))
     }
 
     @Test fun el_lector_SÓLO_LEE_y_sólo_dentro_de_Facebook() {

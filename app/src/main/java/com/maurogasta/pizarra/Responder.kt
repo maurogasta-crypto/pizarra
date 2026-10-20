@@ -132,6 +132,18 @@ object Responder {
         }
     }
 
+    /** pizarra-53: lo que se eligió no parece un pedido (un perfil, un botón): no se guarda nada. */
+    fun noEsPedido(c: Context) {
+        try {
+            canales(c)
+            nm(c)?.notify("fb:nada", ID_PEDIDO, Notification.Builder(c, CANAL_RESPUESTAS)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("No reconocí un pedido de alojamiento acá")
+                .setContentText("No guardé ni copié nada. Abrí la publicación y tocá su cuadro de comentario.")
+                .setAutoCancel(true).setTimeoutAfter(60_000L).build())
+        } catch (e: Throwable) {}
+    }
+
     /** La respuesta está lista: el mismo aviso, con la respuesta y «Copiar y abrir». */
     private fun avisarLista(c: Context, p: PedidoCV) {
         canales(c)
