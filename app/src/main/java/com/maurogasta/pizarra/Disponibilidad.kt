@@ -52,8 +52,9 @@ sealed class Lugar {
     object SinFechas : Lugar()
 }
 
-/* La cabaña 1 tiene `capacidad: 1` en la base (las otras, {base, max}). Hasta que
-   se corrija, vale lo que completa las 20 personas que dijo Mauro. */
+/* Los máximos que dijo Mauro el 20-oct: la cabaña 1 hasta 8, el Loft hasta 7 y el
+   departamento de familias hasta 5. Manda lo que dice la base (`capacidad.max`, que
+   ese día se corrigió en la cabaña 1, que decía 1); esto vale sólo si falta. */
 private val CAPACIDAD_SI_FALTA = mapOf("c1" to 8, "c2" to 7, "c3" to 5)
 
 private fun plano(s: String): String =
