@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-46` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-47` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -366,10 +366,10 @@ mira.
   el norte de la isla o toda Floripa. La Pizarra lo trae al encender el
   lector y cada hora (`Busqueda.kt`).
 - **Lo que cuadra se carga solo**, con una respuesta rápida que siempre
-  sugiere casaverdecanas.com.br, y sale un aviso **en el momento**: «📍 Pedido
-  en pantalla». Un toque copia la respuesta; se pega en la publicación, que
-  todavía está a la vista (Comentar → mantener apretado → Pegar), y queda
-  respondido.
+  sugiere casaverdecanas.com.br. **Sin avisos flotantes** (pizarra-47): si hay
+  un solo pedido a la vista, su respuesta queda copiada sola y un aviso
+  silencioso dice de quién es; se toca Comentar en esa publicación, mantener
+  apretado, Pegar. Con dos pedidos a la vista no se copia nada.
 
 ## Si falla en el teléfono (pizarra-3)
 

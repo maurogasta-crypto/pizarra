@@ -103,6 +103,29 @@ class PantallaTest {
         assertFalse(esPedidoDeAlquiler("alquiler en Bombinhas"))
     }
 
+    // pizarra-47: sin avisos flotantes; la respuesta se copia sola, y sólo si hay UN pedido a la vista.
+    @Test fun se_copia_sola_la_respuesta_del_único_pedido_a_la_vista() {
+        val p1 = "Hola, busco casa en Canasvieiras para 4 personas en enero, alguien tiene?"
+        val p2 = "Buscamos departamento en Ingleses para 2 personas en marzo, alguna recomendación?"
+        fun pantalla(v1: Boolean, v2: Boolean) = publicacionesDe(Nodo(hijos = listOf(
+            Nodo(desc = "Más opciones para la publicación de Ana Souza"), Nodo(texto = p1, visible = v1),
+            Nodo(desc = "Más opciones para la publicación de Juan Pérez"), Nodo(texto = p2, visible = v2))))
+        val solo = queSaleDe("com.facebook.katana", pantalla(true, false), 1, "x", Busqueda()).second
+        assertEquals(2, solo.size)                                   // los dos van a la lista…
+        val c = aCopiar(solo, "")!!                                  // …pero se copia el que se ve
+        assertEquals("Ana Souza", c.autor); assertTrue(c.respuesta.contains("Ana")); assertTrue(c.respuesta.contains(SITIO_WEB))
+        assertEquals(null, aCopiar(solo, c.m.id))                   // el mismo no se vuelve a copiar
+        val dos = queSaleDe("com.facebook.katana", pantalla(true, true), 1, "x", Busqueda()).second
+        assertEquals(null, aCopiar(dos, ""))                         // con dos a la vista, no se adivina
+        assertEquals(null, aCopiar(queSaleDe("com.facebook.katana", pantalla(false, false), 1, "x", Busqueda()).second, ""))
+    }
+
+    @Test fun el_lector_ya_no_tiene_avisos_flotantes() {
+        val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Pantalla.kt").readText()
+        assertFalse(codigo.contains("IMPORTANCE_HIGH")); assertFalse(codigo.contains("avisarEnPantalla"))
+        assertTrue(codigo.contains("IMPORTANCE_LOW"))
+    }
+
     @Test fun el_lector_SÓLO_LEE_y_sólo_dentro_de_Facebook() {
         val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Pantalla.kt").readText()
         for (accion in listOf("performAction", "dispatchGesture", "performGlobalAction", "ACTION_CLICK", "ACTION_SCROLL", "ACTION_SET_TEXT"))

@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CasaVerde.kt — Los pedidos de alquiler de Facebook, directo a la lista de
-// Casa Verde. Sello: pizarra-46
+// Casa Verde. Sello: pizarra-47
 //
 // 18-oct-2026, Mauro: que la lista de pedidos se llene sin despertar al chat
 // cada vez que aparece una notificación; el chat se despierta unas veces por
@@ -69,7 +69,7 @@ fun cuerpoPedidoCasaVerde(docs: String, uid: String, m: MensajeAirbnb, ahora: Lo
 }
 
 /** Un pedido sin atender, como lo necesita el aviso (nunca va a la bitácora). */
-data class PedidoCV(val id: String, val grupo: String, val texto: String, val respuesta: String, val buscar: String, val enlace: String)
+data class PedidoCV(val id: String, val grupo: String, val texto: String, val respuesta: String, val buscar: String, val enlace: String, val fuente: String = "")
 
 /** La consulta de los pedidos sin atender. Sin `orderBy`, para no pedir un índice compuesto. */
 fun cuerpoConsultaNuevos(): JSONObject = JSONObject().put("structuredQuery", JSONObject()
@@ -87,7 +87,7 @@ fun pedidosDeConsulta(texto: String): List<PedidoCV> {
         val d = a.optJSONObject(i)?.optJSONObject("document") ?: return@mapNotNull null
         val f = d.optJSONObject("fields") ?: JSONObject()
         fun s(k: String) = f.optJSONObject(k)?.optString("stringValue").orEmpty()
-        PedidoCV(d.optString("name").substringAfterLast('/'), s("grupo"), s("texto"), s("respuesta").trim(), s("buscar"), s("enlace"))
+        PedidoCV(d.optString("name").substringAfterLast('/'), s("grupo"), s("texto"), s("respuesta").trim(), s("buscar"), s("enlace"), s("fuente"))
     }
 }
 

@@ -186,7 +186,13 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   portugués si escribió en portugués, «varias cabañas, hasta 20 personas» para
   un grupo grande, y SIEMPRE casaverdecanas.com.br) y **avisa en el acto**
   («📍 Pedido en pantalla»): un toque copia la respuesta para pegarla en la
-  publicación que sigue a la vista, y lo marca respondido. Si cambian los
+  publicación que sigue a la vista, y lo marca respondido. **pizarra-47 sacó
+  ese aviso flotante** (Mauro: «en el escroleo son paralizantes en lugar de
+  dinamizar»): ahora, si hay UN solo pedido a la vista (`isVisibleToUser`,
+  `aCopiar`), su respuesta se copia SOLA y un aviso de prioridad baja, sin
+  ventana ni sonido, dice de quién es; con dos a la vista no se copia nada,
+  para no pegar la de otro. Y el aviso de la hora («✍️ Respuesta lista») no
+  sale para lo leído en pantalla, porque no abriría nada. Si cambian los
   valores de la búsqueda en la página o en la regla, cambian acá (el banco los
   compara si el sitio está al lado).
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):

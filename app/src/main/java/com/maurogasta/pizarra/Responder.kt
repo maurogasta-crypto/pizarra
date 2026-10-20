@@ -20,7 +20,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Responder.kt — Del pedido de Facebook a la respuesta, con un toque.
-// Sello: pizarra-46
+// Sello: pizarra-47
 //
 // 18-oct-2026, Mauro: «llegar lo más directamente posible al mensaje en
 // cuestión a responder, sin el riesgo de que pueda ser denunciada y bloqueada
@@ -113,33 +113,6 @@ object Responder {
         }
     }
 
-    /** pizarra-46: el lector lo vio en pantalla y cuadra con lo que se busca. El aviso sale YA, con la
-     *  respuesta rápida: un toque la copia, y se pega en la publicación que todavía está a la vista. */
-    fun avisarEnPantalla(c: Context, p: PedidoPantalla) {
-        try {
-            canales(c)
-            val id = p.m.id
-            guardar(c, id, p.respuesta, enlaceBusqueda(p.m.texto), "")
-            val datos = listOfNotNull(
-                p.encaje.personas.takeIf { it > 0 }?.let { "$it personas" },
-                p.encaje.publico.takeIf { it.isNotEmpty() }?.let { mapOf("jovenes" to "jóvenes").getOrDefault(it, it) },
-                p.encaje.tipo.takeIf { it != "diaria" }).joinToString(" · ")
-            val aqui = aActividad(c, id, "aqui")
-            val b = Notification.Builder(c, CANAL_FACEBOOK)
-                .setSmallIcon(android.R.drawable.ic_dialog_email)
-                .setContentTitle("📍 Pedido en pantalla · ${p.m.chat.ifBlank { "Facebook" }}")
-                .setContentText(if (datos.isNotEmpty()) "$datos — tocá para copiar la respuesta" else "Tocá para copiar la respuesta")
-                .setStyle(Notification.BigTextStyle().bigText("${p.respuesta}\n\n— ${p.m.texto.take(300)}"))
-                .setContentIntent(aqui)
-                .setAutoCancel(false)
-                .addAction(Notification.Action.Builder(null, "Copiar respuesta", aqui).build())
-                .addAction(Notification.Action.Builder(null, "Descartar", aActividad(c, id, "descartar")).build())
-            nm(c)?.notify(TAG_PEDIDO + id, ID_PEDIDO, b.build())
-        } catch (e: Throwable) {
-            Bitacora.anotar(c, "pedidos: no se pudo avisar el de la pantalla: ${e.javaClass.simpleName}")
-        }
-    }
-
     /** La respuesta está lista: el mismo aviso, con la respuesta y «Copiar y abrir». */
     private fun avisarLista(c: Context, p: PedidoCV) {
         canales(c)
@@ -175,6 +148,8 @@ object Responder {
         var n = 0
         for (x in lista) {
             if (x.respuesta.isEmpty()) continue
+            // pizarra-47: lo leído en pantalla ya se copió mientras se recorría; su aviso no abriría nada.
+            if (x.fuente == "pantalla") continue
             guardar(c, x.id, x.respuesta, x.buscar, x.enlace)
             val marca = x.id + ":" + x.respuesta.hashCode()
             if (marca in avisados) continue
@@ -233,13 +208,7 @@ class ResponderActivity : Activity() {
             val id = intent.getStringExtra("id").orEmpty()
             if (id.isNotEmpty()) when (intent.getStringExtra("que")) {
                 "descartar" -> { Responder.cerrar(this, id, "descartado"); Toast.makeText(this, "Pedido descartado.", Toast.LENGTH_SHORT).show() }
-                // pizarra-46: la publicación está en pantalla: sólo copiar, sin abrir nada.
-                "aqui" -> {
-                    val r = Responder.respuesta(this, id)
-                    getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Respuesta", r))
-                    Toast.makeText(this, "Copiada. En la publicación que tenés en pantalla: Comentar → mantené apretado → Pegar.", Toast.LENGTH_LONG).show()
-                    Responder.cerrar(this, id, "respondido")
-                }
+
                 else -> {
                     val r = Responder.respuesta(this, id)
                     if (r.isNotEmpty()) {

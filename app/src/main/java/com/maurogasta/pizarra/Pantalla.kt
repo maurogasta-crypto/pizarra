@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-46
+// Sello: pizarra-47
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -47,13 +47,13 @@ import kotlin.concurrent.thread
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Un nodo de la pantalla, sin Android: lo que el banco puede armar a mano. */
-data class Nodo(val texto: String = "", val desc: String = "", val hijos: List<Nodo> = emptyList(), val editable: Boolean = false)
+data class Nodo(val texto: String = "", val desc: String = "", val hijos: List<Nodo> = emptyList(), val editable: Boolean = false, val visible: Boolean = true)
 
 /** Una publicación leída: quién o qué grupo (el texto corto de antes) y lo que dice. */
-data class Publicacion(val encabezado: String, val texto: String, val esAutor: Boolean = false)
+data class Publicacion(val encabezado: String, val texto: String, val esAutor: Boolean = false, val visible: Boolean = true)
 
 /** Un pedido que cuadra con la búsqueda, con la respuesta rápida ya armada (pizarra-46). */
-data class PedidoPantalla(val m: MensajeAirbnb, val respuesta: String, val encaje: Encaje)
+data class PedidoPantalla(val m: MensajeAirbnb, val respuesta: String, val encaje: Encaje, val visible: Boolean = true, val autor: String = "")
 
 private const val LARGO_MINIMO = 60       // menos que eso es un botón, un nombre o una hora
 private const val MAX_NODOS = 4000        // una pantalla de Facebook anda por 300 a 1500
@@ -61,22 +61,24 @@ private const val MAX_NODOS = 4000        // una pantalla de Facebook anda por 3
 /** El texto de un nodo: el escrito, o la descripción si no tiene (Facebook arma muchos así). */
 private fun dicho(n: Nodo): String = n.texto.trim().ifEmpty { n.desc.trim() }
 
-/** El árbol en el orden en que se lee, de arriba abajo, con un techo. */
-fun enOrden(raiz: Nodo, techo: Int = MAX_NODOS): List<String> {
-    val out = ArrayList<String>()
+/** El árbol en el orden en que se lee, de arriba abajo, con un techo; cada texto con si está a la vista. */
+fun enOrdenConVista(raiz: Nodo, techo: Int = MAX_NODOS): List<Pair<String, Boolean>> {
+    val out = ArrayList<Pair<String, Boolean>>()
     val pila = ArrayDeque<Nodo>().apply { add(raiz) }
     var vistos = 0
     while (pila.isNotEmpty() && vistos < techo) {
         val n = pila.removeLast(); vistos++
         if (n.editable) continue      // pizarra-45: lo que la persona escribe (el buscador) no es una publicación
-        val t = dicho(n); if (t.isNotEmpty()) out.add(t)
+        val t = dicho(n); if (t.isNotEmpty()) out.add(t to n.visible)
         // También la descripción cuando trae MÁS que el texto: en Facebook la
         // tarjeta de una publicación suele describirse entera.
-        val d = n.desc.trim(); if (d.length > n.texto.trim().length + 20 && d != t) out.add(d)
+        val d = n.desc.trim(); if (d.length > n.texto.trim().length + 20 && d != t) out.add(d to n.visible)
         for (h in n.hijos.asReversed()) pila.add(h)
     }
     return out
 }
+
+fun enOrden(raiz: Nodo, techo: Int = MAX_NODOS): List<String> = enOrdenConVista(raiz, techo).map { it.first }
 
 /* Lo que Facebook pone en cada tarjeta y no es la publicación: los botones y
    sus instrucciones para quien usa un lector de pantalla (pizarra-45, visto en
@@ -105,7 +107,8 @@ fun sinHaceCuanto(t: String): String = t.replace(HACE_CUANTO, "").trim()
 
 /** Las publicaciones de una pantalla: los textos largos, sin repetir, y sin el que ya está adentro de otro. */
 fun publicacionesDe(raiz: Nodo): List<Publicacion> {
-    val textos = enOrden(raiz)
+    val conVista = enOrdenConVista(raiz)
+    val textos = conVista.map { it.first }
     val largos = LinkedHashMap<String, Int>()      // texto → posición
     textos.forEachIndexed { i, t ->
         val x = t.replace(Regex("\\s+"), " ").trim()
@@ -122,7 +125,7 @@ fun publicacionesDe(raiz: Nodo): List<Publicacion> {
         val antes = autor ?: cerca.firstOrNull {
             it.length in 3..80 && !RELLENO.containsMatchIn(it) && !Regex("^\\d").containsMatchIn(it)
         }.orEmpty()
-        Publicacion(antes, sinHaceCuanto(t).take(4000), autor != null)
+        Publicacion(antes, sinHaceCuanto(t).take(4000), autor != null, conVista[i].second)
     }
 }
 
@@ -152,15 +155,24 @@ fun queSaleDe(paquete: String, pubs: List<Publicacion>, ahora: Long, propio: Str
             else if (esPedidoDeAlquiler(todo)) Encaje(true, "alquilar y Canasvieiras") else null
         if (e?.ok == true) {
             val m = MensajeAirbnb(taparCodigos(p.encabezado).take(120), taparCodigos(p.texto).take(4000), emptyList(), ahora.toString(), app = "facebook")
-            pedidos.add(PedidoPantalla(m, respuestaRapida(if (p.esAutor) p.encabezado else "", p.texto, e, m.id.hashCode()), e))
+            pedidos.add(PedidoPantalla(m, respuestaRapida(if (p.esAutor) p.encabezado else "", p.texto, e, m.id.hashCode()), e,
+                p.visible, if (p.esAutor) p.encabezado else ""))
         }
     }
     return notifs to pedidos
 }
 
+/** pizarra-47: la respuesta que se copia SOLA mientras se recorre. Sólo si hay UN pedido a la
+ *  vista —con dos, la respuesta pegada podría ir a la publicación equivocada— y si no es la
+ *  misma que ya se copió. Nada de avisos flotantes: Mauro, 20-oct, «en el escroleo son
+ *  paralizantes en lugar de dinamizar». */
+fun aCopiar(pedidos: List<PedidoPantalla>, ultimo: String): PedidoPantalla? =
+    pedidos.filter { it.visible }.singleOrNull()?.takeIf { it.m.id != ultimo }
+
 /** El que lee. Android lo conecta cuando la persona lo enciende en Accesibilidad. */
 class LectorPantalla : AccessibilityService() {
     private var ultima = 0L
+    private var copiado = ""
     private val yaMandados = LinkedHashSet<String>()
 
     override fun onServiceConnected() {
@@ -187,6 +199,7 @@ class LectorPantalla : AccessibilityService() {
             Pantalla.anotar(this, leidas = pubs.size, mandadas = nuevas.size, pedidos = nuevosPedidos.size)
             if (nuevas.isNotEmpty()) Notificaciones.mandar(this, nuevas)
             if (nuevosPedidos.isNotEmpty()) Pantalla.cargarPedidos(this, nuevosPedidos)
+            aCopiar(pedidos, copiado)?.let { p -> copiado = p.m.id; Pantalla.copiar(this, p) }
         } catch (t: Throwable) {
             Bitacora.anotar(this, "pantalla: ${t.message ?: t.javaClass.simpleName}")
         }
@@ -197,7 +210,7 @@ class LectorPantalla : AccessibilityService() {
         cuenta[0]++
         val hijos = if (hondo > 60 || cuenta[0] > MAX_NODOS) emptyList() else
             (0 until n.childCount).mapNotNull { i -> n.getChild(i)?.let { aNodo(it, hondo + 1, cuenta) } }
-        return Nodo(n.text?.toString().orEmpty(), n.contentDescription?.toString().orEmpty(), hijos, n.isEditable)
+        return Nodo(n.text?.toString().orEmpty(), n.contentDescription?.toString().orEmpty(), hijos, n.isEditable, n.isVisibleToUser)
     }
 
     override fun onInterrupt() {}
@@ -241,9 +254,8 @@ object Pantalla {
             "${pr.getInt("pedidos", 0)} pedidos · última ${pr.getString("ultima", "")} UTC"
     }
 
-    /** Los pedidos, a «Pedidos de alquiler» de Casa Verde, con su respuesta rápida, y el aviso
-     *  EN EL ACTO: la publicación todavía está en pantalla, que es lo más cerca que se puede
-     *  estar de contestarla (pizarra-46). */
+    /** Los pedidos, a «Pedidos de alquiler» de Casa Verde, con su respuesta rápida. Sin aviso
+     *  flotante (pizarra-47): la respuesta se copia sola con `copiar`. */
     fun cargarPedidos(c: Context, ps: List<PedidoPantalla>) {
         val app = c.applicationContext
         thread(name = "pantalla") {
@@ -259,8 +271,33 @@ object Pantalla {
                     cv.ultimo = "no se pudo cargar: " + (t.message ?: t.javaClass.simpleName)
                     Bitacora.anotar(app, "pantalla: el pedido no llegó a Casa Verde: ${t.message ?: t.javaClass.simpleName}")
                 }
-                if (nuevo) Responder.avisarEnPantalla(app, p)
             }
+        }
+    }
+
+    private const val CANAL_COPIADA = "facebook-copiada"
+    private const val ID_COPIADA = 4701
+
+    /** Copia la respuesta y lo dice EN SILENCIO: un aviso de prioridad baja, sin ventana flotante ni
+     *  sonido, que se reemplaza a sí mismo. Al pegar en la publicación que está a la vista, listo. */
+    fun copiar(c: Context, p: PedidoPantalla) {
+        try {
+            val clip = android.content.ClipData.newPlainText("Respuesta", p.respuesta)
+            c.getSystemService(android.content.ClipboardManager::class.java)?.setPrimaryClip(clip)
+            val nm = c.getSystemService(android.app.NotificationManager::class.java) ?: return
+            nm.createNotificationChannel(android.app.NotificationChannel(CANAL_COPIADA, "Respuesta copiada (Facebook)",
+                android.app.NotificationManager.IMPORTANCE_LOW).apply { description = "Qué respuesta quedó copiada mientras se recorre Facebook. Sin sonido ni ventana." })
+            val quien = p.autor.ifBlank { "el pedido a la vista" }
+            nm.notify(ID_COPIADA, android.app.Notification.Builder(c, CANAL_COPIADA)
+                .setSmallIcon(android.R.drawable.ic_menu_edit)
+                .setContentTitle("📋 Copiada la respuesta para $quien")
+                .setContentText("Comentar → mantené apretado → Pegar")
+                .setStyle(android.app.Notification.BigTextStyle().bigText(p.respuesta))
+                .setOnlyAlertOnce(true)
+                .setTimeoutAfter(10 * 60_000L)
+                .build())
+        } catch (t: Throwable) {
+            Bitacora.anotar(c, "pantalla: no se pudo copiar: ${t.javaClass.simpleName}")
         }
     }
 }
