@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-45
+// Sello: pizarra-46
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -50,7 +50,10 @@ import kotlin.concurrent.thread
 data class Nodo(val texto: String = "", val desc: String = "", val hijos: List<Nodo> = emptyList(), val editable: Boolean = false)
 
 /** Una publicación leída: quién o qué grupo (el texto corto de antes) y lo que dice. */
-data class Publicacion(val encabezado: String, val texto: String)
+data class Publicacion(val encabezado: String, val texto: String, val esAutor: Boolean = false)
+
+/** Un pedido que cuadra con la búsqueda, con la respuesta rápida ya armada (pizarra-46). */
+data class PedidoPantalla(val m: MensajeAirbnb, val respuesta: String, val encaje: Encaje)
 
 private const val LARGO_MINIMO = 60       // menos que eso es un botón, un nombre o una hora
 private const val MAX_NODOS = 4000        // una pantalla de Facebook anda por 300 a 1500
@@ -119,7 +122,7 @@ fun publicacionesDe(raiz: Nodo): List<Publicacion> {
         val antes = autor ?: cerca.firstOrNull {
             it.length in 3..80 && !RELLENO.containsMatchIn(it) && !Regex("^\\d").containsMatchIn(it)
         }.orEmpty()
-        Publicacion(antes, sinHaceCuanto(t).take(4000))
+        Publicacion(antes, sinHaceCuanto(t).take(4000), autor != null)
     }
 }
 
@@ -135,15 +138,22 @@ private val DE_INTERES = Regex(
 
 fun esDeInteres(texto: String): Boolean = DE_INTERES.containsMatchIn(sinTildes(texto))
 
-/** Lo que sale de una pantalla: las notificaciones para la ronda y los pedidos para la lista. */
-fun queSaleDe(paquete: String, pubs: List<Publicacion>, ahora: Long, propio: String): Pair<List<Notif>, List<MensajeAirbnb>> {
-    val notifs = ArrayList<Notif>(); val pedidos = ArrayList<MensajeAirbnb>()
+/** Lo que sale de una pantalla: las notificaciones para la ronda y los pedidos para la lista.
+ *  Con búsqueda (pizarra-46), un pedido es lo que cuadra con ella; sin búsqueda
+ *  todavía traída, lo de siempre: alquilar y Canasvieiras. */
+fun queSaleDe(paquete: String, pubs: List<Publicacion>, ahora: Long, propio: String, busqueda: Busqueda? = null): Pair<List<Notif>, List<PedidoPantalla>> {
+    val notifs = ArrayList<Notif>(); val pedidos = ArrayList<PedidoPantalla>()
     for (p in pubs) {
-        if (!esDeInteres(p.encabezado + " " + p.texto)) continue
+        val todo = p.encabezado + " " + p.texto
+        if (!esDeInteres(todo)) continue
         // La huella no lleva la hora (Notif.id): la misma publicación leída diez veces es una.
         notifDe("$paquete·pantalla", p.encabezado.ifEmpty { "Facebook" }, p.texto, emptyList(), ahora, propio)?.let { notifs.add(it) }
-        if (esPedidoDeAlquiler(p.encabezado + " " + p.texto))
-            pedidos.add(MensajeAirbnb(taparCodigos(p.encabezado).take(120), taparCodigos(p.texto).take(4000), emptyList(), ahora.toString(), app = "facebook"))
+        val e = if (busqueda != null) encaje(p.texto, busqueda)
+            else if (esPedidoDeAlquiler(todo)) Encaje(true, "alquilar y Canasvieiras") else null
+        if (e?.ok == true) {
+            val m = MensajeAirbnb(taparCodigos(p.encabezado).take(120), taparCodigos(p.texto).take(4000), emptyList(), ahora.toString(), app = "facebook")
+            pedidos.add(PedidoPantalla(m, respuestaRapida(if (p.esAutor) p.encabezado else "", p.texto, e, m.id.hashCode()), e))
+        }
     }
     return notifs to pedidos
 }
@@ -155,6 +165,8 @@ class LectorPantalla : AccessibilityService() {
 
     override fun onServiceConnected() {
         Pantalla.anotar(this, conectado = true)
+        val app = applicationContext
+        thread(name = "busqueda") { Buscador.traer(app) }
         Bitacora.anotar(this, "pantalla: lector de Facebook CONECTADO")
     }
 
@@ -167,11 +179,11 @@ class LectorPantalla : AccessibilityService() {
         try {
             val raiz = rootInActiveWindow ?: return
             val pubs = publicacionesDe(aNodo(raiz, 0, intArrayOf(0)))
-            val (notifs, pedidos) = queSaleDe(paquete, pubs, ahora, packageName)
+            val (notifs, pedidos) = queSaleDe(paquete, pubs, ahora, packageName, Buscador.actual(this))
             val nuevas = synchronized(yaMandados) {
                 notifs.filter { yaMandados.add(it.id) }.also { while (yaMandados.size > 2000) yaMandados.remove(yaMandados.first()) }
             }
-            val nuevosPedidos = synchronized(yaMandados) { pedidos.filter { yaMandados.add("p" + it.id) } }
+            val nuevosPedidos = synchronized(yaMandados) { pedidos.filter { yaMandados.add("p" + it.m.id) } }
             Pantalla.anotar(this, leidas = pubs.size, mandadas = nuevas.size, pedidos = nuevosPedidos.size)
             if (nuevas.isNotEmpty()) Notificaciones.mandar(this, nuevas)
             if (nuevosPedidos.isNotEmpty()) Pantalla.cargarPedidos(this, nuevosPedidos)
@@ -229,18 +241,25 @@ object Pantalla {
             "${pr.getInt("pedidos", 0)} pedidos · última ${pr.getString("ultima", "")} UTC"
     }
 
-    /** Los pedidos, a «Pedidos de alquiler» de Casa Verde, por el mismo camino que los de las notificaciones. */
-    fun cargarPedidos(c: Context, ms: List<MensajeAirbnb>) {
+    /** Los pedidos, a «Pedidos de alquiler» de Casa Verde, con su respuesta rápida, y el aviso
+     *  EN EL ACTO: la publicación todavía está en pantalla, que es lo más cerca que se puede
+     *  estar de contestarla (pizarra-46). */
+    fun cargarPedidos(c: Context, ps: List<PedidoPantalla>) {
         val app = c.applicationContext
         thread(name = "pantalla") {
+            Buscador.alDia(app)
             val cv = CuentaCasaVerde(app)
-            if (!cv.conSesion) { cv.ultimo = "falta entrar con la cuenta de Casa Verde"; return@thread }
-            for (m in ms) try {
-                val nuevo = cv.crearPedido(m)
-                cv.ultimo = isoUtc(System.currentTimeMillis()).take(16) + (if (nuevo) " · pedido cargado (pantalla)" else " · ya estaba")
-            } catch (t: Throwable) {
-                cv.ultimo = "no se pudo cargar: " + (t.message ?: t.javaClass.simpleName)
-                Bitacora.anotar(app, "pantalla: el pedido no llegó a Casa Verde: ${t.message ?: t.javaClass.simpleName}")
+            for (p in ps) {
+                var nuevo = true
+                if (!cv.conSesion) cv.ultimo = "falta entrar con la cuenta de Casa Verde"
+                else try {
+                    nuevo = cv.crearPedido(p.m, respuesta = p.respuesta, fuente = "pantalla")
+                    cv.ultimo = isoUtc(System.currentTimeMillis()).take(16) + (if (nuevo) " · pedido cargado (pantalla)" else " · ya estaba")
+                } catch (t: Throwable) {
+                    cv.ultimo = "no se pudo cargar: " + (t.message ?: t.javaClass.simpleName)
+                    Bitacora.anotar(app, "pantalla: el pedido no llegó a Casa Verde: ${t.message ?: t.javaClass.simpleName}")
+                }
+                if (nuevo) Responder.avisarEnPantalla(app, p)
             }
         }
     }

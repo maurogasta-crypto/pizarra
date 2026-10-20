@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CasaVerde.kt — Los pedidos de alquiler de Facebook, directo a la lista de
-// Casa Verde. Sello: pizarra-42
+// Casa Verde. Sello: pizarra-46
 //
 // 18-oct-2026, Mauro: que la lista de pedidos se llene sin despertar al chat
 // cada vez que aparece una notificación; el chat se despierta unas veces por
@@ -35,7 +35,8 @@ import java.net.URLEncoder
 const val COLECCION_PEDIDOS = "pedidos_alquiler"
 
 /** Los campos que la regla de `pedidos_alquiler` deja crear a una persona. */
-val CAMPOS_PEDIDO = listOf("grupo", "texto", "cuando", "fecha", "buscar", "estado", "fuente", "uid", "creadoEn")
+/** pizarra-46: `respuesta` también, la rápida que arma la Pizarra al ver el pedido en pantalla. */
+val CAMPOS_PEDIDO = listOf("grupo", "texto", "cuando", "fecha", "buscar", "estado", "fuente", "uid", "creadoEn", "respuesta")
 
 /** La MISMA búsqueda que `enlaceBusqueda` de datos/herramientas/facebook.mjs:
  *  las primeras doce palabras, sin «Fulano publicó:» ni signos. Facebook no da
@@ -47,7 +48,7 @@ fun enlaceBusqueda(texto: String): String {
 }
 
 /** El `commit` que crea el pedido, sin pisar uno que ya esté. */
-fun cuerpoPedidoCasaVerde(docs: String, uid: String, m: MensajeAirbnb, ahora: Long): JSONObject {
+fun cuerpoPedidoCasaVerde(docs: String, uid: String, m: MensajeAirbnb, ahora: Long, respuesta: String = "", fuente: String = "pizarra"): JSONObject {
     fun s(v: String) = JSONObject().put("stringValue", v)
     val cuando = m.cuando.toLongOrNull()?.takeIf { it > 0 } ?: ahora
     val texto = (listOf(m.texto) + m.lineas).map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n").take(4000)
@@ -58,8 +59,9 @@ fun cuerpoPedidoCasaVerde(docs: String, uid: String, m: MensajeAirbnb, ahora: Lo
         .put("fecha", s(isoUtc(cuando)))
         .put("buscar", s(enlaceBusqueda(m.texto.ifBlank { texto })))
         .put("estado", s("nuevo"))
-        .put("fuente", s("pizarra"))
+        .put("fuente", s(fuente))
         .put("uid", s(uid))
+    if (respuesta.isNotBlank()) campos.put("respuesta", s(respuesta.take(3000)))
     return JSONObject().put("writes", JSONArray().put(JSONObject()
         .put("update", JSONObject().put("name", "$docs/$COLECCION_PEDIDOS/${m.id}").put("fields", campos))
         .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "creadoEn").put("setToServerValue", "REQUEST_TIME")))
@@ -163,10 +165,10 @@ class CuentaCasaVerde(contexto: Context) {
     }
 
     /** Crea el pedido. Devuelve false si ya estaba (no es un error). */
-    fun crearPedido(m: MensajeAirbnb, ahora: Long = System.currentTimeMillis()): Boolean {
+    fun crearPedido(m: MensajeAirbnb, ahora: Long = System.currentTimeMillis(), respuesta: String = "", fuente: String = "pizarra"): Boolean {
         return try {
             pedir("https://firestore.googleapis.com/v1/${cv.docs}:commit",
-                cuerpoPedidoCasaVerde(cv.docs, uid, m, ahora).toString(), "application/json", token())
+                cuerpoPedidoCasaVerde(cv.docs, uid, m, ahora, respuesta, fuente).toString(), "application/json", token())
             true
         } catch (e: ErrorNube) {
             if (e.message?.contains("ALREADY_EXISTS") == true || e.message?.contains("FAILED_PRECONDITION") == true ||
@@ -190,6 +192,10 @@ class CuentaCasaVerde(contexto: Context) {
     fun nuevos(): List<PedidoCV> =
         pedidosDeConsulta(pedir("https://firestore.googleapis.com/v1/${cv.docs}:runQuery",
             cuerpoConsultaNuevos().toString(), "application/json", token()))
+
+    /** pizarra-46: los `fields` de pedidos_busqueda/actual, o null si nadie la guardó todavía. */
+    fun busqueda(): JSONObject? = camposDeBatchGet(pedir("https://firestore.googleapis.com/v1/${cv.docs}:batchGet",
+        JSONObject().put("documents", JSONArray().put("${cv.docs}/$COLECCION_BUSQUEDA/actual")).toString(), "application/json", token()))
 
     /** pizarra-40: cuántos cambios de reservas esperan que alguien los confirme. */
     fun cambiosPendientes(): Int {

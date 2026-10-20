@@ -174,6 +174,21 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   de…», `DE_AUTOR`), los botones y lo que se escribe en el buscador no son
   publicaciones, y a una notificación de la campana se le saca el «1 min. No
   leída» antes de la huella (`sinHaceCuanto`), o entraba una vez por minuto.
+  **Y desde pizarra-46 busca lo que Mauro elige** (`Busqueda.kt`, 20-oct-2026:
+  «temporada diaria, mensual o anual, para tantas personas… jóvenes o
+  familias… lo más automáticamente posible»). La búsqueda es
+  `pedidos_busqueda/actual` de Casa Verde («🔎 Qué busco ahora» en Pedidos de
+  alquiler); la Pizarra la trae al encender el lector y cada hora. Un pedido es
+  quien BUSCA (no ofrece) dónde alojarse, en la zona, del tipo, con no más
+  personas que el máximo y del público elegido (`encaje`, con el motivo); lo
+  que el texto no dice no descarta. Va a la lista **con una respuesta rápida**
+  (`respuestaRapida`: con el nombre si se sabe, tres formas distintas, en
+  portugués si escribió en portugués, «varias cabañas, hasta 20 personas» para
+  un grupo grande, y SIEMPRE casaverdecanas.com.br) y **avisa en el acto**
+  («📍 Pedido en pantalla»): un toque copia la respuesta para pegarla en la
+  publicación que sigue a la vista, y lo marca respondido. Si cambian los
+  valores de la búsqueda en la página o en la regla, cambian acá (el banco los
+  compara si el sitio está al lado).
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):
   `mensajes/` de Tiempos (reglas v15) con `de`, `nombre`, `dispositivo` y
   `texto`, con la forma exacta de la regla (`cuerpoMensaje`; el banco la

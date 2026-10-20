@@ -44,7 +44,8 @@ class PantallaTest {
         assertEquals(2, notifs.size)                     // el pedido y lo de Jurerê; el cumpleaños del inicio no sale del teléfono
         assertTrue(notifs.all { it.app == "com.facebook.katana·pantalla" })
         assertFalse(notifs.any { it.texto.contains("cumpleaños") })
-        assertEquals(1, pedidos.size); assertEquals("facebook", pedidos[0].app); assertTrue(pedidos[0].texto.contains("Canasvieiras"))
+        assertEquals(1, pedidos.size); assertEquals("facebook", pedidos[0].m.app); assertTrue(pedidos[0].m.texto.contains("Canasvieiras"))
+        assertTrue(pedidos[0].respuesta.contains("casaverdecanas.com.br"))
     }
 
     @Test fun en_un_grupo_de_alquileres_sale_todo_lo_del_grupo() {
@@ -62,7 +63,7 @@ class PantallaTest {
     @Test fun lo_que_sale_lleva_los_códigos_y_los_enlaces_tapados() {
         val t = "Alquilo depto en Canasvieiras, reservá acá https://reservas.ejemplo.com/r?token=AbCdEf123456XyZ"
         val (n, p) = queSaleDe("com.facebook.katana", publicacionesDe(Nodo(hijos = listOf(Nodo(texto = t)))), 1, "x")
-        assertFalse(n[0].texto.contains("AbCdEf123456XyZ")); assertFalse(p[0].texto.contains("AbCdEf123456XyZ"))
+        assertFalse(n[0].texto.contains("AbCdEf123456XyZ")); assertFalse(p[0].m.texto.contains("AbCdEf123456XyZ"))
     }
 
     @Test fun un_árbol_enorme_tiene_techo() {
