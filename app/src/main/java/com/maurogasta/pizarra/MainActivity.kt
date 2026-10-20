@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-44
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-48
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -607,7 +607,7 @@ class MainActivity : Activity() {
                 Notificaciones.estado(this), 13f, "#9AA0A6"))
             // pizarra-44: el lector de Facebook por accesibilidad (Pantalla.kt).
             raiz.addView(texto("Lector de Facebook: " + Pantalla.estado(this) +
-                "\nEncendido, la Pizarra lee los grupos mientras los mirás en Facebook —también lo que quedó arriba y abajo de la pantalla— y manda los pedidos a la lista. Sólo lee y sólo dentro de Facebook: no toca nada.", 13f, "#9AA0A6"))
+                "\nEncendido, cuando tocás «Comentar» en una publicación de Facebook, la Pizarra la guarda en la lista y copia su respuesta: el teclado te la ofrece arriba y la pegás con un toque. Sólo lee y sólo dentro de Facebook: no toca nada.", 13f, "#9AA0A6"))
             if (!Pantalla.encendido(this)) raiz.addView(boton("Encender el lector de Facebook") {
                 try { startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (e: Exception) { }
                 mostrar("En Accesibilidad: «Apps descargadas» → Pizarra · lector de Facebook → encender. Si sale «Ajuste restringido»: Ajustes → Apps → Pizarra → ⋮ → «Permitir ajustes restringidos», y volvé a probar.")

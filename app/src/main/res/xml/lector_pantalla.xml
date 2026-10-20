@@ -3,7 +3,7 @@
      las tres apps de Facebook: Android no le pasa nada de ninguna otra app.
      Sólo lee: no pide gestos ni nada que actúe. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeViewScrolled|typeWindowContentChanged|typeWindowStateChanged"
+    android:accessibilityEventTypes="typeViewClicked|typeViewFocused"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds"
     android:canRetrieveWindowContent="true"

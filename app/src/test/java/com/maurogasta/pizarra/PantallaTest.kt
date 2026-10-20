@@ -39,33 +39,6 @@ class PantallaTest {
         assertTrue(p.isEmpty())
     }
 
-    @Test fun lo_de_interés_va_a_la_ronda_y_el_pedido_además_a_la_lista() {
-        val (notifs, pedidos) = queSaleDe("com.facebook.katana", publicacionesDe(pantalla), 1_000, "com.maurogasta.pizarra")
-        assertEquals(2, notifs.size)                     // el pedido y lo de Jurerê; el cumpleaños del inicio no sale del teléfono
-        assertTrue(notifs.all { it.app == "com.facebook.katana·pantalla" })
-        assertFalse(notifs.any { it.texto.contains("cumpleaños") })
-        assertEquals(1, pedidos.size); assertEquals("facebook", pedidos[0].m.app); assertTrue(pedidos[0].m.texto.contains("Canasvieiras"))
-        assertTrue(pedidos[0].respuesta.contains("casaverdecanas.com.br"))
-    }
-
-    @Test fun en_un_grupo_de_alquileres_sale_todo_lo_del_grupo() {
-        // El nombre del grupo viene en la tarjeta: lo que se publica ahí le interesa a la ronda, sea lo que sea.
-        val (n, _) = queSaleDe("com.facebook.katana", publicacionesDe(Nodo(hijos = listOf(tarjeta("Pedro Gómez", otro)))), 1, "x")
-        assertEquals(1, n.size)
-    }
-
-    @Test fun la_misma_publicación_leída_dos_veces_es_una() {
-        val a = queSaleDe("com.facebook.katana", publicacionesDe(pantalla), 1_000, "x").first
-        val b = queSaleDe("com.facebook.katana", publicacionesDe(pantalla), 99_000, "x").first
-        assertEquals(a.map { it.id }, b.map { it.id })
-    }
-
-    @Test fun lo_que_sale_lleva_los_códigos_y_los_enlaces_tapados() {
-        val t = "Alquilo depto en Canasvieiras, reservá acá https://reservas.ejemplo.com/r?token=AbCdEf123456XyZ"
-        val (n, p) = queSaleDe("com.facebook.katana", publicacionesDe(Nodo(hijos = listOf(Nodo(texto = t)))), 1, "x")
-        assertFalse(n[0].texto.contains("AbCdEf123456XyZ")); assertFalse(p[0].m.texto.contains("AbCdEf123456XyZ"))
-    }
-
     @Test fun un_árbol_enorme_tiene_techo() {
         val grande = Nodo(hijos = List(10_000) { Nodo(texto = "x$it") })
         assertTrue(enOrden(grande).size < 4_001)
@@ -88,13 +61,8 @@ class PantallaTest {
         assertTrue(p.isEmpty())
     }
 
-    @Test fun una_notificación_de_la_campana_es_la_misma_aunque_pase_el_tiempo() {
-        val a = "Ahora en Alquiler en Florianópolis, Brasil: \"Busco casa en Canasvieiras...\". 1 min. No leída"
-        val b = "Ahora en Alquiler en Florianópolis, Brasil: \"Busco casa en Canasvieiras...\". 3 min. Leída"
-        val na = queSaleDe("com.facebook.katana", publicacionesDe(Nodo(hijos = listOf(Nodo(texto = a)))), 1, "x").first
-        val nb = queSaleDe("com.facebook.katana", publicacionesDe(Nodo(hijos = listOf(Nodo(texto = b)))), 2, "x").first
-        assertEquals(na.single().id, nb.single().id); assertFalse(na.single().texto.contains("min"))
-        assertEquals("Ahora en Alquiler en Florianópolis, Brasil: \"Busco casa en Canasvieiras...\"", sinHaceCuanto(b))
+    @Test fun al_texto_se_le_saca_el_hace_cuánto() {
+        assertEquals("Ahora en Alquiler: \"Busco casa...\"", sinHaceCuanto("Ahora en Alquiler: \"Busco casa...\". 3 min. Leída"))
     }
 
     @Test fun canasvieiras_mal_escrito_también_es_canasvieiras() {
@@ -103,27 +71,48 @@ class PantallaTest {
         assertFalse(esPedidoDeAlquiler("alquiler en Bombinhas"))
     }
 
-    // pizarra-47: sin avisos flotantes; la respuesta se copia sola, y sólo si hay UN pedido a la vista.
-    @Test fun se_copia_sola_la_respuesta_del_único_pedido_a_la_vista() {
-        val p1 = "Hola, busco casa en Canasvieiras para 4 personas en enero, alguien tiene?"
-        val p2 = "Buscamos departamento en Ingleses para 2 personas en marzo, alguna recomendación?"
-        fun pantalla(v1: Boolean, v2: Boolean) = publicacionesDe(Nodo(hijos = listOf(
-            Nodo(desc = "Más opciones para la publicación de Ana Souza"), Nodo(texto = p1, visible = v1),
-            Nodo(desc = "Más opciones para la publicación de Juan Pérez"), Nodo(texto = p2, visible = v2))))
-        val solo = queSaleDe("com.facebook.katana", pantalla(true, false), 1, "x", Busqueda()).second
-        assertEquals(2, solo.size)                                   // los dos van a la lista…
-        val c = aCopiar(solo, "")!!                                  // …pero se copia el que se ve
-        assertEquals("Ana Souza", c.autor); assertTrue(c.respuesta.contains("Ana")); assertTrue(c.respuesta.contains(SITIO_WEB))
-        assertEquals(null, aCopiar(solo, c.m.id))                   // el mismo no se vuelve a copiar
-        val dos = queSaleDe("com.facebook.katana", pantalla(true, true), 1, "x", Busqueda()).second
-        assertEquals(null, aCopiar(dos, ""))                         // con dos a la vista, no se adivina
-        assertEquals(null, aCopiar(queSaleDe("com.facebook.katana", pantalla(false, false), 1, "x", Busqueda()).second, ""))
-    }
-
-    @Test fun el_lector_ya_no_tiene_avisos_flotantes() {
+    @Test fun el_lector_no_tiene_avisos_flotantes_ni_manda_lo_que_nadie_eligió() {
         val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Pantalla.kt").readText()
         assertFalse(codigo.contains("IMPORTANCE_HIGH")); assertFalse(codigo.contains("avisarEnPantalla"))
-        assertTrue(codigo.contains("IMPORTANCE_LOW"))
+        assertTrue(codigo.contains("IMPORTANCE_LOW")); assertFalse(codigo.contains("Notificaciones.mandar"))
+        val xml = java.io.File("src/main/res/xml/lector_pantalla.xml").readText()
+        assertTrue(xml.contains("typeViewClicked|typeViewFocused")); assertFalse(xml.contains("typeViewScrolled"))
+    }
+
+    // pizarra-48: sólo la publicación que la persona elige responder (toca «Comentar» o el cuadro).
+    private val p1 = "Hola, busco casa en Canasvieiras para 4 personas en enero, alguien tiene?"
+    private val p2 = "Buscamos departamento en Ingleses para 2 personas en marzo, alguna recomendación?"
+    private fun feed(focoEn: Int) = Nodo(hijos = listOf(
+        Nodo(desc = "Más opciones para la publicación de Ana Souza"), Nodo(texto = p1), Nodo(texto = "Comentar", foco = focoEn == 1),
+        Nodo(desc = "Más opciones para la publicación de Juan Pérez"), Nodo(texto = p2), Nodo(texto = "Comentar", foco = focoEn == 2),
+        Nodo(texto = "Escribí un comentario…", editable = true, foco = focoEn == 3)))
+
+    @Test fun la_elegida_es_la_publicación_de_arriba_de_lo_que_se_tocó() {
+        assertEquals(p1, publicacionElegida(feed(1))!!.texto)
+        assertEquals(p2, publicacionElegida(feed(2))!!.texto)
+        assertEquals(p2, publicacionElegida(feed(3))!!.texto)          // el cuadro de abajo es de la última
+        assertEquals(null, publicacionElegida(feed(0)))                  // sin toque, nada
+        // tocar el texto mismo de la publicación también la elige
+        val t = Nodo(hijos = listOf(Nodo(texto = p1), Nodo(texto = p2, foco = true)))
+        assertEquals(p2, publicacionElegida(t)!!.texto)
+    }
+
+    @Test fun la_elegida_lleva_autor_y_respuesta_con_la_página_y_los_códigos_tapados() {
+        val p = pedidoDeLaElegida(publicacionElegida(feed(1))!!, 1_000, Busqueda())
+        assertEquals("Ana Souza", p.autor); assertTrue(p.respuesta.startsWith("¡Hola Ana!") || p.respuesta.contains("Ana"))
+        assertTrue(p.respuesta.contains(SITIO_WEB)); assertEquals("facebook", p.m.app); assertEquals(4, p.encaje.personas)
+        val t = "Alquilo depto en Canasvieiras, reservá acá https://reservas.ejemplo.com/r?token=AbCdEf123456XyZ y comentá"
+        val q = pedidoDeLaElegida(Publicacion("", t), 1, Busqueda())
+        assertFalse(q.m.texto.contains("AbCdEf123456XyZ"))
+        // la misma publicación elegida dos veces es la misma (la huella no lleva la hora)
+        assertEquals(p.m.id, pedidoDeLaElegida(publicacionElegida(feed(1))!!, 99_000, Busqueda()).m.id)
+    }
+
+    @Test fun sólo_reacciona_a_lo_que_es_para_responder() {
+        assertTrue(esParaResponder("Comentar", false)); assertTrue(esParaResponder("Responder", false))
+        assertTrue(esParaResponder("Comentário", false)); assertTrue(esParaResponder("", true))
+        assertFalse(esParaResponder("Me gusta", false)); assertFalse(esParaResponder("Compartir", false))
+        assertFalse(esParaResponder("Ana Souza", false))
     }
 
     @Test fun el_lector_SÓLO_LEE_y_sólo_dentro_de_Facebook() {

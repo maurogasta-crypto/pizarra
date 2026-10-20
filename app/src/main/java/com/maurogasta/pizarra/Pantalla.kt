@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-47
+// Sello: pizarra-48
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -31,26 +31,25 @@ import kotlin.concurrent.thread
 // está mirando. Para Facebook, es una persona mirando el grupo. El banco busca
 // en este archivo cualquier acción sobre la pantalla y falla si aparece.
 //
-// ADÓNDE VA:
-//   · una publicación que pide alquilar en Canasvieiras → `pedidos_alquiler/`
-//     de Casa Verde, igual que si hubiera llegado por notificación (la ronda le
-//     prepara la respuesta);
-//   · TODA publicación que hable de alquileres, temporada o la zona →
-//     `notificaciones/` de Casa Verde, como una notificación más (`app` con
-//     «·pantalla»): la ronda la clasifica y borra lo que no sirve, y vence a
-//     los 7 días. Es el «máximo de información»: el filtro fino es de la ronda,
-//     no del teléfono. Con los códigos y los enlaces tapados (`taparCodigos`).
-// Lo que no habla de eso (un cumpleaños, una publicidad de zapatillas) no sale
-// del teléfono: no hay por qué mandar el inicio de Facebook de nadie.
+// ADÓNDE VA (desde pizarra-48, 20-oct, Mauro: «así sólo me guarda las que entro
+// y me prepara la respuesta automáticamente»): mientras se recorre, a NINGÚN
+// lado. Cuando la persona toca «Comentar» o el cuadro de texto de una
+// publicación, ésa —la última antes de lo que tocó (`publicacionElegida`)— va a
+// `pedidos_alquiler/` de Casa Verde con su respuesta rápida, y la respuesta
+// queda copiada: el teclado la ofrece arriba y se pega con un toque. Pegarla
+// sola en el cuadro sería escribir dentro de Facebook, y eso no se hace.
+// Hasta pizarra-47 mandaba además a `notificaciones/` todo lo que hablaba de
+// alquileres: era ruido, y guardaba lo que nadie eligió.
 //
-// LA BITÁCORA dice cuántas leyó y cuántas mandó, nunca el texto.
+// LA BITÁCORA dice cuántos pedidos se eligieron, nunca el texto.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Un nodo de la pantalla, sin Android: lo que el banco puede armar a mano. */
-data class Nodo(val texto: String = "", val desc: String = "", val hijos: List<Nodo> = emptyList(), val editable: Boolean = false, val visible: Boolean = true)
+/** `foco`: el nodo que la persona acaba de tocar o donde va a escribir (pizarra-48). */
+data class Nodo(val texto: String = "", val desc: String = "", val hijos: List<Nodo> = emptyList(), val editable: Boolean = false, val visible: Boolean = true, val foco: Boolean = false)
 
 /** Una publicación leída: quién o qué grupo (el texto corto de antes) y lo que dice. */
-data class Publicacion(val encabezado: String, val texto: String, val esAutor: Boolean = false, val visible: Boolean = true)
+data class Publicacion(val encabezado: String, val texto: String, val esAutor: Boolean = false, val visible: Boolean = true, val pos: Int = 0)
 
 /** Un pedido que cuadra con la búsqueda, con la respuesta rápida ya armada (pizarra-46). */
 data class PedidoPantalla(val m: MensajeAirbnb, val respuesta: String, val encaje: Encaje, val visible: Boolean = true, val autor: String = "")
@@ -68,6 +67,7 @@ fun enOrdenConVista(raiz: Nodo, techo: Int = MAX_NODOS): List<Pair<String, Boole
     var vistos = 0
     while (pila.isNotEmpty() && vistos < techo) {
         val n = pila.removeLast(); vistos++
+        if (n.foco) out.add(FOCO to true)   // pizarra-48: dónde tocó la persona, en el orden de lectura
         if (n.editable) continue      // pizarra-45: lo que la persona escribe (el buscador) no es una publicación
         val t = dicho(n); if (t.isNotEmpty()) out.add(t to n.visible)
         // También la descripción cuando trae MÁS que el texto: en Facebook la
@@ -78,7 +78,9 @@ fun enOrdenConVista(raiz: Nodo, techo: Int = MAX_NODOS): List<Pair<String, Boole
     return out
 }
 
-fun enOrden(raiz: Nodo, techo: Int = MAX_NODOS): List<String> = enOrdenConVista(raiz, techo).map { it.first }
+fun enOrden(raiz: Nodo, techo: Int = MAX_NODOS): List<String> = enOrdenConVista(raiz, techo).map { it.first }.filter { it != FOCO }
+
+private const val FOCO = "\u0000foco"
 
 /* Lo que Facebook pone en cada tarjeta y no es la publicación: los botones y
    sus instrucciones para quien usa un lector de pantalla (pizarra-45, visto en
@@ -125,55 +127,41 @@ fun publicacionesDe(raiz: Nodo): List<Publicacion> {
         val antes = autor ?: cerca.firstOrNull {
             it.length in 3..80 && !RELLENO.containsMatchIn(it) && !Regex("^\\d").containsMatchIn(it)
         }.orEmpty()
-        Publicacion(antes, sinHaceCuanto(t).take(4000), autor != null, conVista[i].second)
+        Publicacion(antes, sinHaceCuanto(t).take(4000), autor != null, conVista[i].second, i)
     }
 }
 
 private fun sinTildes(s: String): String =
     java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").lowercase()
 
-/* Lo que vale la pena que vea la ronda: alquileres, temporada, la zona. Amplio
-   a propósito —la ronda descarta—, pero no el inicio de Facebook entero. */
-private val DE_INTERES = Regex(
-    "\\b(alquil\\w*|alug\\w*|arriend\\w*|temporada|hosped\\w*|hospeda\\w*|vacacion\\w*|ferias|veraneo|verano|verao|" +
-        "departamento|depto|apartamento|apto|kitnet|quarto|habitacion\\w*|cabana\\w*|pousada|posada|diaria\\w*|" +
-        "canasvieiras|canas|jurere|ingleses|cachoeira|florianopolis|floripa|santa catarina|praia|playa)\\b")
-
-fun esDeInteres(texto: String): Boolean = DE_INTERES.containsMatchIn(sinTildes(texto))
-
-/** Lo que sale de una pantalla: las notificaciones para la ronda y los pedidos para la lista.
- *  Con búsqueda (pizarra-46), un pedido es lo que cuadra con ella; sin búsqueda
- *  todavía traída, lo de siempre: alquilar y Canasvieiras. */
-fun queSaleDe(paquete: String, pubs: List<Publicacion>, ahora: Long, propio: String, busqueda: Busqueda? = null): Pair<List<Notif>, List<PedidoPantalla>> {
-    val notifs = ArrayList<Notif>(); val pedidos = ArrayList<PedidoPantalla>()
-    for (p in pubs) {
-        val todo = p.encabezado + " " + p.texto
-        if (!esDeInteres(todo)) continue
-        // La huella no lleva la hora (Notif.id): la misma publicación leída diez veces es una.
-        notifDe("$paquete·pantalla", p.encabezado.ifEmpty { "Facebook" }, p.texto, emptyList(), ahora, propio)?.let { notifs.add(it) }
-        val e = if (busqueda != null) encaje(p.texto, busqueda)
-            else if (esPedidoDeAlquiler(todo)) Encaje(true, "alquilar y Canasvieiras") else null
-        if (e?.ok == true) {
-            val m = MensajeAirbnb(taparCodigos(p.encabezado).take(120), taparCodigos(p.texto).take(4000), emptyList(), ahora.toString(), app = "facebook")
-            pedidos.add(PedidoPantalla(m, respuestaRapida(if (p.esAutor) p.encabezado else "", p.texto, e, m.id.hashCode()), e,
-                p.visible, if (p.esAutor) p.encabezado else ""))
-        }
-    }
-    return notifs to pedidos
+/** pizarra-48: la publicación que la persona eligió responder. Es la última que aparece
+ *  ANTES del lugar que tocó («Comentar», o el cuadro para escribir): en Facebook el botón
+ *  y el cuadro van debajo de su publicación. Si tocó el texto mismo de una, es ésa. */
+fun publicacionElegida(raiz: Nodo): Publicacion? {
+    val orden = enOrdenConVista(raiz)
+    val foco = orden.indexOfFirst { it.first == FOCO }
+    if (foco < 0) return null
+    val pubs = publicacionesDe(raiz)
+    val propio = orden.getOrNull(foco + 1)?.first?.let { t -> pubs.firstOrNull { it.pos == foco + 1 && t.length >= LARGO_MINIMO } }
+    return propio ?: pubs.filter { it.pos < foco }.maxByOrNull { it.pos }
 }
 
-/** pizarra-47: la respuesta que se copia SOLA mientras se recorre. Sólo si hay UN pedido a la
- *  vista —con dos, la respuesta pegada podría ir a la publicación equivocada— y si no es la
- *  misma que ya se copió. Nada de avisos flotantes: Mauro, 20-oct, «en el escroleo son
- *  paralizantes en lugar de dinamizar». */
-fun aCopiar(pedidos: List<PedidoPantalla>, ultimo: String): PedidoPantalla? =
-    pedidos.filter { it.visible }.singleOrNull()?.takeIf { it.m.id != ultimo }
+/** El pedido de la elegida, con la respuesta rápida armada según lo que se busca. */
+fun pedidoDeLaElegida(p: Publicacion, ahora: Long, busqueda: Busqueda): PedidoPantalla {
+    val e = encaje(p.texto, busqueda)
+    val m = MensajeAirbnb(taparCodigos(p.encabezado).take(120), taparCodigos(p.texto).take(4000), emptyList(), ahora.toString(), app = "facebook")
+    val autor = if (p.esAutor) p.encabezado else ""
+    return PedidoPantalla(m, respuestaRapida(autor, p.texto, e, m.id.hashCode()), e, true, autor)
+}
+
+/* Lo que toca la persona cuando va a responder: el botón «Comentar» (o «Responder») o el cuadro de texto. */
+private val PARA_RESPONDER = Regex("^(comentar|comment|coment[aá]rio|comentario|responder|reply|escrib[ei]|escreva|write)", RegexOption.IGNORE_CASE)
+
+fun esParaResponder(rotulo: String, editable: Boolean): Boolean = editable || PARA_RESPONDER.containsMatchIn(rotulo.trim())
 
 /** El que lee. Android lo conecta cuando la persona lo enciende en Accesibilidad. */
 class LectorPantalla : AccessibilityService() {
-    private var ultima = 0L
-    private var copiado = ""
-    private val yaMandados = LinkedHashSet<String>()
+    private var ultimaElegida = ""
 
     override fun onServiceConnected() {
         Pantalla.anotar(this, conectado = true)
@@ -182,35 +170,37 @@ class LectorPantalla : AccessibilityService() {
         Bitacora.anotar(this, "pantalla: lector de Facebook CONECTADO")
     }
 
+    /* pizarra-48 (Mauro, 20-oct: «así sólo me guarda las que entro y me prepara la respuesta
+       automáticamente»): mientras se recorre no se guarda nada. Cuando la persona toca
+       «Comentar» o el cuadro de texto, ESA publicación va a la lista con su respuesta, y la
+       respuesta queda copiada: el teclado la ofrece arriba y se pega con un toque. */
     override fun onAccessibilityEvent(e: AccessibilityEvent?) {
         val paquete = e?.packageName?.toString() ?: return
         if (paquete !in PAQUETES_FACEBOOK) return
-        val ahora = System.currentTimeMillis()
-        if (ahora - ultima < 1200) return          // Facebook cambia la pantalla decenas de veces por segundo
-        ultima = ahora
+        if (e.eventType != AccessibilityEvent.TYPE_VIEW_CLICKED && e.eventType != AccessibilityEvent.TYPE_VIEW_FOCUSED) return
         try {
+            val fuente = e.source ?: return
+            val rotulo = (fuente.text ?: fuente.contentDescription ?: e.text?.joinToString(" ") ?: "").toString()
+            if (!esParaResponder(rotulo, fuente.isEditable)) return
             val raiz = rootInActiveWindow ?: return
-            val pubs = publicacionesDe(aNodo(raiz, 0, intArrayOf(0)))
-            val (notifs, pedidos) = queSaleDe(paquete, pubs, ahora, packageName, Buscador.actual(this))
-            val nuevas = synchronized(yaMandados) {
-                notifs.filter { yaMandados.add(it.id) }.also { while (yaMandados.size > 2000) yaMandados.remove(yaMandados.first()) }
-            }
-            val nuevosPedidos = synchronized(yaMandados) { pedidos.filter { yaMandados.add("p" + it.m.id) } }
-            Pantalla.anotar(this, leidas = pubs.size, mandadas = nuevas.size, pedidos = nuevosPedidos.size)
-            if (nuevas.isNotEmpty()) Notificaciones.mandar(this, nuevas)
-            if (nuevosPedidos.isNotEmpty()) Pantalla.cargarPedidos(this, nuevosPedidos)
-            aCopiar(pedidos, copiado)?.let { p -> copiado = p.m.id; Pantalla.copiar(this, p) }
+            val elegida = publicacionElegida(aNodo(raiz, 0, intArrayOf(0), fuente)) ?: return
+            val p = pedidoDeLaElegida(elegida, System.currentTimeMillis(), Buscador.actual(this))
+            if (p.m.id == ultimaElegida) return
+            ultimaElegida = p.m.id
+            Pantalla.copiar(this, p)
+            Pantalla.cargarPedidos(this, listOf(p))
+            Pantalla.anotar(this, leidas = 1, pedidos = 1)
         } catch (t: Throwable) {
             Bitacora.anotar(this, "pantalla: ${t.message ?: t.javaClass.simpleName}")
         }
     }
 
     /** Del árbol de Android al nuestro. Sólo se LEE: ni una acción sobre el nodo. */
-    private fun aNodo(n: AccessibilityNodeInfo, hondo: Int, cuenta: IntArray): Nodo {
+    private fun aNodo(n: AccessibilityNodeInfo, hondo: Int, cuenta: IntArray, tocado: AccessibilityNodeInfo): Nodo {
         cuenta[0]++
         val hijos = if (hondo > 60 || cuenta[0] > MAX_NODOS) emptyList() else
-            (0 until n.childCount).mapNotNull { i -> n.getChild(i)?.let { aNodo(it, hondo + 1, cuenta) } }
-        return Nodo(n.text?.toString().orEmpty(), n.contentDescription?.toString().orEmpty(), hijos, n.isEditable, n.isVisibleToUser)
+            (0 until n.childCount).mapNotNull { i -> n.getChild(i)?.let { aNodo(it, hondo + 1, cuenta, tocado) } }
+        return Nodo(n.text?.toString().orEmpty(), n.contentDescription?.toString().orEmpty(), hijos, n.isEditable, n.isVisibleToUser, n == tocado)
     }
 
     override fun onInterrupt() {}
@@ -242,16 +232,15 @@ object Pantalla {
         ed.putInt("mandadas", (if (mismo) pr.getInt("mandadas", 0) else 0) + mandadas)
         ed.putInt("pedidos", (if (mismo) pr.getInt("pedidos", 0) else 0) + pedidos)
         ed.apply()
-        if (mandadas > 0 || pedidos > 0) Bitacora.anotar(c, "pantalla: $mandadas publicaciones para la ronda, $pedidos pedidos (de $leidas leídas)")
+        if (pedidos > 0) Bitacora.anotar(c, "pantalla: un pedido elegido para responder, a la lista con su respuesta")
     }
 
     /** Para la pantalla de la app y el diagnóstico. Sin un solo texto leído. */
     fun estado(c: Context): String {
         if (!encendido(c)) return "apagado (Ajustes → Accesibilidad → Pizarra)"
         val pr = p(c); val hoy = isoUtc(System.currentTimeMillis()).take(10)
-        if (pr.getString("dia", "") != hoy) return "encendido · hoy todavía no leyó Facebook"
-        return "encendido · hoy: ${pr.getInt("leidas", 0)} publicaciones vistas, ${pr.getInt("mandadas", 0)} a la ronda, " +
-            "${pr.getInt("pedidos", 0)} pedidos · última ${pr.getString("ultima", "")} UTC"
+        if (pr.getString("dia", "") != hoy) return "encendido · hoy todavía no elegiste ningún pedido"
+        return "encendido · hoy: ${pr.getInt("pedidos", 0)} pedidos elegidos para responder · último ${pr.getString("ultima", "")} UTC"
     }
 
     /** Los pedidos, a «Pedidos de alquiler» de Casa Verde, con su respuesta rápida. Sin aviso

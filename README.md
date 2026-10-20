@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-47` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-48` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -365,11 +365,12 @@ mira.
   7, 2 ≈ 12, las 3 ≈ 20); familias, parejas, jóvenes o grupos; Canasvieiras,
   el norte de la isla o toda Floripa. La Pizarra lo trae al encender el
   lector y cada hora (`Busqueda.kt`).
-- **Lo que cuadra se carga solo**, con una respuesta rápida que siempre
-  sugiere casaverdecanas.com.br. **Sin avisos flotantes** (pizarra-47): si hay
-  un solo pedido a la vista, su respuesta queda copiada sola y un aviso
-  silencioso dice de quién es; se toca Comentar en esa publicación, mantener
-  apretado, Pegar. Con dos pedidos a la vista no se copia nada.
+- **Sólo se guarda lo que elegís responder** (pizarra-48): recorrer no guarda
+  nada. Al tocar «Comentar» (o el cuadro de texto) de una publicación, ésa va a
+  «Pedidos de alquiler» con una respuesta rápida que siempre sugiere
+  casaverdecanas.com.br, y la respuesta queda copiada: el teclado la ofrece
+  arriba y se pega con un toque. Un aviso silencioso dice de quién es. Sin
+  avisos flotantes.
 
 ## Si falla en el teléfono (pizarra-3)
 

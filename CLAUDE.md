@@ -192,7 +192,16 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   `aCopiar`), su respuesta se copia SOLA y un aviso de prioridad baja, sin
   ventana ni sonido, dice de quién es; con dos a la vista no se copia nada,
   para no pegar la de otro. Y el aviso de la hora («✍️ Respuesta lista») no
-  sale para lo leído en pantalla, porque no abriría nada. Si cambian los
+  sale para lo leído en pantalla, porque no abriría nada. **Y desde
+  pizarra-48 sólo cuenta lo que la persona ELIGE** (Mauro: «así sólo me
+  guarda las que entro y me prepara la respuesta automáticamente»): el lector
+  escucha sólo toques y focos (`typeViewClicked|typeViewFocused`); cuando se
+  toca «Comentar» o el cuadro de texto (`esParaResponder`), la publicación de
+  arriba de ese toque (`publicacionElegida`) va a la lista con su respuesta y
+  la respuesta queda copiada: el teclado la ofrece arriba y se pega con un
+  toque. Recorrer no guarda nada, y ya no se manda nada a `notificaciones/`.
+  **Pegarla sola en el cuadro NO se hace**: sería escribir dentro de Facebook,
+  la línea que este lector no cruza. Si cambian los
   valores de la búsqueda en la página o en la regla, cambian acá (el banco los
   compara si el sitio está al lado).
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):
