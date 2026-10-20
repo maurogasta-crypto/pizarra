@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Notificaciones.kt — TODAS las notificaciones del teléfono de captura, a la
-// base de Casa Verde, para que la ronda las clasifique. Sello: pizarra-42
+// base de Casa Verde, para que la ronda las clasifique. Sello: pizarra-43
 //
 // 19-oct-2026, decisión de Mauro: «que lea todo… y que la ronda lo clasifique y
 // descarte en caso que no cuadre a ninguna de las aplicaciones o agendas,
@@ -61,11 +61,34 @@ data class Notif(val app: String, val titulo: String, val texto: String, val lin
 private val PALABRAS_CODIGO = Regex(
     "c[oó]digo|\\bcode\\b|verifica|verifique|verification|\\botp\\b|\\bpin\\b|senha|contrase[ñn]a|password|token|2fa|autentica|autorizaci[oó]n|clave",
     RegexOption.IGNORE_CASE)
-private val NUMERO_CODIGO = Regex("(?<![\\d.,])(\\d{2})((?:[ -]?\\d){2,6})(?![\\d.,])")
+/* El borde es «ni letra ni cifra, ni un punto o una coma pegados a otra
+   cifra»: así «1.250,00» no se toca y «482913.» —el código con su punto
+   final— sí (pizarra-43: hasta pizarra-42 el punto final lo dejaba pasar).
+   La letra también es borde: «23100RN82L», un modelo de teléfono, no es un código. */
+private val NUMERO_CODIGO = Regex("(?<![\\p{L}\\d]|\\d[.,])(\\d{2})((?:[ -]?\\d){2,6})(?![\\p{L}\\d]|[.,]\\d)")
+
+/* Un enlace de verificación abre algo aunque no tenga cifras sueltas
+   («whois_verify.html?code=7SDz8c…», un enlace mágico de inicio de sesión).
+   En CUALQUIER notificación, con o sin la palabra: el valor de un parámetro
+   que se llama como una llave, y todo tramo largo de letras y cifras
+   mezcladas dentro de una dirección. Para clasificar alcanza con saber que
+   había un enlace; la llave no hace falta nunca. */
+private val URL = Regex("https?://\\S+", RegexOption.IGNORE_CASE)
+private val PARAM_LLAVE = Regex(
+    "([?&#;](?:[\\w-]*(?:code|token|key|otp|pin|auth|verif|confirm|reset|secret|sig|session|login|pass)[\\w-]*|t|k|c)=)([^&#\\s]{4,})",
+    RegexOption.IGNORE_CASE)
+private val TRAMO_LARGO = Regex("(?=[A-Za-z0-9_-]*\\d)(?=[A-Za-z0-9_-]*[A-Za-z])[A-Za-z0-9_-]{20,}")
+
+private fun tapar(v: String) = v.take(2) + "•".repeat(minOf(v.length - 2, 8))
+
+fun taparEnlaces(s: String): String = URL.replace(s) { u ->
+    TRAMO_LARGO.replace(PARAM_LLAVE.replace(u.value) { m -> m.groupValues[1] + tapar(m.groupValues[2]) }) { tapar(it.value) }
+}
 
 fun taparCodigos(s: String): String {
-    if (!PALABRAS_CODIGO.containsMatchIn(s)) return s
-    return NUMERO_CODIGO.replace(s) { m -> m.groupValues[1] + m.groupValues[2].replace(Regex("\\d"), "•") }
+    val sinEnlaces = taparEnlaces(s)
+    if (!PALABRAS_CODIGO.containsMatchIn(sinEnlaces)) return sinEnlaces
+    return NUMERO_CODIGO.replace(sinEnlaces) { m -> m.groupValues[1] + m.groupValues[2].replace(Regex("\\d"), "•") }
 }
 
 /** De una notificación, lo que se guarda — o null si no hay nada escrito o es de esta misma app. */

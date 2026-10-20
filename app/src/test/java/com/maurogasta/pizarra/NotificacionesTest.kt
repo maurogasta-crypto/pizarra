@@ -20,6 +20,25 @@ class NotificacionesTest {
         assertEquals("Use 55••••• como senha temporária", taparCodigos("Use 5512345 como senha temporária"))
     }
 
+    @Test fun elCódigoConSuPuntoFinal_tambiénSeTapa() {
+        // pizarra-43: hasta pizarra-42 «482913.» pasaba entero
+        assertEquals("Tu código es 48••••.", taparCodigos("Tu código es 482913."))
+        assertEquals("Código: 77••••, válido 10 minutos", taparCodigos("Código: 774411, válido 10 minutos"))
+        // un modelo de teléfono no es un código, aunque la notificación hable de verificar
+        assertEquals("verificación en Redmi 23100RN82L", taparCodigos("verificación en Redmi 23100RN82L"))
+    }
+
+    @Test fun unEnlaceDeVerificación_noViaja() {
+        val d = taparCodigos("Verify: https://www.dynadot.com/whois_verify.html?code=7SDz8c8Q9BW7v8KTG7d8C737n9S8X6X7H6R707l7mJ8yrq6x65h7C9Q")
+        assertFalse(d.contains("7SDz8c8Q9BW7")); assertTrue(d.contains("dynadot.com/whois_verify.html?code=7S"))
+        // sin la palabra al lado, igual: un enlace mágico en el camino
+        val m = taparCodigos("Entrá acá https://app.ejemplo.com/login/a8F3kQ9zP2mX7vL4nR6tY1wB")
+        assertFalse(m.contains("a8F3kQ9zP2mX7vL4nR6tY1wB")); assertTrue(m.startsWith("Entrá acá https://app.ejemplo.com/login/a8"))
+        assertFalse(taparCodigos("reset https://x.com/r?oobCode=abcdEFGHijkl&lang=es").contains("abcdEFGHijkl"))
+        // un enlace común queda como está
+        assertEquals("Mirá https://casayourte.com/album.html?lang=fr", taparCodigos("Mirá https://casayourte.com/album.html?lang=fr"))
+    }
+
     @Test fun loQueNoEsUnCódigo_noSeToca() {
         // sin la palabra al lado, un número es un número
         assertEquals("Llegamos a las 1930 al aeropuerto", taparCodigos("Llegamos a las 1930 al aeropuerto"))

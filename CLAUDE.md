@@ -145,8 +145,10 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   regla (`CAMPOS_NOTIFICACION`, `cuerpoNotificacion`; el banco la compara si el
   sitio está al lado), sin pisar. **Los códigos de verificación se tapan acá,
   antes de salir** (`taparCodigos`: un número de 4 a 8 cifras en una
-  notificación que habla de códigos queda «48••••»), y eso no se afloja: es la
-  regla de oro. NO va a la bodega (git no olvida): la ronda la clasifica y
+  notificación que habla de códigos queda «48••••», también con su punto
+  final; y desde pizarra-43, en CUALQUIER notificación, la llave de un enlace
+  de verificación —`?code=…`, un enlace mágico— queda «7S••••••»,
+  `taparEnlaces`), y eso no se afloja: es la regla de oro. NO va a la bodega (git no olvida): la ronda la clasifica y
   borra lo que no sirve. Lo que no pudo subir queda en una cola con techo y se
   reintenta cada hora. La bitácora dice cuántas y de qué apps, nunca el texto.
   Airbnb y Facebook siguen además por su camino de siempre.

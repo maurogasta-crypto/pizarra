@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-42` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-43` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -308,8 +308,13 @@ caso que no cuadre a ninguna de las aplicaciones o agendas, pizarra, etc».
 - **Lo que no sale nunca: un código de verificación.** En una notificación que
   habla de códigos («código», «code», «senha», «PIN»…), un número de 4 a 8
   cifras se tapa ACÁ, antes de subir: «Tu código es 48••••»
-  (`taparCodigos`, con su banco, que también prueba que un monto o una hora no
-  se tocan).
+  (`taparCodigos`, con su banco, que también prueba que un monto, una hora o
+  un modelo de teléfono no se tocan). **Y un enlace de verificación tampoco**
+  (pizarra-43, `taparEnlaces`): en cualquier notificación, el valor de un
+  parámetro con nombre de llave (`code`, `token`, `oobCode`…) y todo tramo
+  largo de letras y cifras dentro de una dirección se tapan. Lo encontró la
+  primera ronda que clasificó: un enlace `whois_verify.html?code=…` llegó
+  entero, y un «482913.» con su punto final también habría pasado.
 - **Adónde va:** a `notificaciones/` de la base de **Casa Verde**, con la misma
   cuenta de Casa Verde de los pedidos de alquiler. NO a la bodega: es git y lo
   que entra ahí no se olvida. Nadie del equipo la lee desde un sitio; la lee
