@@ -201,7 +201,18 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   la respuesta queda copiada: el teclado la ofrece arriba y se pega con un
   toque. Recorrer no guarda nada, y ya no se manda nada a `notificaciones/`.
   **Pegarla sola en el cuadro NO se hace**: sería escribir dentro de Facebook,
-  la línea que este lector no cruza. Si cambian los
+  la línea que este lector no cruza. **Y desde pizarra-49 la respuesta
+  coincide con la ocupación** (`Disponibilidad.kt`, Mauro: «mirar
+  disponibilidad al inicio de las búsquedas, en esa sesión, una sola vez»): al
+  abrir Facebook después de media hora sin abrirlo (`Ocupado.empiezaSesion`)
+  se traen `disponibilidad/` y `cabanas/` de Casa Verde, públicas. Al elegir
+  una publicación se leen sus fechas (`fechasPedidas`: «13.01 al 21.01», «del
+  10 al 23 de enero», «enero 10 al 23», quincenas, Semana Santa, Carnaval, Año
+  Nuevo, un mes suelto) y se cruzan (`lugarPara`): con lugar, la respuesta
+  dice esas fechas y cuántas cabañas juntas hacen falta; **sin lugar no se
+  copia ni se guarda nada**, y un aviso silencioso lo dice; sin fechas, la
+  respuesta de siempre. La cabaña 1 tiene `capacidad: 1` en la base: hasta que
+  se corrija vale 8 (`CAPACIDAD_SI_FALTA`). Si cambian los
   valores de la búsqueda en la página o en la regla, cambian acá (el banco los
   compara si el sitio está al lado).
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):

@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CasaVerde.kt — Los pedidos de alquiler de Facebook, directo a la lista de
-// Casa Verde. Sello: pizarra-47
+// Casa Verde. Sello: pizarra-49
 //
 // 18-oct-2026, Mauro: que la lista de pedidos se llene sin despertar al chat
 // cada vez que aparece una notificación; el chat se despierta unas veces por
@@ -192,6 +192,11 @@ class CuentaCasaVerde(contexto: Context) {
     fun nuevos(): List<PedidoCV> =
         pedidosDeConsulta(pedir("https://firestore.googleapis.com/v1/${cv.docs}:runQuery",
             cuerpoConsultaNuevos().toString(), "application/json", token()))
+
+    /** pizarra-49: una colección entera (la ocupación y las cabañas, que son de lectura pública). */
+    fun coleccion(nombre: String): List<Pair<String, JSONObject>> = documentosDeConsulta(pedir("https://firestore.googleapis.com/v1/${cv.docs}:runQuery",
+        JSONObject().put("structuredQuery", JSONObject().put("from", JSONArray().put(JSONObject().put("collectionId", nombre))).put("limit", 1000)).toString(),
+        "application/json", token()))
 
     /** pizarra-46: los `fields` de pedidos_busqueda/actual, o null si nadie la guardó todavía. */
     fun busqueda(): JSONObject? = camposDeBatchGet(pedir("https://firestore.googleapis.com/v1/${cv.docs}:batchGet",

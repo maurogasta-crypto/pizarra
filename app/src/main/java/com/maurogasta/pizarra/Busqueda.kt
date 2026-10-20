@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busqueda.kt — Qué pedidos de alquiler se buscan AHORA, y si una publicación
-// cuadra. Sello: pizarra-46
+// cuadra. Sello: pizarra-49
 //
 // 20-oct-2026, Mauro: «en la misma aplicación de Casa Verde, para ver los
 // pedidos, tiene que haber una configuración de los parámetros que yo estoy
@@ -120,18 +120,21 @@ fun busquedaDeCampos(f: JSONObject?): Busqueda {
         lista("zonas", setOf("canasvieiras", "norte")), activa)
 }
 
-private fun enPortugues(texto: String): Boolean =
+fun enPortugues(texto: String): Boolean =
     Regex("\\b(voce|voces|procuro|procurando|alguem|pessoas|obrigad\\w*|criancas|estamos|gostaria|aluguel|ficar|praia)\\b").containsMatchIn(plano(texto)) &&
         !Regex("\\b(busco|buscamos|personas|gracias|ninos|alquiler|playa)\\b").containsMatchIn(plano(texto))
 
 /** La respuesta rápida que la Pizarra deja lista en el acto. Corta, distinta según quién, y SIEMPRE con la página. */
-fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int): String {
+fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int, lugar: Lugar = Lugar.SinFechas): String {
     val pila = nombre.trim().split(Regex("\\s+")).firstOrNull()?.takeIf { it.length in 2..20 && it[0].isUpperCase() }
     val pt = enPortugues(texto)
     val k = Math.floorMod(semilla, 3)
     if (pt) {
         val ola = listOf("Olá", "Oi", "Olá, tudo bem?")[k] + (if (pila != null) " $pila" else "") + "!"
-        val lugar = when {
+        val frase = when {
+            lugar is Lugar.Hay && lugar.cabanas.size > 1 -> " Temos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, true)} em Canasvieiras: ${lugar.cabanas.size} cabanas juntas para os ${e.personas}"
+            lugar is Lugar.Hay -> " Temos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, true)} nas nossas cabanas em Canasvieiras" + (if (e.personas > 0) ", para os ${e.personas}" else "")
+            lugar is Lugar.MesConLugar -> " Em ${mesEnPalabras(lugar.mes, true)} ainda temos datas livres nas nossas cabanas em Canasvieiras"
             e.personas > 7 -> " Temos cabanas em Canasvieiras e alugamos várias juntas, até 20 pessoas"
             e.personas > 0 -> " Temos cabanas em Canasvieiras com lugar para ${e.personas} pessoas"
             else -> " Temos cabanas em Canasvieiras, no norte da ilha"
@@ -139,10 +142,13 @@ fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int): Str
         val fim = listOf(" Veja fotos e disponibilidade em $SITIO_WEB e chama no privado 😊",
             " Dá uma olhada em $SITIO_WEB e me escreve no privado.",
             " Fotos e datas livres em $SITIO_WEB; qualquer dúvida, no privado!")[k]
-        return ola + lugar + fim
+        return ola + frase + fim
     }
     val hola = listOf("¡Hola", "Hola", "¡Buenas")[k] + (if (pila != null) " $pila" else "") + "!"
-    val lugar = when {
+    val frase = when {
+        lugar is Lugar.Hay && lugar.cabanas.size > 1 -> " Tenemos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, false)} en Canasvieiras: ${lugar.cabanas.size} cabañas juntas para los ${e.personas}"
+        lugar is Lugar.Hay -> " Tenemos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, false)} en nuestras cabañas de Canasvieiras" + (if (e.personas > 0) ", para los ${e.personas}" else "")
+        lugar is Lugar.MesConLugar -> " En ${mesEnPalabras(lugar.mes, false)} todavía tenemos fechas libres en nuestras cabañas de Canasvieiras"
         e.personas > 7 -> " Tenemos cabañas en Canasvieiras y alquilamos varias juntas, hasta 20 personas"
         e.personas > 0 -> " Tenemos cabañas en Canasvieiras con lugar para ${e.personas}"
         e.publico == "familias" -> " Tenemos cabañas en Canasvieiras, ideales para ir en familia"
@@ -151,7 +157,7 @@ fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int): Str
     val fin = listOf(" Mirá fotos y disponibilidad en $SITIO_WEB y escribinos por privado 😊",
         " Pegale una mirada a $SITIO_WEB y escribime por privado.",
         " Fotos y fechas libres en $SITIO_WEB; cualquier duda, por privado.")[k]
-    return hola + lugar + fin
+    return hola + frase + fin
 }
 
 /** La búsqueda guardada en el teléfono, y traerla de Casa Verde. */
