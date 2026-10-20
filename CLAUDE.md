@@ -152,6 +152,23 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   borra lo que no sirve. Lo que no pudo subir queda en una cola con techo y se
   reintenta cada hora. La bitácora dice cuántas y de qué apps, nunca el texto.
   Airbnb y Facebook siguen además por su camino de siempre.
+- **Y lee Facebook POR LA PANTALLA, mientras alguien lo mira** (pizarra-44,
+  `Pantalla.kt`, 20-oct-2026, Mauro: «no funcionan las notificaciones push de
+  facebook… el máximo de información con el mínimo de intervención»). Un
+  servicio de accesibilidad atado a las tres apps de Facebook
+  (`res/xml/lector_pantalla.xml`, `packageNames`: Android no le pasa nada de
+  otra app) recorre el árbol ENTERO de la ventana cada vez que Facebook se
+  desliza —también lo que quedó armado arriba y abajo— y saca las
+  publicaciones (`publicacionesDe`). Lo que habla de alquileres, temporada o la
+  zona va a `notificaciones/` como `<paquete>·pantalla` para que la ronda lo
+  clasifique; un pedido de Canasvieiras va además a `pedidos_alquiler/` por
+  `crearPedido`, como si hubiera llegado por notificación. **SÓLO LEE: no toca,
+  no desliza, no abre «Ver más»** —automatizar toques dentro de Facebook es lo
+  que bloquea la cuenta, y el ecosistema lo prohíbe—, y el banco falla si
+  aparece una acción en `Pantalla.kt` o gestos en el XML. Sin red de la API de
+  grupos (Meta la cerró en abril de 2024), es la única lectura que no se ve
+  distinta de una persona mirando. Se enciende en Accesibilidad; en una app que
+  no viene de Play Store, antes «Permitir ajustes restringidos».
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):
   `mensajes/` de Tiempos (reglas v15) con `de`, `nombre`, `dispositivo` y
   `texto`, con la forma exacta de la regla (`cuerpoMensaje`; el banco la

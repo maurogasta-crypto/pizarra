@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pizarra-44: el lector de Facebook (Pantalla.kt). packageNames lo ata a
+     las tres apps de Facebook: Android no le pasa nada de ninguna otra app.
+     Sólo lee: no pide gestos ni nada que actúe. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeViewScrolled|typeWindowContentChanged|typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/descripcion_pantalla"
+    android:notificationTimeout="500"
+    android:packageNames="com.facebook.katana,com.facebook.lite,com.facebook.groups" />

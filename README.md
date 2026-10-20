@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-43` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-44` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -325,6 +325,38 @@ caso que no cuadre a ninguna de las aplicaciones o agendas, pizarra, etc».
 - **Hace falta publicar `interno/firestore.rules` de Casa Verde** (entra el
   bloque de `notificaciones`): hasta entonces la base dice que no y quedan en
   la cola.
+
+## Facebook por la pantalla, mientras alguien lo mira (pizarra-44)
+
+20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… buscá
+el máximo de información con el mínimo de intervención». Facebook no avisa
+cada publicación de un grupo, y la API de grupos la cerró Meta en abril de
+2024: lo que queda es leer lo que la app de Facebook ya armó para quien la
+mira.
+
+- **Qué hace:** `LectorPantalla` (`Pantalla.kt`) es un servicio de
+  accesibilidad. Cada vez que Facebook se desliza o cambia, recorre el árbol
+  entero de la ventana —también lo que quedó armado fuera de la vista— y saca
+  las publicaciones (`publicacionesDe`: los textos largos, sin repetir la
+  tarjeta y su párrafo).
+- **Adónde va:** lo que habla de alquileres, temporada o la zona (o se publicó
+  en un grupo con eso en el nombre) va a `notificaciones/` de Casa Verde como
+  `<paquete>·pantalla`, para que la ronda lo clasifique; un pedido de
+  alquiler en Canasvieiras va además a «Pedidos de alquiler». Con los códigos
+  y los enlaces tapados. El resto del inicio de Facebook no sale del teléfono.
+- **Lo que no hace nunca:** tocar, deslizar, abrir «Ver más» ni escribir. Es
+  lo que bloquea una cuenta, y el banco falla si aparece una acción en el
+  archivo. Hay que recorrer el grupo a mano: un minuto por grupo alcanza,
+  rápido, porque lee lo que quedó armado arriba y abajo.
+- **Sólo dentro de Facebook:** `res/xml/lector_pantalla.xml` lo ata a las
+  tres apps de Facebook; Android no le pasa nada de ninguna otra.
+- **Cómo se enciende:** Pizarra → Casa Verde → «Encender el lector de
+  Facebook» → Accesibilidad → Apps descargadas → «Pizarra · lector de
+  Facebook». Si Android dice «Ajuste restringido» (pasa con las apps que no
+  vienen de Play Store): Ajustes → Apps → Pizarra → ⋮ → «Permitir ajustes
+  restringidos», y de nuevo.
+- **Cómo se sabe que anda:** la misma sección dice cuántas publicaciones vio
+  hoy, cuántas mandó y cuántos pedidos. La bitácora, sólo los números.
 
 ## Si falla en el teléfono (pizarra-3)
 

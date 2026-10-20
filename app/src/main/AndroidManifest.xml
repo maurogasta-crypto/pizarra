@@ -179,6 +179,22 @@
              Canasvieiras de los grupos de Facebook. El nombre de la clase no
              cambia: el permiso que dio Android va atado a él. Android lo conecta recién cuando la persona le da el
              acceso; la app la lleva a ese renglón. -->
+        <!-- pizarra-44: el lector de Facebook por accesibilidad (Pantalla.kt).
+             Sólo dentro de las apps de Facebook (res/xml/lector_pantalla.xml) y
+             sólo lee. Se enciende en Ajustes → Accesibilidad → Pizarra. -->
+        <service
+            android:name=".LectorPantalla"
+            android:exported="true"
+            android:label="Pizarra · lector de Facebook"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/lector_pantalla" />
+        </service>
+
         <service
             android:name=".LectorAirbnb"
             android:exported="true"

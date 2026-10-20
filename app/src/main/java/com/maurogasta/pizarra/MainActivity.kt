@@ -24,7 +24,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-42
+// MainActivity.kt — Los ajustes de la app, y Compartir. Sello: pizarra-44
 //
 // pizarra-15 (10-oct-2026, Mauro): «📝 La pizarra» está PLEGADA y se abre con
 // un toque; adentro, las tareas por categoría (`paraElegirPorCategoria`). Y el
@@ -117,7 +117,8 @@ class MainActivity : Activity() {
             "Casa Verde: " + (if (cv.conSesion) "con sesión" else "sin sesión") +
                 (if (cv.ultimo.isNotEmpty()) " · pedidos: ${cv.ultimo}" else "") +
                 (if (cv.respuestas.isNotEmpty()) " · respuestas: ${cv.respuestas}" else ""),
-            "Notificaciones a Casa Verde: " + Notificaciones.estado(this))
+            "Notificaciones a Casa Verde: " + Notificaciones.estado(this),
+            "Lector de Facebook: " + Pantalla.estado(this))
         val texto = Bitacora.armarDiagnostico(estado, Bitacora.ultimos(this, 120))
         decir("Mandando…")
         enSegundo({ nube.mandarFalla(texto, "traba") }) { decir("Mandado a Claude. Contale en el chat qué estabas tocando.") }
@@ -604,6 +605,13 @@ class MainActivity : Activity() {
                 (if (cv.respuestas.isNotEmpty()) "\nRespuestas: ${cv.respuestas}" else "") +
                 "\nTodas las notificaciones de este teléfono van también a Casa Verde, con los códigos tapados, para que Claude las revise en la ronda: " +
                 Notificaciones.estado(this), 13f, "#9AA0A6"))
+            // pizarra-44: el lector de Facebook por accesibilidad (Pantalla.kt).
+            raiz.addView(texto("Lector de Facebook: " + Pantalla.estado(this) +
+                "\nEncendido, la Pizarra lee los grupos mientras los mirás en Facebook —también lo que quedó arriba y abajo de la pantalla— y manda los pedidos a la lista. Sólo lee y sólo dentro de Facebook: no toca nada.", 13f, "#9AA0A6"))
+            if (!Pantalla.encendido(this)) raiz.addView(boton("Encender el lector de Facebook") {
+                try { startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (e: Exception) { }
+                mostrar("En Accesibilidad: «Apps descargadas» → Pizarra · lector de Facebook → encender. Si sale «Ajuste restringido»: Ajustes → Apps → Pizarra → ⋮ → «Permitir ajustes restringidos», y volvé a probar.")
+            })
             raiz.addView(boton("Traer respuestas ahora") {
                 mostrar("Trayendo…")
                 enFondo { val n = Responder.sincronizar(this); mostrar(if (n > 0) "$n respuestas nuevas: están en la barra de avisos." else "Nada nuevo. ${cv.respuestas}") }
