@@ -139,6 +139,8 @@ class PantallaTest {
         assertTrue(p.isEmpty())
         assertFalse(hablaDeAlojamiento("Musicien, Pianiste, Guitariste, Chanteur en un grupo de rock de la ciudad"))
         assertTrue(hablaDeAlojamiento(pedidoAbierto))
+        // pizarra-54: un mensaje de Marketplace (visto el 20-oct, guardado por la 52) no es un pedido
+        assertFalse(hablaDeAlojamiento("Antonella está esperando tu respuesta sobre Patines. Ver publicación"))
     }
 
     @Test fun el_nombre_sólo_si_firma_una_persona() {

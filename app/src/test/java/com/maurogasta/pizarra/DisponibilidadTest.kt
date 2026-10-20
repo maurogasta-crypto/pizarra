@@ -80,6 +80,14 @@ class DisponibilidadTest {
         assertTrue(tituloDeEleccion(p), tituloDeEleccion(p).contains("pasa la base: $cond"))
     }
 
+    // pizarra-54: la alternativa que pasa de la base lo dice (15 personas, segunda quincena de enero, 20-oct).
+    @Test fun la_alternativa_con_extra_lo_dice() {
+        val p = pedidoDeLaElegida(Publicacion("", "Busco alquiler para 15 personas somos familia. Para la segunda quincena enero"), 1, Busqueda(), ocup, cabanas, hoy)
+        val l = p.lugar as Lugar.Lleno
+        assertTrue(l.alt!!.conExtra)
+        assertTrue(p.respuesta, p.respuesta.contains(", con un adicional por persona,"))
+    }
+
     @Test fun la_respuesta_dice_las_fechas_y_la_página() {
         val t = "Hola busco alquiler en canas vieiras para la segunda quincena de marzo 2027"
         val r = respuestaRapida("Susana Azzollini", t, Encaje(true, ""), 0, lugar(t, 0))

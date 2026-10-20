@@ -48,6 +48,9 @@ class BusquedaTest {
         assertEquals(15, cuantasPersonas("Somos una familia de 15 personas"))
         assertEquals(4, cuantasPersonas("somos 4 y un perro"))
         assertEquals(0, cuantasPersonas("del 18 al 25 de enero"))
+        // pizarra-54: con letras
+        assertEquals(2, cuantasPersonas("Hola, busco alquiler para dos personas en canasvieiras"))
+        assertEquals(8, cuantasPersonas("somos oito pessoas"))
     }
 
     @Test fun la_respuesta_rápida_siempre_lleva_la_página_y_no_se_repite() {

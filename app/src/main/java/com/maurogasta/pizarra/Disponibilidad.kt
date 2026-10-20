@@ -8,7 +8,7 @@ import java.time.YearMonth
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Disponibilidad.kt — Que la respuesta a un pedido de Facebook diga la verdad
-// sobre la ocupación de Casa Verde. Sello: pizarra-52
+// sobre la ocupación de Casa Verde. Sello: pizarra-54
 //
 // 20-oct-2026, Mauro: «tiene que mirar disponibilidad al inicio de las
 // búsquedas, en esa sesión, una sola vez, y buscar que coincida con la
@@ -44,7 +44,7 @@ sealed class Pedido {
 /** pizarra-51: lo que SÍ se puede ofrecer cuando lo pedido está ocupado. `parcial`: una parte
  *  de las mismas fechas; si no, otras fechas con las mismas noches. `personas`: para cuántos hay
  *  lugar en esas fechas, cuando lo que no alcanza es el cupo. */
-data class Alternativa(val desde: LocalDate, val hasta: LocalDate, val cabanas: List<CabanaCV>, val parcial: Boolean, val personas: Int = 0, val personasBase: Int = 0)
+data class Alternativa(val desde: LocalDate, val hasta: LocalDate, val cabanas: List<CabanaCV>, val parcial: Boolean, val personas: Int = 0, val personasBase: Int = 0, val conExtra: Boolean = false)
 
 /** Lo que se puede ofrecer. */
 sealed class Lugar {
@@ -178,7 +178,7 @@ fun alternativa(desde: LocalDate, hasta: LocalDate, personas: Int, ocup: List<Oc
     fun prueba(d: LocalDate): Alternativa? {
         if (!d.isAfter(hoy)) return null
         val h = d.plusDays(n.toLong())
-        return alcanzan(libres(ocup, cabanas, d, h), personas)?.let { Alternativa(d, h, it, false) }
+        return alcanzan(libres(ocup, cabanas, d, h), personas)?.let { Alternativa(d, h, it, false, conExtra = conExtra(it, personas)) }
     }
     fun corrida(max: Int): Alternativa? {
         for (k in 1..max) { prueba(desde.plusDays(k.toLong()))?.let { return it }; prueba(desde.minusDays(k.toLong()))?.let { return it } }
@@ -193,7 +193,7 @@ fun alternativa(desde: LocalDate, hasta: LocalDate, personas: Int, ocup: List<Oc
         val m = mejor
         if (m != null && noches(m.desde, m.hasta) >= j - i) break
         val a = alcanzan(libres(ocup, cabanas, d, h), personas)
-        if (a != null) mejor = Alternativa(d, h, a, true)
+        if (a != null) mejor = Alternativa(d, h, a, true, conExtra = conExtra(a, personas))
     }
     mejor?.takeIf { noches(it.desde, it.hasta) * 2 >= n && noches(it.desde, it.hasta) >= 2 }?.let { return it }
     return corrida(45)

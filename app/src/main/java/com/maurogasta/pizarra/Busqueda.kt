@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busqueda.kt — Qué pedidos de alquiler se buscan AHORA, y si una publicación
-// cuadra. Sello: pizarra-53
+// cuadra. Sello: pizarra-54
 //
 // 20-oct-2026, Mauro: «en la misma aplicación de Casa Verde, para ver los
 // pedidos, tiene que haber una configuración de los parámetros que yo estoy
@@ -69,8 +69,17 @@ private val PAREJAS = Regex("\\b(pareja|casal|novios|luna de miel|lua de mel)\\b
 private val CUENTA = Regex("(\\d{1,2})\\s*(adult\\w*|personas?|pessoas?|ninos?|ninas?|criaturas|criancas?|chicos|menores|bebes?|pax|huespedes|hospedes|integrantes)")
 private val SOMOS = Regex("\\b(somos|seriamos|seremos|familia de|grupo de|para)\\s+(\\d{1,2})\\b")
 
+/* pizarra-54: «para dos personas», «somos cuatro», «oito pessoas»: los números con letras. */
+private val NUMEROS = mapOf(
+    "dos" to 2, "dois" to 2, "duas" to 2, "tres" to 3, "cuatro" to 4, "quatro" to 4, "cinco" to 5, "seis" to 6,
+    "siete" to 7, "sete" to 7, "ocho" to 8, "oito" to 8, "nueve" to 9, "nove" to 9, "diez" to 10, "dez" to 10,
+    "once" to 11, "onze" to 11, "doce" to 12, "doze" to 12, "trece" to 13, "treze" to 13, "catorce" to 14, "catorze" to 14,
+    "quatorze" to 14, "quince" to 15, "quinze" to 15, "dieciseis" to 16, "dezesseis" to 16, "diecisiete" to 17,
+    "dezessete" to 17, "dieciocho" to 18, "dezoito" to 18, "diecinueve" to 19, "dezenove" to 19, "veinte" to 20, "vinte" to 20)
+private val NUMERO_EN_LETRAS = Regex("\\b(" + NUMEROS.keys.joinToString("|") + ")\\b")
+
 fun cuantasPersonas(texto: String): Int {
-    val t = plano(texto)
+    val t = NUMERO_EN_LETRAS.replace(plano(texto)) { NUMEROS.getValue(it.value).toString() }
     val sumadas = CUENTA.findAll(t).sumOf { it.groupValues[1].toInt() }
     if (sumadas > 0) return sumadas
     return SOMOS.findAll(t).map { it.groupValues[2].toInt() }.maxOrNull() ?: 0
@@ -173,7 +182,8 @@ fun semLugar(lugar: Lugar, pt: Boolean): String {
     }
     val completos = mayuscula(pedido) + (if (pt) " estamos lotados" else " estamos completos")
     if (alt == null) return completos + (if (pt) " em Canasvieiras" else " en Canasvieiras")
-    val otro = rangoEnPalabras(alt.desde, alt.hasta, pt)
+    // pizarra-54: si para entrar en la alternativa hay que pasar de la base, se dice (20-oct).
+    val otro = rangoEnPalabras(alt.desde, alt.hasta, pt) + (if (alt.conExtra) (if (pt) ", com um adicional por pessoa," else ", con un adicional por persona,") else "")
     return when {
         alt.personas > 0 && alt.personasBase in 1 until alt.personas ->
             if (pt) "${mayuscula(pedido)} temos lugar para ${alt.personasBase} pessoas em Canasvieiras, e até ${alt.personas} com um adicional por pessoa"
