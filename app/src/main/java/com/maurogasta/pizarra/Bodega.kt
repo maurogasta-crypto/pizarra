@@ -16,7 +16,7 @@ import java.security.MessageDigest
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-42
+// Bodega.kt — La Pizarra lee los mensajes de Airbnb. Sello: pizarra-45
 //
 // 6-oct-2026, decisión de Mauro: Termux:API no logra leer las notificaciones
 // en este Xiaomi (Android 16 / HyperOS 3): el servicio de Termux:API nunca se
@@ -82,7 +82,8 @@ private fun sinAcentos(s: String): String =
     java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").lowercase()
 
 private val ALQUILAR = Regex("\\b(alquil\\w*|alug\\w*)")
-private val CANASVIEIRAS = Regex("\\b(canasvieiras|canas)\\b")
+// pizarra-45: también como se escribe apurado («casnavieras», «canavieiras»).
+private val CANASVIEIRAS = Regex("\\b(canasvieiras?|canavieiras?|canasvieras|casnavieras?|canas)\\b")
 
 /** Un pedido de alquiler en Canasvieiras: las DOS cosas, como pidió Mauro. */
 fun esPedidoDeAlquiler(texto: String): Boolean {

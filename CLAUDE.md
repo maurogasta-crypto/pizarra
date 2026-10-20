@@ -169,6 +169,11 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   grupos (Meta la cerró en abril de 2024), es la única lectura que no se ve
   distinta de una persona mirando. Se enciende en Accesibilidad; en una app que
   no viene de Play Store, antes «Permitir ajustes restringidos».
+  **Desde pizarra-45**, con lo que mostró el primer recorrido real: el autor
+  sale del rótulo del botón ⋮ de la tarjeta («Más opciones para la publicación
+  de…», `DE_AUTOR`), los botones y lo que se escribe en el buscador no son
+  publicaciones, y a una notificación de la campana se le saca el «1 min. No
+  leída» antes de la huella (`sinHaceCuanto`), o entraba una vez por minuto.
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):
   `mensajes/` de Tiempos (reglas v15) con `de`, `nombre`, `dispositivo` y
   `texto`, con la forma exacta de la regla (`cuerpoMensaje`; el banco la

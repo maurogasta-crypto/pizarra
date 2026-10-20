@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-44
+// Sello: pizarra-45
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -47,7 +47,7 @@ import kotlin.concurrent.thread
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Un nodo de la pantalla, sin Android: lo que el banco puede armar a mano. */
-data class Nodo(val texto: String = "", val desc: String = "", val hijos: List<Nodo> = emptyList())
+data class Nodo(val texto: String = "", val desc: String = "", val hijos: List<Nodo> = emptyList(), val editable: Boolean = false)
 
 /** Una publicación leída: quién o qué grupo (el texto corto de antes) y lo que dice. */
 data class Publicacion(val encabezado: String, val texto: String)
@@ -65,6 +65,7 @@ fun enOrden(raiz: Nodo, techo: Int = MAX_NODOS): List<String> {
     var vistos = 0
     while (pila.isNotEmpty() && vistos < techo) {
         val n = pila.removeLast(); vistos++
+        if (n.editable) continue      // pizarra-45: lo que la persona escribe (el buscador) no es una publicación
         val t = dicho(n); if (t.isNotEmpty()) out.add(t)
         // También la descripción cuando trae MÁS que el texto: en Facebook la
         // tarjeta de una publicación suele describirse entera.
@@ -74,10 +75,30 @@ fun enOrden(raiz: Nodo, techo: Int = MAX_NODOS): List<String> {
     return out
 }
 
-/* Lo que Facebook pone en cada tarjeta y no es la publicación. */
+/* Lo que Facebook pone en cada tarjeta y no es la publicación: los botones y
+   sus instrucciones para quien usa un lector de pantalla (pizarra-45, visto en
+   el primer recorrido real: «Botón "Compartir". Toca dos veces…»). */
 private val RELLENO = Regex(
-    "^(me gusta|comentar|compartir|enviar|responder|seguir|unirte|ver más|ver menos|curtir|comentário|compartilhar|like|comment|share|reply)\\b",
+    "^(me gusta|comentar|compartir|enviar|responder|seguir|unirte|ver más|ver menos|curtir|comentário|compartilhar|like|comment|share|reply|" +
+        "bot[oó]n|bot[aã]o|button|buscar en|pesquisar em|search in|m[aá]s opciones|mais op[cç][oõ]es|more options|foto del perfil|foto do perfil|" +
+        "profile picture|administrar configuraci[oó]n|agregar a amigos|adicionar amigo|add friend)\\b|toca dos veces|toque duas vezes|double.tap",
     RegexOption.IGNORE_CASE)
+
+/* El autor sale de la etiqueta del botón «⋮» de la tarjeta, que es lo único
+   que Facebook rotula con el nombre: «Más opciones para la publicación de Ana». */
+private val DE_AUTOR = Regex(
+    "^(?:m[aá]s opciones para la publicaci[oó]n de|mais op[cç][oõ]es para a publica[cç][aã]o de|more options for (?:the )?post by|" +
+        "foto del perfil de|foto do perfil de|profile picture of)\\s+(.{2,80}?)\\.?$",
+    RegexOption.IGNORE_CASE)
+
+/* Una notificación de la campana de Facebook trae al final hace cuánto y si se
+   leyó («… 1 min. No leída»): eso cambia cada minuto y haría que la misma
+   notificación entre una vez por minuto. Se saca antes de la huella. */
+private val HACE_CUANTO = Regex(
+    "[.\\s]*\\b\\d+\\s*(?:s|seg|min|h|d|sem|a)\\.?\\s*(?:no le[ií]da|le[ií]da|n[aã]o lida|lida|unread|read)?\\.?\\s*$",
+    RegexOption.IGNORE_CASE)
+
+fun sinHaceCuanto(t: String): String = t.replace(HACE_CUANTO, "").trim()
 
 /** Las publicaciones de una pantalla: los textos largos, sin repetir, y sin el que ya está adentro de otro. */
 fun publicacionesDe(raiz: Nodo): List<Publicacion> {
@@ -93,9 +114,12 @@ fun publicacionesDe(raiz: Nodo): List<Publicacion> {
     val sueltos = todos.filter { a -> todos.none { b -> b !== a && b.length > a.length && b.contains(a) } }
     return sueltos.map { t ->
         val i = largos.getValue(t)
-        val antes = (i - 1 downTo maxOf(0, i - 6)).map { textos[it].trim() }
-            .firstOrNull { it.length in 3..80 && !RELLENO.containsMatchIn(it) && !Regex("^\\d").containsMatchIn(it) }.orEmpty()
-        Publicacion(antes, t.take(4000))
+        val cerca = (i - 1 downTo maxOf(0, i - 8)).map { textos[it].trim() }
+        val autor = cerca.firstNotNullOfOrNull { DE_AUTOR.find(it)?.groupValues?.get(1) }
+        val antes = autor ?: cerca.firstOrNull {
+            it.length in 3..80 && !RELLENO.containsMatchIn(it) && !Regex("^\\d").containsMatchIn(it)
+        }.orEmpty()
+        Publicacion(antes, sinHaceCuanto(t).take(4000))
     }
 }
 
@@ -161,7 +185,7 @@ class LectorPantalla : AccessibilityService() {
         cuenta[0]++
         val hijos = if (hondo > 60 || cuenta[0] > MAX_NODOS) emptyList() else
             (0 until n.childCount).mapNotNull { i -> n.getChild(i)?.let { aNodo(it, hondo + 1, cuenta) } }
-        return Nodo(n.text?.toString().orEmpty(), n.contentDescription?.toString().orEmpty(), hijos)
+        return Nodo(n.text?.toString().orEmpty(), n.contentDescription?.toString().orEmpty(), hijos, n.isEditable)
     }
 
     override fun onInterrupt() {}

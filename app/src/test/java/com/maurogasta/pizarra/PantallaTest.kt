@@ -70,6 +70,38 @@ class PantallaTest {
         assertTrue(enOrden(grande).size < 4_001)
     }
 
+    // pizarra-45: lo que mostró el primer recorrido real, el 20-oct.
+    @Test fun el_autor_sale_del_botón_de_la_tarjeta_y_los_botones_no_son_publicaciones() {
+        val t = "Estoy buscando un hospedaje en ingléses o alrededores para 10 adultos y 3 criaturas 04/01 al 12/01"
+        val p = publicacionesDe(Nodo(hijos = listOf(
+            Nodo(desc = "Más opciones para la publicación de Pablo Gimenez"), Nodo(texto = "3 h"), Nodo(texto = t),
+            Nodo(desc = "Botón \"Compartir\". Toca dos veces para compartir la publicación."),
+            Nodo(desc = "Botón Me gusta para el comentario de NAthii. Toca dos veces y mantén presionado para mostrar la bandeja de reacciones."),
+            Nodo(texto = "Más opciones para la publicación de Canasvieiras Hospedagens, que es un nombre larguísimo"))))
+        assertEquals(1, p.size); assertEquals("Pablo Gimenez", p[0].encabezado); assertEquals(t, p[0].texto)
+    }
+
+    @Test fun lo_que_se_escribe_en_el_buscador_no_sale() {
+        val p = publicacionesDe(Nodo(hijos = listOf(Nodo(texto = "alquiler canasvieiras", editable = true),
+            Nodo(texto = "Buscar en EN AUTO A FLORIPA Alquileres en Florianópolis, el grupo de siempre"))))
+        assertTrue(p.isEmpty())
+    }
+
+    @Test fun una_notificación_de_la_campana_es_la_misma_aunque_pase_el_tiempo() {
+        val a = "Ahora en Alquiler en Florianópolis, Brasil: \"Busco casa en Canasvieiras...\". 1 min. No leída"
+        val b = "Ahora en Alquiler en Florianópolis, Brasil: \"Busco casa en Canasvieiras...\". 3 min. Leída"
+        val na = queSaleDe("com.facebook.katana", publicacionesDe(Nodo(hijos = listOf(Nodo(texto = a)))), 1, "x").first
+        val nb = queSaleDe("com.facebook.katana", publicacionesDe(Nodo(hijos = listOf(Nodo(texto = b)))), 2, "x").first
+        assertEquals(na.single().id, nb.single().id); assertFalse(na.single().texto.contains("min"))
+        assertEquals("Ahora en Alquiler en Florianópolis, Brasil: \"Busco casa en Canasvieiras...\"", sinHaceCuanto(b))
+    }
+
+    @Test fun canasvieiras_mal_escrito_también_es_canasvieiras() {
+        assertTrue(esPedidoDeAlquiler("busco alquilar en casnavieras para enero"))
+        assertTrue(esPedidoDeAlquiler("aluguel em Canavieiras"))
+        assertFalse(esPedidoDeAlquiler("alquiler en Bombinhas"))
+    }
+
     @Test fun el_lector_SÓLO_LEE_y_sólo_dentro_de_Facebook() {
         val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Pantalla.kt").readText()
         for (accion in listOf("performAction", "dispatchGesture", "performGlobalAction", "ACTION_CLICK", "ACTION_SCROLL", "ACTION_SET_TEXT"))
