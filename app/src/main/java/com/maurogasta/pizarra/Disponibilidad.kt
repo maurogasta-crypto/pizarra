@@ -8,7 +8,7 @@ import java.time.YearMonth
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Disponibilidad.kt — Que la respuesta a un pedido de Facebook diga la verdad
-// sobre la ocupación de Casa Verde. Sello: pizarra-50
+// sobre la ocupación de Casa Verde. Sello: pizarra-51
 //
 // 20-oct-2026, Mauro: «tiene que mirar disponibilidad al inicio de las
 // búsquedas, en esa sesión, una sola vez, y buscar que coincida con la
@@ -38,12 +38,17 @@ sealed class Pedido {
     data class Mes(val mes: YearMonth) : Pedido()
 }
 
+/** pizarra-51: lo que SÍ se puede ofrecer cuando lo pedido está ocupado. `parcial`: una parte
+ *  de las mismas fechas; si no, otras fechas con las mismas noches. `personas`: para cuántos hay
+ *  lugar en esas fechas, cuando lo que no alcanza es el cupo. */
+data class Alternativa(val desde: LocalDate, val hasta: LocalDate, val cabanas: List<CabanaCV>, val parcial: Boolean, val personas: Int = 0)
+
 /** Lo que se puede ofrecer. */
 sealed class Lugar {
     data class Hay(val cabanas: List<CabanaCV>, val desde: LocalDate, val hasta: LocalDate) : Lugar()
-    data class Lleno(val desde: LocalDate, val hasta: LocalDate, val porCupo: Boolean) : Lugar()
+    data class Lleno(val desde: LocalDate, val hasta: LocalDate, val porCupo: Boolean, val alt: Alternativa? = null) : Lugar()
     data class MesConLugar(val mes: YearMonth) : Lugar()
-    data class MesLleno(val mes: YearMonth) : Lugar()
+    data class MesLleno(val mes: YearMonth, val alt: Alternativa? = null) : Lugar()
     object SinFechas : Lugar()
 }
 
@@ -151,20 +156,60 @@ fun alcanzan(libres: List<CabanaCV>, personas: Int): List<CabanaCV>? {
     return null
 }
 
+private fun noches(d: LocalDate, h: LocalDate) = java.time.temporal.ChronoUnit.DAYS.between(d, h).toInt()
+
+/** Lo que sí hay cuando el rango pedido está ocupado (pizarra-51, Mauro: «prepara una respuesta
+ *  acorde diciendo lo que sí podemos ofrecer»). Primero las mismas noches corridas hasta una
+ *  semana; si no, la parte libre más larga de lo pedido (la mitad o más); si no, las mismas
+ *  noches dentro de los 45 días. Nunca antes de mañana. */
+fun alternativa(desde: LocalDate, hasta: LocalDate, personas: Int, ocup: List<Ocupacion>, cabanas: List<CabanaCV>, hoy: LocalDate): Alternativa? {
+    val n = noches(desde, hasta)
+    fun prueba(d: LocalDate): Alternativa? {
+        if (!d.isAfter(hoy)) return null
+        val h = d.plusDays(n.toLong())
+        return alcanzan(libres(ocup, cabanas, d, h), personas)?.let { Alternativa(d, h, it, false) }
+    }
+    fun corrida(max: Int): Alternativa? {
+        for (k in 1..max) { prueba(desde.plusDays(k.toLong()))?.let { return it }; prueba(desde.minusDays(k.toLong()))?.let { return it } }
+        return null
+    }
+    corrida(7)?.let { return it }
+    // La parte libre más larga adentro de lo pedido.
+    var mejor: Alternativa? = null
+    for (i in 0 until n) for (j in n downTo i + 1) {
+        val d = desde.plusDays(i.toLong()); val h = desde.plusDays(j.toLong())
+        if (!d.isAfter(hoy)) continue
+        val m = mejor
+        if (m != null && noches(m.desde, m.hasta) >= j - i) break
+        val a = alcanzan(libres(ocup, cabanas, d, h), personas)
+        if (a != null) mejor = Alternativa(d, h, a, true)
+    }
+    mejor?.takeIf { noches(it.desde, it.hasta) * 2 >= n && noches(it.desde, it.hasta) >= 2 }?.let { return it }
+    return corrida(45)
+}
+
 /** Lo que se puede ofrecer para este pedido. */
 fun lugarPara(texto: String, personas: Int, ocup: List<Ocupacion>, cabanas: List<CabanaCV>, hoy: LocalDate): Lugar =
     when (val p = fechasPedidas(texto, hoy)) {
         null -> Lugar.SinFechas
         is Pedido.Rango -> {
             val l = libres(ocup, cabanas, p.desde, p.hasta)
-            alcanzan(l, personas)?.let { Lugar.Hay(it, p.desde, p.hasta) } ?: Lugar.Lleno(p.desde, p.hasta, l.isNotEmpty())
+            alcanzan(l, personas)?.let { Lugar.Hay(it, p.desde, p.hasta) } ?: run {
+                // Lo que no alcanza es el cupo: se dice para cuántos SÍ hay lugar en esas fechas.
+                val cupo = l.sumOf { it.max }
+                val alt = if (l.isNotEmpty() && personas > cupo) Alternativa(p.desde, p.hasta, l, false, cupo)
+                    else alternativa(p.desde, p.hasta, personas, ocup, cabanas, hoy)
+                Lugar.Lleno(p.desde, p.hasta, l.isNotEmpty(), alt)
+            }
         }
         is Pedido.Mes -> {
             // Hay lugar ese mes si alguna cabaña que alcanza tiene cinco noches seguidas libres.
             val dias = (1..p.mes.lengthOfMonth()).map { p.mes.atDay(it) }
             val sirven = cabanas.filter { personas <= 0 || it.max >= personas }
             val hay = sirven.any { c -> dias.windowed(5).any { w -> libres(ocup, listOf(c), w.first(), w.last().plusDays(1)).isNotEmpty() } }
-            if (hay) Lugar.MesConLugar(p.mes) else Lugar.MesLleno(p.mes)
+            if (hay) Lugar.MesConLugar(p.mes)
+            else Lugar.MesLleno(p.mes, (0..60).asSequence().map { p.mes.plusMonths(1).atDay(1).plusDays(it.toLong()) }
+                .mapNotNull { d -> alcanzan(libres(ocup, sirven, d, d.plusDays(5)), personas)?.let { Alternativa(d, d.plusDays(5), it, false) } }.firstOrNull())
         }
     }
 

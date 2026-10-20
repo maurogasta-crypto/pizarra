@@ -74,7 +74,9 @@ class PantallaTest {
     @Test fun el_lector_no_tiene_avisos_flotantes_ni_manda_lo_que_nadie_eligió() {
         val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Pantalla.kt").readText()
         assertFalse(codigo.contains("IMPORTANCE_HIGH")); assertFalse(codigo.contains("avisarEnPantalla"))
-        assertTrue(codigo.contains("IMPORTANCE_LOW")); assertFalse(codigo.contains("Notificaciones.mandar"))
+        assertFalse(codigo.contains("Notificaciones.mandar"))
+        // pizarra-51: el único aviso es el de la elección (al abrir el comentario), no el del recorrido
+        assertEquals(1, Regex("Responder\\.avisarEleccion\\(").findAll(codigo).count())
         val xml = java.io.File("src/main/res/xml/lector_pantalla.xml").readText()
         assertTrue(xml.contains("typeViewClicked|typeViewFocused")); assertFalse(xml.contains("typeViewScrolled"))
     }

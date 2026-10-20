@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-50` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-51` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -374,8 +374,13 @@ mira.
 - **La respuesta coincide con la ocupación de Casa Verde** (pizarra-49): la
   Pizarra trae la ocupación una vez por sesión de Facebook. Si el pedido dice
   fechas y hay lugar, la respuesta las nombra («Tenemos lugar del 16 de marzo
-  al 1 de abril…», o «3 cabañas juntas para los 18»); si están ocupadas, no
-  copia ni guarda nada y lo dice en silencio.
+  al 1 de abril…», o «3 cabañas juntas para los 18»). Si están ocupadas
+  (pizarra-51), la respuesta dice lo que SÍ hay: las mismas noches unos días
+  antes o después, la parte libre de lo pedido, o para cuántas personas hay
+  lugar.
+- **Al abrir el comentario sale un aviso** —el único: mientras se recorre no
+  hay ninguno— que dice «✅ Hay lugar…» o «⛔ Sin lugar… · copié lo que sí
+  hay», con la respuesta copiada a la vista.
 
 ## Si falla en el teléfono (pizarra-3)
 

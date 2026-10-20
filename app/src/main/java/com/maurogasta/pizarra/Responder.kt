@@ -20,7 +20,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Responder.kt — Del pedido de Facebook a la respuesta, con un toque.
-// Sello: pizarra-47
+// Sello: pizarra-51
 //
 // 18-oct-2026, Mauro: «llegar lo más directamente posible al mensaje en
 // cuestión a responder, sin el riesgo de que pueda ser denunciada y bloqueada
@@ -110,6 +110,25 @@ object Responder {
             nm(c)?.notify(TAG_PEDIDO + id, ID_PEDIDO, b.build())
         } catch (e: Throwable) {
             Bitacora.anotar(c, "pedidos: no se pudo avisar la llegada: ${e.javaClass.simpleName}")
+        }
+    }
+
+    /** pizarra-51 (Mauro: «al abrir el comentario… debería saltar una ventana aviso que me digas
+     *  si hay disponibilidad o no en Casa Verde»): sale UNA vez, al elegir responder —no mientras
+     *  se recorre—, con la respuesta que quedó copiada a la vista. */
+    fun avisarEleccion(c: Context, p: PedidoPantalla) {
+        try {
+            canales(c)
+            val b = Notification.Builder(c, CANAL_FACEBOOK)
+                .setSmallIcon(if (p.lugar is Lugar.Lleno || p.lugar is Lugar.MesLleno) android.R.drawable.ic_dialog_alert else android.R.drawable.ic_dialog_email)
+                .setContentTitle(tituloDeEleccion(p))
+                .setContentText(p.respuesta)
+                .setStyle(Notification.BigTextStyle().bigText(p.respuesta + "\n\nPegala: mantené apretado el cuadro → Pegar (o tocala arriba del teclado)."))
+                .setAutoCancel(true)
+                .setTimeoutAfter(10 * 60_000L)
+            nm(c)?.notify(TAG_PEDIDO + p.m.id, ID_PEDIDO, b.build())
+        } catch (e: Throwable) {
+            Bitacora.anotar(c, "pedidos: no se pudo avisar la disponibilidad: ${e.javaClass.simpleName}")
         }
     }
 

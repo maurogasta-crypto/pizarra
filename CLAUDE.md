@@ -209,9 +209,16 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   una publicación se leen sus fechas (`fechasPedidas`: «13.01 al 21.01», «del
   10 al 23 de enero», «enero 10 al 23», quincenas, Semana Santa, Carnaval, Año
   Nuevo, un mes suelto) y se cruzan (`lugarPara`): con lugar, la respuesta
-  dice esas fechas y cuántas cabañas juntas hacen falta; **sin lugar no se
-  copia ni se guarda nada**, y un aviso silencioso lo dice; sin fechas, la
-  respuesta de siempre. La cabaña 1 tiene `capacidad: 1` en la base: hasta que
+  dice esas fechas y cuántas cabañas juntas hacen falta; sin fechas, la
+  respuesta de siempre. **Desde pizarra-51, sin lugar se ofrece lo que SÍ hay**
+  (`alternativa`, Mauro: «si no hay disponibilidad lo advierte y prepara una
+  respuesta diciendo lo que sí podemos ofrecer»): las mismas noches corridas
+  hasta una semana, si no la parte libre de lo pedido (la mitad o más), si no
+  las mismas noches dentro de 45 días; y si lo que falta es cupo, para cuántos
+  hay lugar. **Al abrir el comentario —y sólo ahí— sale UN aviso con ventana**
+  (`Responder.avisarEleccion`, `tituloDeEleccion`: «✅ Hay lugar…» o «⛔ Sin
+  lugar… · copié lo que sí hay») con la respuesta copiada a la vista; mientras
+  se recorre sigue sin haber ninguno. La cabaña 1 tiene `capacidad: 1` en la base: hasta que
   se corrija vale 8 (`CAPACIDAD_SI_FALTA`). Si cambian los
   valores de la búsqueda en la página o en la regla, cambian acá (el banco los
   compara si el sitio está al lado).

@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-49
+// Sello: pizarra-51
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -150,15 +150,24 @@ fun publicacionElegida(raiz: Nodo): Publicacion? {
  *  pizarra-49, según la ocupación de Casa Verde que se trajo al empezar la sesión. */
 fun pedidoDeLaElegida(p: Publicacion, ahora: Long, busqueda: Busqueda, ocup: List<Ocupacion> = emptyList(),
                       cabanas: List<CabanaCV> = emptyList(), hoy: java.time.LocalDate = java.time.LocalDate.now()): PedidoPantalla {
-    val e = encaje(p.texto, busqueda)
+    // Cuántos son, el tipo y el público se leen siempre: el encaje corta antes cuando la zona no
+    // es la buscada, y la persona igual eligió responder (pizarra-51).
+    val n = cuantasPersonas(p.texto)
+    val e = encaje(p.texto, busqueda).copy(personas = n, tipo = tipoDe(p.texto), publico = publicoDe(p.texto, n))
     val m = MensajeAirbnb(taparCodigos(p.encabezado).take(120), taparCodigos(p.texto).take(4000), emptyList(), ahora.toString(), app = "facebook")
     val autor = if (p.esAutor) p.encabezado else ""
     val lugar = if (cabanas.isEmpty()) Lugar.SinFechas else lugarPara(p.texto, e.personas, ocup, cabanas, hoy)
     return PedidoPantalla(m, respuestaRapida(autor, p.texto, e, m.id.hashCode(), lugar), e, true, autor, lugar)
 }
 
-/** ¿Se puede ofrecer algo? Con las fechas ocupadas, no: ni se copia ni se guarda. */
-fun hayQueOfrecer(p: PedidoPantalla): Boolean = p.lugar !is Lugar.Lleno && p.lugar !is Lugar.MesLleno
+/** El título del aviso que sale al abrir el comentario (pizarra-51): hay lugar o no, y qué quedó copiado. */
+fun tituloDeEleccion(p: PedidoPantalla): String = when (val l = p.lugar) {
+    is Lugar.Hay -> "✅ Hay lugar " + rangoEnPalabras(l.desde, l.hasta, false) + (if (l.cabanas.size > 1) " (${l.cabanas.size} cabañas)" else "") + " · respuesta copiada"
+    is Lugar.MesConLugar -> "✅ Hay fechas libres en " + mesEnPalabras(l.mes, false) + " · respuesta copiada"
+    is Lugar.Lleno -> "⛔ Sin lugar " + rangoEnPalabras(l.desde, l.hasta, false) + (if (l.alt != null) " · copié lo que sí hay" else " · copié una respuesta")
+    is Lugar.MesLleno -> "⛔ " + mesEnPalabras(l.mes, false).replaceFirstChar { it.uppercase() } + " completo" + (if (l.alt != null) " · copié lo que sí hay" else "")
+    Lugar.SinFechas -> "📋 No dice fechas · respuesta copiada"
+}
 
 /* Lo que toca la persona cuando va a responder: el botón «Comentar» (o «Responder») o el cuadro de texto. */
 private val PARA_RESPONDER = Regex("^(comentar|comment|coment[aá]rio|comentario|responder|reply|escrib[ei]|escreva|write)", RegexOption.IGNORE_CASE)
@@ -195,8 +204,8 @@ class LectorPantalla : AccessibilityService() {
             val p = pedidoDeLaElegida(elegida, System.currentTimeMillis(), Buscador.actual(this), Ocupado.ocupaciones(this), Ocupado.cabanas(this))
             if (p.m.id == ultimaElegida) return
             ultimaElegida = p.m.id
-            if (!hayQueOfrecer(p)) { Pantalla.sinLugar(this, p); return }
             Pantalla.copiar(this, p)
+            Responder.avisarEleccion(this, p)
             Pantalla.cargarPedidos(this, listOf(p))
             Pantalla.anotar(this, leidas = 1, pedidos = 1)
         } catch (t: Throwable) {
@@ -273,48 +282,13 @@ object Pantalla {
         }
     }
 
-    private const val CANAL_COPIADA = "facebook-copiada"
 
-    /** Las fechas que pide están ocupadas: nada copiado, nada guardado, y un aviso silencioso que lo dice. */
-    fun sinLugar(c: Context, p: PedidoPantalla) {
-        try {
-            val nm = c.getSystemService(android.app.NotificationManager::class.java) ?: return
-            nm.createNotificationChannel(android.app.NotificationChannel(CANAL_COPIADA, "Respuesta copiada (Facebook)",
-                android.app.NotificationManager.IMPORTANCE_LOW).apply { description = "Qué respuesta quedó copiada mientras se recorre Facebook. Sin sonido ni ventana." })
-            val cuando = when (val l = p.lugar) {
-                is Lugar.Lleno -> rangoEnPalabras(l.desde, l.hasta, false) + (if (l.porCupo) " (hay cabañas libres, pero no alcanzan para ${p.encaje.personas})" else "")
-                is Lugar.MesLleno -> "en " + mesEnPalabras(l.mes, false)
-                else -> ""
-            }
-            nm.notify(ID_COPIADA, android.app.Notification.Builder(c, CANAL_COPIADA)
-                .setSmallIcon(android.R.drawable.ic_menu_close_clear_cancel)
-                .setContentTitle("Sin lugar $cuando")
-                .setContentText("No copié ninguna respuesta ni lo guardé: Casa Verde está ocupada esas fechas.")
-                .setOnlyAlertOnce(true).setTimeoutAfter(10 * 60_000L).build())
-        } catch (t: Throwable) {
-            Bitacora.anotar(c, "pantalla: no se pudo avisar sin lugar: ${t.javaClass.simpleName}")
-        }
-    }
-    private const val ID_COPIADA = 4701
-
-    /** Copia la respuesta y lo dice EN SILENCIO: un aviso de prioridad baja, sin ventana flotante ni
-     *  sonido, que se reemplaza a sí mismo. Al pegar en la publicación que está a la vista, listo. */
+    /** Copia la respuesta: el teclado la ofrece arriba y se pega con un toque. El aviso lo da
+     *  `Responder.avisarEleccion`, que dice además si hay lugar (pizarra-51). */
     fun copiar(c: Context, p: PedidoPantalla) {
         try {
-            val clip = android.content.ClipData.newPlainText("Respuesta", p.respuesta)
-            c.getSystemService(android.content.ClipboardManager::class.java)?.setPrimaryClip(clip)
-            val nm = c.getSystemService(android.app.NotificationManager::class.java) ?: return
-            nm.createNotificationChannel(android.app.NotificationChannel(CANAL_COPIADA, "Respuesta copiada (Facebook)",
-                android.app.NotificationManager.IMPORTANCE_LOW).apply { description = "Qué respuesta quedó copiada mientras se recorre Facebook. Sin sonido ni ventana." })
-            val quien = p.autor.ifBlank { "el pedido a la vista" }
-            nm.notify(ID_COPIADA, android.app.Notification.Builder(c, CANAL_COPIADA)
-                .setSmallIcon(android.R.drawable.ic_menu_edit)
-                .setContentTitle("📋 Copiada la respuesta para $quien")
-                .setContentText("Comentar → mantené apretado → Pegar")
-                .setStyle(android.app.Notification.BigTextStyle().bigText(p.respuesta))
-                .setOnlyAlertOnce(true)
-                .setTimeoutAfter(10 * 60_000L)
-                .build())
+            c.getSystemService(android.content.ClipboardManager::class.java)
+                ?.setPrimaryClip(android.content.ClipData.newPlainText("Respuesta", p.respuesta))
         } catch (t: Throwable) {
             Bitacora.anotar(c, "pantalla: no se pudo copiar: ${t.javaClass.simpleName}")
         }

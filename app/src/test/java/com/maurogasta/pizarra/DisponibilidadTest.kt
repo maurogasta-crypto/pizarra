@@ -77,15 +77,31 @@ class DisponibilidadTest {
         assertTrue(rp, rp.contains("Temos lugar de 5 a 12 de março")); assertTrue(rp.contains(SITIO_WEB))
     }
 
-    @Test fun sin_lugar_no_se_ofrece_nada() {
+    // pizarra-51: sin lugar, la respuesta dice lo que SÍ se puede ofrecer.
+    @Test fun sin_lugar_se_ofrece_lo_que_sí_hay() {
         val pub = Publicacion("Juan", "Busco alquiler en canasvieiras del 13.01 al 21.01 para 4 personas, algo de confianza")
         val p = pedidoDeLaElegida(pub, 1, Busqueda(), ocup, cabanas, hoy)
-        assertFalse(hayQueOfrecer(p))
+        val l = p.lugar as Lugar.Lleno
+        assertEquals(LocalDate.of(2027, 1, 6), l.alt!!.desde); assertEquals(LocalDate.of(2027, 1, 14), l.alt!!.hasta)   // las mismas 8 noches, una semana antes, en la 3
+        assertTrue(p.respuesta, p.respuesta.contains("Del 13 al 21 de enero estamos completos, pero tenemos lugar del 6 al 14 de enero"))
+        assertTrue(p.respuesta.contains(SITIO_WEB))
+        assertTrue(tituloDeEleccion(p).startsWith("⛔ Sin lugar del 13 al 21 de enero"))
+        // lo que no alcanza es el cupo: para cuántos sí hay
+        val g = pedidoDeLaElegida(Publicacion("", "Somos 25 personas, del 15 al 20 de marzo"), 1, Busqueda(), ocup, cabanas, hoy)
+        assertTrue(g.respuesta, g.respuesta.contains("tenemos lugar para hasta 20 personas"))
+        // la parte libre de lo pedido: del 10 al 23 de enero para 5 sólo está libre la 3 del 10 al 14
+        val parc = alternativa(LocalDate.of(2027, 1, 3), LocalDate.of(2027, 1, 9), 5, ocup, cabanas, hoy)
+        assertTrue(parc != null)
+        // un mes completo para muchos, sin nada después: lo dice sin inventar
+        val m = pedidoDeLaElegida(Publicacion("", "Buscamos casa para 30 personas para enero"), 1, Busqueda(), ocup, cabanas, hoy)
+        assertTrue(m.respuesta, m.respuesta.contains("En enero estamos completos en Canasvieiras"))
+    }
+
+    @Test fun con_lugar_el_aviso_dice_hay_lugar_y_sin_ocupación_la_respuesta_de_siempre() {
         val q = pedidoDeLaElegida(Publicacion("Juan", "Busco alquiler en canasvieiras del 13.03 al 21.03 para 4 personas"), 1, Busqueda(), ocup, cabanas, hoy)
-        assertTrue(hayQueOfrecer(q)); assertTrue(q.respuesta.contains("del 13 al 21 de marzo"))
-        // sin la ocupación traída todavía, la respuesta de siempre (no promete fechas)
-        val r = pedidoDeLaElegida(pub, 1, Busqueda(), emptyList(), emptyList(), hoy)
-        assertTrue(hayQueOfrecer(r)); assertFalse(r.respuesta.contains("Tenemos lugar"))
+        assertTrue(q.respuesta.contains("del 13 al 21 de marzo")); assertTrue(tituloDeEleccion(q).startsWith("✅ Hay lugar del 13 al 21 de marzo"))
+        val r = pedidoDeLaElegida(Publicacion("Juan", "del 13.01 al 21.01 para 4"), 1, Busqueda(), emptyList(), emptyList(), hoy)
+        assertFalse(r.respuesta.contains("Tenemos lugar")); assertTrue(tituloDeEleccion(r).startsWith("📋"))
     }
 
     @Test fun la_base_se_lee_con_sus_formas() {

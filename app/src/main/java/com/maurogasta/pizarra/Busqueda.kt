@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busqueda.kt — Qué pedidos de alquiler se buscan AHORA, y si una publicación
-// cuadra. Sello: pizarra-49
+// cuadra. Sello: pizarra-51
 //
 // 20-oct-2026, Mauro: «en la misma aplicación de Casa Verde, para ver los
 // pedidos, tiene que haber una configuración de los parámetros que yo estoy
@@ -132,6 +132,7 @@ fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int, luga
     if (pt) {
         val ola = listOf("Olá", "Oi", "Olá, tudo bem?")[k] + (if (pila != null) " $pila" else "") + "!"
         val frase = when {
+            lugar is Lugar.Lleno || lugar is Lugar.MesLleno -> " " + semLugar(lugar, true)
             lugar is Lugar.Hay && lugar.cabanas.size > 1 -> " Temos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, true)} em Canasvieiras: ${lugar.cabanas.size} cabanas juntas para os ${e.personas}"
             lugar is Lugar.Hay -> " Temos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, true)} nas nossas cabanas em Canasvieiras" + (if (e.personas > 0) ", para os ${e.personas}" else "")
             lugar is Lugar.MesConLugar -> " Em ${mesEnPalabras(lugar.mes, true)} ainda temos datas livres nas nossas cabanas em Canasvieiras"
@@ -146,6 +147,7 @@ fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int, luga
     }
     val hola = listOf("¡Hola", "Hola", "¡Buenas")[k] + (if (pila != null) " $pila" else "") + "!"
     val frase = when {
+        lugar is Lugar.Lleno || lugar is Lugar.MesLleno -> " " + semLugar(lugar, false)
         lugar is Lugar.Hay && lugar.cabanas.size > 1 -> " Tenemos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, false)} en Canasvieiras: ${lugar.cabanas.size} cabañas juntas para los ${e.personas}"
         lugar is Lugar.Hay -> " Tenemos lugar ${rangoEnPalabras(lugar.desde, lugar.hasta, false)} en nuestras cabañas de Canasvieiras" + (if (e.personas > 0) ", para los ${e.personas}" else "")
         lugar is Lugar.MesConLugar -> " En ${mesEnPalabras(lugar.mes, false)} todavía tenemos fechas libres en nuestras cabañas de Canasvieiras"
@@ -158,6 +160,28 @@ fun respuestaRapida(nombre: String, texto: String, e: Encaje, semilla: Int, luga
         " Pegale una mirada a $SITIO_WEB y escribime por privado.",
         " Fotos y fechas libres en $SITIO_WEB; cualquier duda, por privado.")[k]
     return hola + frase + fin
+}
+
+private fun mayuscula(s: String) = s.replaceFirstChar { it.uppercase() }
+
+/** pizarra-51: lo que se dice cuando lo pedido está ocupado, con lo que sí se puede ofrecer. */
+fun semLugar(lugar: Lugar, pt: Boolean): String {
+    val (pedido, alt) = when (lugar) {
+        is Lugar.Lleno -> rangoEnPalabras(lugar.desde, lugar.hasta, pt) to lugar.alt
+        is Lugar.MesLleno -> (if (pt) "em " else "en ") + mesEnPalabras(lugar.mes, pt) to lugar.alt
+        else -> return ""
+    }
+    val completos = mayuscula(pedido) + (if (pt) " estamos lotados" else " estamos completos")
+    if (alt == null) return completos + (if (pt) " em Canasvieiras" else " en Canasvieiras")
+    val otro = rangoEnPalabras(alt.desde, alt.hasta, pt)
+    return when {
+        alt.personas > 0 -> if (pt) "${mayuscula(pedido)} temos lugar para até ${alt.personas} pessoas em Canasvieiras"
+                            else "${mayuscula(pedido)} tenemos lugar para hasta ${alt.personas} personas en Canasvieiras"
+        alt.parcial -> if (pt) "$completos, mas temos lugar $otro em Canasvieiras" else "$completos, pero tenemos lugar $otro en Canasvieiras"
+        alt.cabanas.size > 1 -> if (pt) "$completos, mas temos lugar $otro, em ${alt.cabanas.size} cabanas juntas em Canasvieiras"
+                                else "$completos, pero tenemos lugar $otro, en ${alt.cabanas.size} cabañas juntas en Canasvieiras"
+        else -> if (pt) "$completos, mas temos lugar $otro em Canasvieiras" else "$completos, pero tenemos lugar $otro en Canasvieiras"
+    }
 }
 
 /** La búsqueda guardada en el teléfono, y traerla de Casa Verde. */
