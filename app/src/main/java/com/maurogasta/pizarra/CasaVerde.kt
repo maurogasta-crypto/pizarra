@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CasaVerde.kt — Los pedidos de alquiler de Facebook, directo a la lista de
-// Casa Verde. Sello: pizarra-57
+// Casa Verde. Sello: pizarra-58
 //
 // 18-oct-2026, Mauro: que la lista de pedidos se llene sin despertar al chat
 // cada vez que aparece una notificación; el chat se despierta unas veces por

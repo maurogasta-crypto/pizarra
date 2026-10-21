@@ -10,7 +10,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Avisos.kt — Los avisos del ecosistema, en el teléfono. Sello: pizarra-14
+// Avisos.kt — Los avisos del ecosistema, en el teléfono. Sello: pizarra-58
 //
 // tiempos:V10 (9-oct-2026). Mauro: «La configuración de los avisos para cada
 // usuario estará concentrada en la APK… un aviso que pueda concentrar de manera
@@ -145,7 +145,10 @@ object Buzon {
     private fun mostrar(c: Context, a: Aviso) {
         crearCanales(c)
         val nm = c.getSystemService(NotificationManager::class.java) ?: return
-        val abrir = PendingIntent.getActivity(c, 20, Intent(c, MainActivity::class.java).putExtra("avisos", true),
+        // pizarra-58: el toque lleva a lo que dice el aviso y lo marca leído. Un código por aviso:
+        // con uno solo para todos (hasta pizarra-57) cada aviso nuevo pisaba lo que abría el anterior.
+        val abrir = PendingIntent.getActivity(c, ("aviso:" + a.id).hashCode(),
+            Intent(c, AbrirActivity::class.java).putExtra("aviso", a.id).putExtra("url", destinoDeAviso(a)),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         // Un sitio que esta versión no conoce va al canal del panel: sin canal, Android no la muestra.
         val n = Notification.Builder(c, canal(SITIOS.firstOrNull { it.id == a.sitio }?.id ?: "panel"))

@@ -137,6 +137,16 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   `enlace`/`buscar`, y marca `respondido` (`cuerpoMarcar`: sólo `estado`,
   `atendidoPor`, `atendidoEn`, lo que deja la regla). **Publicar en Facebook
   sigue siendo de la persona**: eso es lo que no hace bloquear la cuenta.
+  **Desde pizarra-58 no hay «Respuesta lista»** (Mauro: «que no malgaste
+  notificaciones»): `sincronizar` guarda la respuesta y saca lo atendido, sin
+  avisar, y copiar no marca respondido.
+- **Un toque lleva a lo que dice** (pizarra-58, `Abrir.kt`, Mauro: «algunas no
+  hacen nada claro»). Avisos de Claude (barra, lista y widget) y renglones del
+  widget de mensajes pasan por `AbrirActivity`: el aviso va a
+  `destinoDeAviso` (el enlace de su texto; si no, según sitio y tema) y queda
+  leído; el renglón de Casa Verde, a Reservas o a Pedidos. **Si cambia dónde
+  vive una página de un sitio, o `avisos.mjs` suma un tema, cambia
+  `destinoDeAviso` en la misma tanda.**
 - **El 13C manda TODAS sus notificaciones** (pizarra-42, `Notificaciones.kt`,
   19-oct-2026, Mauro: «que lea todo… y que la ronda lo clasifique y descarte»).
   Cada una —de cualquier app, WhatsApp incluido, menos las fijas, la tapa de un

@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-57
+// ecosistema en un widget. Sello: pizarra-58
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -72,7 +72,8 @@ const val URL_RESERVAS_CV = "https://casaverdecanas.com.br/interno/reservas.html
 data class Mensaje(val id: String, val de: String, val nombre: String, val dispositivo: String, val texto: String, val creado: String)
 
 /** Una línea del widget: un mensaje, un aviso de Claude o lo que espera en Casa Verde. */
-data class Novedad(val id: String, val cuando: String, val titulo: String, val texto: String, val tipo: String, val mio: Boolean = false)
+data class Novedad(val id: String, val cuando: String, val titulo: String, val texto: String, val tipo: String, val mio: Boolean = false,
+                   val url: String = "", val aviso: String = "")
 
 /** Los últimos mensajes, del más nuevo al más viejo. Sin filtro: no pide índice compuesto. */
 fun consultaMensajes(cuantos: Int = 60): JSONObject = JSONObject().put("structuredQuery", JSONObject()
@@ -119,12 +120,15 @@ fun armarNovedades(mensajes: List<Mensaje>, avisos: List<Aviso>, pedidosCV: Int,
                    yo: String, miTelefono: String, tope: Int = 40): List<Novedad> {
     val l = mutableListOf<Novedad>()
     for (m in mensajes) l.add(Novedad("m:" + m.id, m.creado, "💬 " + firmaMensaje(m, yo, miTelefono), m.texto, "mensaje", m.de == yo))
-    for (a in avisos) l.add(Novedad("a:" + a.id, a.creado, iconoTema(a.tema) + " " + nombreSitio(a.sitio), a.texto, "aviso"))
+    // pizarra-58: cada renglón sabe adónde lleva (Abrir.kt): el aviso, a lo que dice; Casa Verde, a lo que espera.
+    for (a in avisos) l.add(Novedad("a:" + a.id, a.creado, iconoTema(a.tema) + " " + nombreSitio(a.sitio), a.texto, "aviso",
+        url = destinoDeAviso(a), aviso = a.id))
     if (pedidosCV > 0 || cambiosCV > 0) l.add(Novedad("cv", cuandoCV, "🏠 Casa Verde", listOfNotNull(
         // pizarra-57 (Mauro, 21-oct: «no debería decir pedidos de alquiler para contestar, debería decir
         // búsquedas de Facebook que coinciden»): son publicaciones que cuadran con «Qué busco ahora».
         if (pedidosCV > 0) "$pedidosCV búsqueda${if (pedidosCV == 1) "" else "s"} de Facebook que coincide${if (pedidosCV == 1) "" else "n"}" else null,
-        if (cambiosCV > 0) "$cambiosCV cambio${if (cambiosCV == 1) "" else "s"} de reservas para confirmar" else null).joinToString(" · "), "casaverde"))
+        if (cambiosCV > 0) "$cambiosCV cambio${if (cambiosCV == 1) "" else "s"} de reservas para confirmar" else null).joinToString(" · "), "casaverde",
+        url = if (cambiosCV > 0) URL_RESERVAS_CV else URL_PEDIDOS_CV))
     return l.sortedByDescending { it.cuando }.take(tope)
 }
 
@@ -236,10 +240,6 @@ class CharlaActivity : Activity() {
 
     override fun onCreate(estado: Bundle?) {
         super.onCreate(estado)
-        when (intent.getStringExtra("que")) {
-            "aviso" -> { startActivity(Intent(this, MainActivity::class.java).putExtra("avisos", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); finish(); return }
-            "casaverde" -> { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(URL_PEDIDOS_CV)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e: Throwable) { }; finish(); return }
-        }
         val n = Nube(this)
         if (!n.conSesion || !n.esTiempos) {
             startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); finish(); return
@@ -328,7 +328,7 @@ class MensajesWidget : AppWidgetProvider() {
                 v.setOnClickPendingIntent(R.id.actualizar_mensajes, PendingIntent.getBroadcast(c, 43,
                     Intent(c, MensajesWidget::class.java).setAction(ACCION_MENSAJES), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 v.setPendingIntentTemplate(R.id.lista_mensajes, PendingIntent.getActivity(c, 44,
-                    Intent(c, CharlaActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE))
+                    Intent(c, AbrirActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE))
                 manager.updateAppWidget(id, v)
                 manager.notifyAppWidgetViewDataChanged(id, R.id.lista_mensajes)
             }
@@ -357,7 +357,8 @@ class FilasMensajes(private val c: Context) : RemoteViewsService.RemoteViewsFact
         v.setTextViewText(R.id.mensaje_hora, horaCorta(f.cuando))
         v.setTextViewText(R.id.mensaje_texto, f.texto)
         v.setTextColor(R.id.mensaje_titulo, Color.parseColor(when (f.tipo) { "mensaje" -> if (f.mio) "#AEB3BA" else "#E8B85C"; "casaverde" -> "#7FB98A"; else -> "#7FB4BF" }))
-        v.setOnClickFillInIntent(R.id.mensaje_fila, Intent().putExtra("que", when (f.tipo) { "aviso" -> "aviso"; "casaverde" -> "casaverde"; else -> "charla" }))
+        v.setOnClickFillInIntent(R.id.mensaje_fila, if (f.tipo == "mensaje") Intent().putExtra("que", "charla")
+            else Intent().putExtra("url", f.url).putExtra("aviso", f.aviso))
         return v
     }
 }

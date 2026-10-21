@@ -3,6 +3,6 @@
     <string name="app_name">Tiempos</string>
     <string name="descripcion">Las tareas de Tiempos que elegiste, para tachar desde la pantalla.</string>
     <string name="descripcion_agenda">Tu agenda de Tiempos de los próximos siete días: actividades, tareas agendadas y lo de los chicos.</string>
-    <string name="descripcion_pantalla">Cuando tocás «Comentar» en una publicación de un grupo de Facebook, la guarda en Pedidos de alquiler de Casa Verde y te deja copiada la respuesta para pegar. Sólo lee, sólo dentro de Facebook: no toca nada ni ve otras apps.</string>
+    <string name="descripcion_pantalla">Mientras recorrés un grupo de Facebook, guarda en Pedidos de alquiler de Casa Verde cada búsqueda de alojamiento que coincide, con sus fechas; cuando tocás «Comentar», te deja copiada la respuesta para pegar. Sólo lee, sólo dentro de Facebook: no toca nada ni ve otras apps.</string>
     <string name="descripcion_mensajes">Los mensajes entre Mauro y Florencia (con el teléfono de cada uno), los avisos de Claude y lo que espera en Casa Verde.</string>
 </resources>

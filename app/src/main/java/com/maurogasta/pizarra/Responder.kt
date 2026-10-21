@@ -20,7 +20,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Responder.kt — Del pedido de Facebook a la respuesta, con un toque.
-// Sello: pizarra-57
+// Sello: pizarra-58
 //
 // 18-oct-2026, Mauro: «llegar lo más directamente posible al mensaje en
 // cuestión a responder, sin el riesgo de que pueda ser denunciada y bloqueada
@@ -29,10 +29,10 @@ import kotlin.concurrent.thread
 //
 // Un aviso por pedido, en la barra, mientras esté sin atender:
 //   · llega el pedido → «🏠 Pedido de alquiler» (como pizarra-34);
-//   · la ronda dejó la respuesta → el MISMO aviso pasa a «✍️ Respuesta lista»,
-//     con la respuesta a la vista y «Copiar y abrir»: copia la respuesta, abre
-//     la publicación en Facebook y lo marca respondido en Casa Verde. Queda
-//     tocar «Comentar», mantener apretado, Pegar y mandar.
+//   · hasta pizarra-57, cuando la ronda dejaba la respuesta, el aviso pasaba a
+//     «✍️ Respuesta lista». Desde pizarra-58 no («que no malgaste
+//     notificaciones»): la respuesta se guarda y la copia el toque del aviso de
+//     llegada, o la Pizarra al tocar «Comentar».
 //   · si alguien lo atendió desde otro lado (la lista de Casa Verde), el aviso
 //     se va solo en la próxima vuelta.
 //
@@ -70,8 +70,8 @@ object Responder {
     private fun canales(c: Context) {
         nm(c)?.createNotificationChannel(NotificationChannel(CANAL_FACEBOOK, "Pedidos de alquiler (Facebook)",
             NotificationManager.IMPORTANCE_HIGH).apply { description = "Alguien pide alquilar en Canasvieiras en un grupo." })
-        nm(c)?.createNotificationChannel(NotificationChannel(CANAL_RESPUESTAS, "Respuestas listas (Facebook)",
-            NotificationManager.IMPORTANCE_DEFAULT).apply { description = "Claude dejó la respuesta a un pedido de alquiler: copiar y abrir." })
+        // pizarra-58: «Respuestas listas» ya no se usa; se borra para que no quede en Ajustes.
+        try { nm(c)?.deleteNotificationChannel(CANAL_RESPUESTAS) } catch (e: Throwable) {}
     }
 
     /** La acción «Ver publicación» de Facebook que guarda el aviso de ese pedido, si sigue en la barra. */
@@ -113,58 +113,10 @@ object Responder {
         }
     }
 
-    /** pizarra-51 (Mauro: «al abrir el comentario… debería saltar una ventana aviso que me digas
-     *  si hay disponibilidad o no en Casa Verde»): sale UNA vez, al elegir responder —no mientras
-     *  se recorre—, con la respuesta que quedó copiada a la vista. */
-    fun avisarEleccion(c: Context, p: PedidoPantalla, ya: YaRespondido? = null) {
-        try {
-            canales(c)
-            val b = Notification.Builder(c, CANAL_FACEBOOK)
-                .setSmallIcon(if (ya != null || p.lugar is Lugar.Lleno || p.lugar is Lugar.MesLleno) android.R.drawable.ic_dialog_alert else android.R.drawable.ic_dialog_email)
-                .setContentTitle(tituloDeEleccion(p, ya))
-                .setContentText(if (ya?.enPantalla == true) "Abajo ya hay un comentario con casaverdecanas.com.br. Si igual querés contestar, la respuesta está en Pedidos de alquiler." else p.respuesta)
-                .setStyle(Notification.BigTextStyle().bigText(if (ya?.enPantalla == true)
-                    "Abajo ya hay un comentario con casaverdecanas.com.br: no copié nada para no repetir. En Casa Verde → Pedidos de alquiler quedó como respondido."
-                    else p.respuesta + "\n\nPegala: mantené apretado el cuadro → Pegar (o tocala arriba del teclado)."))
-                .setAutoCancel(true)
-                .setTimeoutAfter(10 * 60_000L)
-            nm(c)?.notify(TAG_PEDIDO + p.m.id, ID_PEDIDO, b.build())
-        } catch (e: Throwable) {
-            Bitacora.anotar(c, "pedidos: no se pudo avisar la disponibilidad: ${e.javaClass.simpleName}")
-        }
-    }
-
-    /** pizarra-53: lo que se eligió no parece un pedido (un perfil, un botón): no se guarda nada. */
-    fun noEsPedido(c: Context) {
-        try {
-            canales(c)
-            nm(c)?.notify("fb:nada", ID_PEDIDO, Notification.Builder(c, CANAL_RESPUESTAS)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("No reconocí un pedido de alojamiento acá")
-                .setContentText("No guardé ni copié nada. Abrí la publicación y tocá su cuadro de comentario.")
-                .setAutoCancel(true).setTimeoutAfter(60_000L).build())
-        } catch (e: Throwable) {}
-    }
-
-    /** La respuesta está lista: el mismo aviso, con la respuesta y «Copiar y abrir». */
-    private fun avisarLista(c: Context, p: PedidoCV) {
-        canales(c)
-        val facebook = accionDeFacebook(c, p.id)
-        val copiar = aActividad(c, p.id, "copiar")
-        val b = Notification.Builder(c, CANAL_RESPUESTAS)
-            .setSmallIcon(android.R.drawable.ic_menu_send)
-            .setContentTitle("✍️ Respuesta lista · ${p.grupo.ifBlank { "Facebook" }}")
-            .setContentText(p.respuesta)
-            .setStyle(Notification.BigTextStyle().bigText("${p.respuesta}\n\n— Pedido: ${p.texto.take(300)}"))
-            .setContentIntent(copiar)
-            .setAutoCancel(false)
-            .addAction(Notification.Action.Builder(null, "Copiar y abrir", copiar).build())
-        conVer(c, b, p.id, facebook)
-        b.addAction(Notification.Action.Builder(null, "Descartar", aActividad(c, p.id, "descartar")).build())
-        nm(c)?.notify(TAG_PEDIDO + p.id, ID_PEDIDO, b.build())
-    }
-
-    /** Cada hora (y con «Traer respuestas»): avisa las respuestas nuevas y saca lo ya atendido. */
+    /** Cada hora: guarda las respuestas (para el toque del aviso de llegada) y saca lo ya atendido.
+     *  pizarra-58 (Mauro, 21-oct: «que no malgaste notificaciones»): ya no avisa «✍️ Respuesta lista»
+     *  por cada pedido. Lo que espera se ve en el widget («búsquedas de Facebook que coinciden») y en
+     *  la lista de Casa Verde; la respuesta la copia la Pizarra al tocar «Comentar». */
     fun sincronizar(c: Context, ahora: Long = System.currentTimeMillis()): Int {
         val cv = CuentaCasaVerde(c)
         if (!cv.conSesion) return 0
@@ -181,15 +133,14 @@ object Responder {
         var n = 0
         for (x in lista) {
             if (x.respuesta.isEmpty()) continue
-            // pizarra-47: lo leído en pantalla ya se copió mientras se recorría; su aviso no abriría nada.
             if (x.fuente == "pantalla") continue
             guardar(c, x.id, x.respuesta, x.buscar, x.enlace)
             val marca = x.id + ":" + x.respuesta.hashCode()
             if (marca in avisados) continue
-            avisarLista(c, x); avisados += marca; n++
+            avisados += marca; n++
         }
         p.edit().putString("avisados", JSONArray(avisados.takeLast(500)).toString()).apply()
-        cv.respuestas = isoUtc(ahora).take(16).replace('T', ' ') + " · ${lista.size} sin atender · $n avisadas"
+        cv.respuestas = isoUtc(ahora).take(16).replace('T', ' ') + " · ${lista.size} sin atender"
         return n
     }
 
@@ -198,7 +149,7 @@ object Responder {
         Buscador.traer(c)   // pizarra-46: lo que se busca puede haber cambiado en Casa Verde
         try {
             val n = sincronizar(c)
-            if (n > 0) Bitacora.anotar(c, "pedidos: $n respuestas listas avisadas")
+            if (n > 0) Bitacora.anotar(c, "pedidos: $n respuestas nuevas guardadas")
         } catch (e: Throwable) {
             Bitacora.anotar(c, "pedidos: no se pudieron traer las respuestas: ${e.message ?: e.javaClass.simpleName}")
         }
@@ -250,8 +201,8 @@ class ResponderActivity : Activity() {
                     }
                     val abrio = Responder.abrir(this, id)
                     if (!abrio) Toast.makeText(this, "No se pudo abrir la publicación: buscala en el grupo.", Toast.LENGTH_LONG).show()
-                    // Con la respuesta en la mano, queda respondido (en la lista se puede volver atrás).
-                    if (r.isNotEmpty()) Responder.cerrar(this, id, "respondido")
+                    // pizarra-58: copiar no es publicar. Ya no se marca respondido acá: la Pizarra lo
+                    // marca cuando ve nuestra respuesta debajo (YA COMENTADA), o una persona en la lista.
                 }
             }
         } catch (e: Throwable) {

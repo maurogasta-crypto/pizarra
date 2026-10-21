@@ -2,6 +2,7 @@ package com.maurogasta.pizarra
 
 import org.json.JSONArray
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,5 +58,37 @@ class MensajesTest {
         assertEquals(listOf("cv", "m:a", "a:x"), n.map { it.id })
         assertTrue(n[0].texto.contains("2 búsquedas de Facebook que coinciden") && n[0].texto.contains("1 cambio de"))
         assertEquals(2, armarNovedades(ms, av, 0, 0, "z", "yo", "Redmi 15").size)
+    }
+
+    // pizarra-58: cada toque lleva a algún lado claro.
+    @Test fun cadaAviso_llevaALoQueDice() {
+        fun av(sitio: String, tema: String, texto: String) = Aviso("x", sitio, tema, texto, "2026-10-21T10:00:00Z", false)
+        assertEquals("https://casaverdecanas.com.br/interno/llegada.html?r=abc",
+            destinoDeAviso(av("casaverde", "llegada", "Llega Ana: https://casaverdecanas.com.br/interno/llegada.html?r=abc.")))
+        assertEquals(URL_RESERVAS_CV, destinoDeAviso(av("casaverde", "llegada", "Llega un huésped mañana")))
+        assertEquals(TIEMPOS_URL + "?solapa=agenda", destinoDeAviso(av("tiempos", "recordatorio", "Hoy: odontólogo")))
+        assertEquals(URL_PANEL, destinoDeAviso(av("panel", "novedades", "3 cosas")))
+        assertEquals("https://casayourte.com/admin.html", destinoDeAviso(av("casayourte", "pedido", "Quedó hecho")))
+        assertEquals("", destinoDeAviso(av("hilux", "urgente", "El teléfono no sube")))
+        assertEquals("https://casaverdecanas.com.br/interno/x", destinoDeAviso(av("casaverde", "pedido", "Mirá «https://casaverdecanas.com.br/interno/x»")))
+    }
+
+    @Test fun lasNovedades_sabenAdóndeLlevan() {
+        val av = listOf(Aviso("x", "casaverde", "llegada", "Llega Ana", "2026-10-18T15:00:00Z", false))
+        val n = armarNovedades(emptyList(), av, 3, 0, "2026-10-18T17:00:00Z", "yo", "Redmi 15")
+        assertEquals(URL_PEDIDOS_CV, n.first { it.id == "cv" }.url)
+        assertEquals("x", n.first { it.id == "a:x" }.aviso); assertEquals(URL_RESERVAS_CV, n.first { it.id == "a:x" }.url)
+        assertEquals(URL_RESERVAS_CV, armarNovedades(emptyList(), emptyList(), 3, 1, "z", "yo", "R").first().url)
+        // el widget va a la pantalla que decide, no a la charla ni a la app
+        val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Mensajes.kt").readText()
+        assertTrue(codigo.contains("Intent(c, AbrirActivity::class.java)"))
+        val avisos = java.io.File("src/main/java/com/maurogasta/pizarra/Avisos.kt").readText()
+        assertTrue(avisos.contains("Intent(c, AbrirActivity::class.java)")); assertFalse(avisos.contains("PendingIntent.getActivity(c, 20,"))
+    }
+
+    @Test fun lasRespuestasNoGastanNotificaciones() {
+        val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Responder.kt").readText()
+        assertFalse(codigo.contains("Respuesta lista ·")); assertFalse(codigo.contains("fun avisarLista"))
+        assertFalse(codigo.contains("Responder.cerrar(this, id, \"respondido\")"))
     }
 }

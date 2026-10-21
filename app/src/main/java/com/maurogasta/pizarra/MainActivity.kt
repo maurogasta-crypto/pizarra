@@ -205,7 +205,7 @@ class MainActivity : Activity() {
 
     private fun pintarAvisos() {
         raiz.addView(subtitulo("🔔 Avisos de Claude"))
-        raiz.addView(texto("Lo que Claude te avisa de ${if (nube.esTiempos) "todos los sitios" else nube.sitio.nombre}. Llegan solos como notificación (puede tardar hasta una hora). Cada sitio tiene su canal: lo silenciás o lo dejás sonar en «Configurar».", 13f, "#9AA0A6"))
+        raiz.addView(texto("Lo que Claude te avisa de ${if (nube.esTiempos) "todos los sitios" else nube.sitio.nombre}. Llegan solos como notificación (puede tardar hasta una hora). Tocar uno —acá, en la barra o en el widget— te lleva a lo que dice y lo marca leído. Cada sitio tiene su canal: lo silenciás o lo dejás sonar en «Configurar».", 13f, "#9AA0A6"))
         val lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         avisosVista = lista
         raiz.addView(lista)
@@ -242,8 +242,8 @@ class MainActivity : Activity() {
                     if (!a.leido) enSegundo({ nube.marcarLeido(a.id) }) {
                         pintarListaAvisos(with(Buzon) { avisosGuardados }.map { x -> if (x.id == a.id) x.copy(leido = true) else x })
                     }
-                    // Un enlace del ecosistema en el texto se abre (Tiempos, adentro).
-                    Regex("https://\\S+").find(a.texto)?.let { m -> abrir(m.value.trimEnd('.', ',', ')')) }
+                    // pizarra-58: lleva a lo que dice el aviso (destinoDeAviso, el mismo de la barra y el widget).
+                    destinoDeAviso(a).takeIf { it.isNotEmpty() }?.let { abrir(it) }
                 }
             })
         }
@@ -599,23 +599,19 @@ class MainActivity : Activity() {
             }
         }
         if (cv.conSesion) {
-            raiz.addView(texto("Entraste con ${cv.mail}. Cada pedido de alquiler en Canasvieiras que llegue de Facebook va a la lista «Pedidos de alquiler» de Casa Verde, que ve todo el equipo." +
+            raiz.addView(texto("Entraste con ${cv.mail}. Las búsquedas de Facebook que coinciden van a «Pedidos de alquiler» de Casa Verde, que ve todo el equipo, y Casa Verde marca 🟢 las que caen en fechas libres." +
                 (if (cv.ultimo.isNotEmpty()) "\nÚltimo: ${cv.ultimo}" else "") +
-                "\nCuando Claude deja la respuesta, el aviso del pedido pasa a «✍️ Respuesta lista»: «Copiar y abrir» la copia, abre la publicación y lo marca respondido. Las respuestas se traen cada hora." +
-                (if (cv.respuestas.isNotEmpty()) "\nRespuestas: ${cv.respuestas}" else "") +
+                (if (cv.respuestas.isNotEmpty()) "\nEn la lista: ${cv.respuestas}" else "") +
                 "\nTodas las notificaciones de este teléfono van también a Casa Verde, con los códigos tapados, para que Claude las revise en la ronda: " +
                 Notificaciones.estado(this), 13f, "#9AA0A6"))
             // pizarra-44: el lector de Facebook por accesibilidad (Pantalla.kt).
             raiz.addView(texto("Lector de Facebook: " + Pantalla.estado(this) +
-                "\nEncendido, cuando tocás «Comentar» en una publicación de Facebook, la Pizarra la guarda en la lista y copia su respuesta: el teclado te la ofrece arriba y la pegás con un toque. Sólo lee y sólo dentro de Facebook: no toca nada.", 13f, "#9AA0A6"))
+                "\nEncendido, mientras recorrés un grupo guarda en silencio cada búsqueda de alojamiento que pasa, con sus fechas y cuántos son. Cuando tocás «Comentar», un cartel corto dice si hay lugar y la respuesta queda copiada: el teclado te la ofrece arriba y la pegás. Sólo lee y sólo dentro de Facebook: no toca nada.", 13f, "#9AA0A6"))
             if (!Pantalla.encendido(this)) raiz.addView(boton("Encender el lector de Facebook") {
                 try { startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (e: Exception) { }
                 mostrar("En Accesibilidad: «Apps descargadas» → Pizarra · lector de Facebook → encender. Si sale «Ajuste restringido»: Ajustes → Apps → Pizarra → ⋮ → «Permitir ajustes restringidos», y volvé a probar.")
             })
-            raiz.addView(boton("Traer respuestas ahora") {
-                mostrar("Trayendo…")
-                enFondo { val n = Responder.sincronizar(this); mostrar(if (n > 0) "$n respuestas nuevas: están en la barra de avisos." else "Nada nuevo. ${cv.respuestas}") }
-            })
+            raiz.addView(boton("Abrir Pedidos de alquiler") { abrir(URL_PEDIDOS_CV) })
             raiz.addView(boton("Salir de Casa Verde") { cv.salir(); pintar() })
             raiz.addView(dice)
             return

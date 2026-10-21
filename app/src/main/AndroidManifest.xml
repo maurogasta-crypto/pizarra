@@ -138,6 +138,16 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- pizarra-58: el toque en un aviso de Claude o en una novedad del widget de
+             mensajes: lleva a lo que dice el aviso. Invisible, como las de arriba. -->
+        <activity
+            android:name=".AbrirActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- pizarra-40: la charla (escribir y leer los mensajes), y los toques del widget de mensajes. -->
         <activity
             android:name=".CharlaActivity"

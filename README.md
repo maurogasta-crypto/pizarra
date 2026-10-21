@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-57` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-58` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -278,8 +278,18 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   publicación en Facebook y la marca respondida en la lista (si después no la
   mandaste, en la lista se vuelve a «sin atender»). Queda tocar «Comentar»,
   mantener apretado, Pegar y Publicar. «Descartar» la saca de la lista. Lo
-  que alguien atendió desde la lista se va solo de la barra. También está
-  «Traer respuestas ahora» en los ajustes.
+  que alguien atendió desde la lista se va solo de la barra. **Hasta
+  pizarra-57**: desde pizarra-58 ya no hay aviso «Respuesta lista» (gastaba
+  una notificación por pedido); la respuesta la copia la Pizarra al tocar
+  «Comentar», y copiar ya no marca respondido.
+- **Cada toque lleva a algún lado** (pizarra-58, `Abrir.kt`, Mauro: «la forma
+  en la que direccionan al hacer clic, algunas no hacen nada claro»). Un aviso
+  de Claude —en la barra, en la lista de la app o en el widget— abre lo que
+  dice (`destinoDeAviso`: el enlace del texto; si no, la llegada en Reservas,
+  la agenda de Tiempos o el panel del sitio) y queda leído. El renglón de
+  Casa Verde del widget abre Reservas si hay cambios para confirmar y si no
+  Pedidos de alquiler; un mensaje, la charla. Antes todo abría la pantalla de
+  ajustes, y un aviso nuevo pisaba lo que abría el anterior.
 - **Despertaba al chat en el acto** (pizarra-35, hasta pizarra-36). Después de subirlo, la
   Pizarra lo deja como un pedido en `reportes/` de Tiempos (`pagina:
   "facebook-pedido"`, urgencia alta, con el texto: la sesión que despierta no
