@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-55` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-56` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -391,6 +391,11 @@ mira.
 pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro se trababa. El
 informe de fallos de HyperOS se va a Xiaomi, no a nosotros. Desde pizarra-3:
 
+- **Sin notificaciones y con registro de todo** (pizarra-56): al tocar «Comentar»
+  la propuesta sale en un cartel que se va solo (no gasta una notificación), y al
+  recorrer se registran en silencio en Casa Verde todos los pedidos de alojamiento
+  que pasan, con sus fechas y cuántos son, para que el sitio diga cuáles caen en
+  fechas libres.
 - **La app lleva una bitácora** (80 renglones: qué abrió, qué pidió, qué
   error). Si se **cierra** o se **traba** (la pantalla 5 s sin contestar),
   guarda qué estaba haciendo y la pila, y **la próxima vez que se abre lo

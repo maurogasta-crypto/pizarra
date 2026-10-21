@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CasaVerde.kt — Los pedidos de alquiler de Facebook, directo a la lista de
-// Casa Verde. Sello: pizarra-49
+// Casa Verde. Sello: pizarra-56
 //
 // 18-oct-2026, Mauro: que la lista de pedidos se llene sin despertar al chat
 // cada vez que aparece una notificación; el chat se despierta unas veces por
@@ -36,7 +36,11 @@ const val COLECCION_PEDIDOS = "pedidos_alquiler"
 
 /** Los campos que la regla de `pedidos_alquiler` deja crear a una persona. */
 /** pizarra-46: `respuesta` también, la rápida que arma la Pizarra al ver el pedido en pantalla. */
-val CAMPOS_PEDIDO = listOf("grupo", "texto", "cuando", "fecha", "buscar", "estado", "fuente", "uid", "creadoEn", "respuesta")
+val CAMPOS_PEDIDO = listOf("grupo", "texto", "cuando", "fecha", "buscar", "estado", "fuente", "uid", "creadoEn", "respuesta",
+    "desde", "hasta", "mes", "personas")
+
+/** pizarra-56: lo que ya se leyó del pedido, para que Casa Verde vea si cae en una fecha libre. */
+data class DatosPedido(val desde: String = "", val hasta: String = "", val mes: String = "", val personas: Int = 0)
 
 /** La MISMA búsqueda que `enlaceBusqueda` de datos/herramientas/facebook.mjs:
  *  las primeras doce palabras, sin «Fulano publicó:» ni signos. Facebook no da
@@ -48,7 +52,7 @@ fun enlaceBusqueda(texto: String): String {
 }
 
 /** El `commit` que crea el pedido, sin pisar uno que ya esté. */
-fun cuerpoPedidoCasaVerde(docs: String, uid: String, m: MensajeAirbnb, ahora: Long, respuesta: String = "", fuente: String = "pizarra"): JSONObject {
+fun cuerpoPedidoCasaVerde(docs: String, uid: String, m: MensajeAirbnb, ahora: Long, respuesta: String = "", fuente: String = "pizarra", datos: DatosPedido = DatosPedido()): JSONObject {
     fun s(v: String) = JSONObject().put("stringValue", v)
     val cuando = m.cuando.toLongOrNull()?.takeIf { it > 0 } ?: ahora
     val texto = (listOf(m.texto) + m.lineas).map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n").take(4000)
@@ -62,6 +66,11 @@ fun cuerpoPedidoCasaVerde(docs: String, uid: String, m: MensajeAirbnb, ahora: Lo
         .put("fuente", s(fuente))
         .put("uid", s(uid))
     if (respuesta.isNotBlank()) campos.put("respuesta", s(respuesta.take(3000)))
+    if (Regex("^\\d{4}-\\d{2}-\\d{2}$").matches(datos.desde) && Regex("^\\d{4}-\\d{2}-\\d{2}$").matches(datos.hasta)) {
+        campos.put("desde", s(datos.desde)); campos.put("hasta", s(datos.hasta))
+    }
+    if (Regex("^\\d{4}-\\d{2}$").matches(datos.mes)) campos.put("mes", s(datos.mes))
+    if (datos.personas in 1..60) campos.put("personas", JSONObject().put("integerValue", datos.personas.toString()))
     return JSONObject().put("writes", JSONArray().put(JSONObject()
         .put("update", JSONObject().put("name", "$docs/$COLECCION_PEDIDOS/${m.id}").put("fields", campos))
         .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "creadoEn").put("setToServerValue", "REQUEST_TIME")))
@@ -165,10 +174,11 @@ class CuentaCasaVerde(contexto: Context) {
     }
 
     /** Crea el pedido. Devuelve false si ya estaba (no es un error). */
-    fun crearPedido(m: MensajeAirbnb, ahora: Long = System.currentTimeMillis(), respuesta: String = "", fuente: String = "pizarra"): Boolean {
+    fun crearPedido(m: MensajeAirbnb, ahora: Long = System.currentTimeMillis(), respuesta: String = "", fuente: String = "pizarra",
+                    datos: DatosPedido = DatosPedido()): Boolean {
         return try {
             pedir("https://firestore.googleapis.com/v1/${cv.docs}:commit",
-                cuerpoPedidoCasaVerde(cv.docs, uid, m, ahora, respuesta, fuente).toString(), "application/json", token())
+                cuerpoPedidoCasaVerde(cv.docs, uid, m, ahora, respuesta, fuente, datos).toString(), "application/json", token())
             true
         } catch (e: ErrorNube) {
             if (e.message?.contains("ALREADY_EXISTS") == true || e.message?.contains("FAILED_PRECONDITION") == true ||

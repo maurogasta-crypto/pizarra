@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-55
+// Sello: pizarra-56
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -52,7 +52,10 @@ data class Nodo(val texto: String = "", val desc: String = "", val hijos: List<N
 data class Publicacion(val encabezado: String, val texto: String, val esAutor: Boolean = false, val visible: Boolean = true, val pos: Int = 0)
 
 /** Un pedido que cuadra con la búsqueda, con la respuesta rápida ya armada (pizarra-46). */
-data class PedidoPantalla(val m: MensajeAirbnb, val respuesta: String, val encaje: Encaje, val visible: Boolean = true, val autor: String = "", val lugar: Lugar = Lugar.SinFechas)
+/** pizarra-56: con las fechas y cuántos son ya leídos (`desde`/`hasta` o `mes`, `personas`), para que
+ *  Casa Verde calcule si el pedido cae en una fecha libre sin volver a leer el texto. */
+data class PedidoPantalla(val m: MensajeAirbnb, val respuesta: String, val encaje: Encaje, val visible: Boolean = true, val autor: String = "",
+                          val lugar: Lugar = Lugar.SinFechas, val desde: String = "", val hasta: String = "", val mes: String = "", val personas: Int = 0)
 
 private const val LARGO_MINIMO = 60       // menos que eso es un botón, un nombre o una hora
 private const val MAX_NODOS = 4000        // una pantalla de Facebook anda por 300 a 1500
@@ -182,8 +185,24 @@ fun pedidoDeLaElegida(p: Publicacion, ahora: Long, busqueda: Busqueda, ocup: Lis
     val m = MensajeAirbnb(taparCodigos(p.encabezado).take(120), taparCodigos(p.texto).take(4000), emptyList(), ahora.toString(), app = "facebook")
     val autor = if (p.esAutor) p.encabezado else ""
     val lugar = if (cabanas.isEmpty()) Lugar.SinFechas else lugarPara(p.texto, e.personas, ocup, cabanas, hoy)
-    return PedidoPantalla(m, respuestaRapida(autor, p.texto, e, m.id.hashCode(), lugar), e, true, autor, lugar)
+    val f = fechasPedidas(p.texto, hoy)
+    return PedidoPantalla(m, respuestaRapida(autor, p.texto, e, m.id.hashCode(), lugar), e, true, autor, lugar,
+        desde = (f as? Pedido.Rango)?.desde?.toString().orEmpty(), hasta = (f as? Pedido.Rango)?.hasta?.toString().orEmpty(),
+        mes = (f as? Pedido.Mes)?.mes?.toString().orEmpty(), personas = n)
 }
+
+/** pizarra-56 (Mauro, 21-oct: «guarda los registros de todas las publicaciones»): mientras se recorre,
+ *  se registra todo pedido de alojamiento de la zona —quien BUSCA, no quien ofrece—, sea del tipo,
+ *  del tamaño y del público que sea: si cae en una fecha libre lo decide Casa Verde, no el teléfono. */
+fun esPedidoParaRegistrar(texto: String, b: Busqueda): Boolean =
+    hablaDeAlojamiento(texto) && encaje(texto, b.copy(tipos = setOf("diaria", "mensual", "anual"), personasMax = 60, publico = emptySet(), activa = true)).ok
+
+/** Los pedidos de una pantalla, listos para registrar (sin aviso ni copia). */
+fun registrosDe(pubs: List<Publicacion>, ahora: Long, b: Busqueda, ocup: List<Ocupacion>, cabanas: List<CabanaCV>,
+                hoy: java.time.LocalDate = java.time.LocalDate.now()): List<PedidoPantalla> =
+    pubs.filter { esPedidoParaRegistrar(it.texto, b) }.map { pedidoDeLaElegida(it, ahora, b, ocup, cabanas, hoy) }
+
+
 
 /** pizarra-55 (Mauro, 21-oct: «los avisos que ya se comentaron tienen que advertirse»): ¿ya hay
  *  un comentario NUESTRO debajo de la publicación elegida? Todas nuestras respuestas llevan la
@@ -234,6 +253,22 @@ fun esParaResponder(rotulo: String, editable: Boolean): Boolean = editable || PA
 /** El que lee. Android lo conecta cuando la persona lo enciende en Accesibilidad. */
 class LectorPantalla : AccessibilityService() {
     private var ultimaElegida = ""
+    private var ultimoRecorrido = 0L
+    private val registrados = LinkedHashSet<String>()
+
+    /** Un cartel que se va solo: no queda en la barra ni gasta una notificación (pizarra-56). */
+    private fun cartel(t: String) = try { android.widget.Toast.makeText(this, t, android.widget.Toast.LENGTH_LONG).show() } catch (e: Throwable) {}
+
+    /** Al recorrer: registra en Casa Verde los pedidos que pasan por la pantalla, en silencio. */
+    private fun registrar(raiz: AccessibilityNodeInfo) {
+        val ahora = System.currentTimeMillis()
+        if (ahora - ultimoRecorrido < 1500) return          // Facebook cambia la pantalla decenas de veces por segundo
+        ultimoRecorrido = ahora
+        val pubs = publicacionesDe(aNodo(raiz, 0, intArrayOf(0), null))
+        val nuevos = registrosDe(pubs, ahora, Buscador.actual(this), Ocupado.ocupaciones(this), Ocupado.cabanas(this))
+            .filter { synchronized(registrados) { registrados.add(it.m.id).also { while (registrados.size > 2000) registrados.remove(registrados.first()) } } }
+        if (nuevos.isNotEmpty()) { Pantalla.cargarPedidos(this, nuevos); Pantalla.anotar(this, leidas = pubs.size, pedidos = nuevos.size) }
+    }
 
     override fun onServiceConnected() {
         Pantalla.anotar(this, conectado = true)
@@ -243,7 +278,9 @@ class LectorPantalla : AccessibilityService() {
     }
 
     /* pizarra-48 (Mauro, 20-oct: «así sólo me guarda las que entro y me prepara la respuesta
-       automáticamente»): mientras se recorre no se guarda nada. Cuando la persona toca
+       automáticamente»). pizarra-56 (21-oct: «guarda los registros de todas las publicaciones»):
+       al recorrer se REGISTRA en silencio cada pedido de alojamiento que pasa, con sus fechas y
+       cuántos son, para que Casa Verde diga cuáles caen en fechas libres. Cuando la persona toca
        «Comentar» o el cuadro de texto, ESA publicación va a la lista con su respuesta, y la
        respuesta queda copiada: el teclado la ofrece arriba y se pega con un toque. */
     override fun onAccessibilityEvent(e: AccessibilityEvent?) {
@@ -251,6 +288,10 @@ class LectorPantalla : AccessibilityService() {
         if (paquete !in PAQUETES_FACEBOOK) return
         // pizarra-49: al empezar una sesión de Facebook, UNA vez, la ocupación de Casa Verde.
         if (Ocupado.empiezaSesion(this)) { val app = applicationContext; thread(name = "ocupacion") { Ocupado.traer(app); Buscador.traer(app) } }
+        if (e.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED || e.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+            try { rootInActiveWindow?.let { registrar(it) } } catch (t: Throwable) { Bitacora.anotar(this, "pantalla: ${t.message ?: t.javaClass.simpleName}") }
+            return
+        }
         if (e.eventType != AccessibilityEvent.TYPE_VIEW_CLICKED && e.eventType != AccessibilityEvent.TYPE_VIEW_FOCUSED) return
         try {
             val fuente = e.source ?: return
@@ -259,7 +300,7 @@ class LectorPantalla : AccessibilityService() {
             val raiz = rootInActiveWindow ?: return
             val arbol = aNodo(raiz, 0, intArrayOf(0), fuente)
             val elegida = publicacionElegida(arbol) ?: return
-            if (!hablaDeAlojamiento(elegida.texto)) { Responder.noEsPedido(this); return }
+            if (!hablaDeAlojamiento(elegida.texto)) { cartel("No reconocí un pedido de alojamiento acá: no copié nada."); return }
             val p = pedidoDeLaElegida(elegida, System.currentTimeMillis(), Buscador.actual(this), Ocupado.ocupaciones(this), Ocupado.cabanas(this))
             if (p.m.id == ultimaElegida) return
             ultimaElegida = p.m.id
@@ -268,7 +309,9 @@ class LectorPantalla : AccessibilityService() {
             val ya = YaRespondido(yaComentadoEnPantalla(arbol, elegida), Pantalla.elegidaAntes(this, p.m.id))
             Pantalla.recordarElegida(this, p.m.id)
             if (!ya.enPantalla) Pantalla.copiar(this, p)
-            Responder.avisarEleccion(this, p, ya)
+            // pizarra-56 (Mauro, 21-oct: «que proponga un texto de respuesta al momento de poner para escribir
+            // comentarios, pero que no malgaste notificaciones»): un cartel que se va solo, no una notificación.
+            cartel(tituloDeEleccion(p, ya))
             Pantalla.cargarPedidos(this, listOf(p), respondido = ya.enPantalla)
             Pantalla.anotar(this, leidas = 1, pedidos = 1)
         } catch (t: Throwable) {
@@ -277,11 +320,11 @@ class LectorPantalla : AccessibilityService() {
     }
 
     /** Del árbol de Android al nuestro. Sólo se LEE: ni una acción sobre el nodo. */
-    private fun aNodo(n: AccessibilityNodeInfo, hondo: Int, cuenta: IntArray, tocado: AccessibilityNodeInfo): Nodo {
+    private fun aNodo(n: AccessibilityNodeInfo, hondo: Int, cuenta: IntArray, tocado: AccessibilityNodeInfo?): Nodo {
         cuenta[0]++
         val hijos = if (hondo > 60 || cuenta[0] > MAX_NODOS) emptyList() else
             (0 until n.childCount).mapNotNull { i -> n.getChild(i)?.let { aNodo(it, hondo + 1, cuenta, tocado) } }
-        return Nodo(n.text?.toString().orEmpty(), n.contentDescription?.toString().orEmpty(), hijos, n.isEditable, n.isVisibleToUser, n == tocado)
+        return Nodo(n.text?.toString().orEmpty(), n.contentDescription?.toString().orEmpty(), hijos, n.isEditable, n.isVisibleToUser, tocado != null && n == tocado)
     }
 
     override fun onInterrupt() {}
@@ -351,7 +394,8 @@ object Pantalla {
                 var nuevo = true
                 if (!cv.conSesion) cv.ultimo = "falta entrar con la cuenta de Casa Verde"
                 else try {
-                    nuevo = cv.crearPedido(p.m, respuesta = p.respuesta, fuente = "pantalla")
+                    nuevo = cv.crearPedido(p.m, respuesta = p.respuesta, fuente = "pantalla",
+                        datos = DatosPedido(p.desde, p.hasta, p.mes, p.personas))
                     // Ya había una respuesta nuestra en la publicación: queda respondida en la lista.
                     if (respondido) cv.marcar(p.m.id, "respondido")
                     cv.ultimo = isoUtc(System.currentTimeMillis()).take(16) + (if (nuevo) " · pedido cargado (pantalla)" else " · ya estaba")
@@ -365,7 +409,7 @@ object Pantalla {
 
 
     /** Copia la respuesta: el teclado la ofrece arriba y se pega con un toque. El aviso lo da
-     *  `Responder.avisarEleccion`, que dice además si hay lugar (pizarra-51). */
+     *  un cartel (`tituloDeEleccion`), que dice además si hay lugar (pizarra-51, -56). */
     fun copiar(c: Context, p: PedidoPantalla) {
         try {
             c.getSystemService(android.content.ClipboardManager::class.java)

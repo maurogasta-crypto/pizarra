@@ -139,6 +139,22 @@ class BodegaTest {
             .getJSONObject("update").getJSONObject("fields").getJSONObject("cuando").getString("integerValue"))
     }
 
+    // pizarra-56: las fechas y cuántos son viajan con el pedido, y sólo con la forma que deja la regla.
+    @Test fun elPedido_llevaFechasYPersonas_sóloSiTienenForma() {
+        val m = pedidoDeFacebook("com.facebook.katana", "G", "alquiler Canasvieiras", emptyList(), 1)!!
+        val docs = "projects/casaverde-20/databases/(default)/documents"
+        fun campos(d: DatosPedido) = cuerpoPedidoCasaVerde(docs, "u1", m, 5, datos = d).getJSONArray("writes").getJSONObject(0)
+            .getJSONObject("update").getJSONObject("fields")
+        val f = campos(DatosPedido("2027-01-10", "2027-01-17", "", 4))
+        assertEquals("2027-01-10", f.getJSONObject("desde").getString("stringValue"))
+        assertEquals("4", f.getJSONObject("personas").getString("integerValue"))
+        assertFalse(f.has("mes"))
+        assertTrue(CAMPOS_PEDIDO.containsAll(f.keys().asSequence().toList()))
+        val g = campos(DatosPedido("2027-01-10", "", "2027-02", 99))
+        assertFalse(g.has("desde")); assertFalse(g.has("hasta")); assertFalse(g.has("personas"))
+        assertEquals("2027-02", g.getJSONObject("mes").getString("stringValue"))
+    }
+
     // La MISMA búsqueda que enlaceBusqueda de datos/herramientas/facebook.mjs.
     @Test fun laBusqueda_esLaMismaQueLaDeDatos() {
         val u = enlaceBusqueda("Ana publicou: Busco aluguel em Canasvieiras para janeiro, 4 pessoas!")

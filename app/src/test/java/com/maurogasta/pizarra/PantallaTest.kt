@@ -75,10 +75,30 @@ class PantallaTest {
         val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Pantalla.kt").readText()
         assertFalse(codigo.contains("IMPORTANCE_HIGH")); assertFalse(codigo.contains("avisarEnPantalla"))
         assertFalse(codigo.contains("Notificaciones.mandar"))
-        // pizarra-51: el único aviso es el de la elección (al abrir el comentario), no el del recorrido
-        assertEquals(1, Regex("Responder\\.avisarEleccion\\(").findAll(codigo).count())
+        // pizarra-56: ni una notificación desde el lector; al abrir el comentario, un cartel que se va solo
+        assertEquals(0, Regex("Responder\\.avisarEleccion\\(").findAll(codigo).count())
+        assertTrue(codigo.contains("cartel(tituloDeEleccion(p, ya))"))
+        assertFalse(codigo.contains("NotificationCompat") || codigo.contains("Notification.Builder"))
         val xml = java.io.File("src/main/res/xml/lector_pantalla.xml").readText()
-        assertTrue(xml.contains("typeViewClicked|typeViewFocused")); assertFalse(xml.contains("typeViewScrolled"))
+        assertTrue(xml.contains("typeViewClicked|typeViewFocused")); assertTrue(xml.contains("typeViewScrolled"))
+    }
+
+    // pizarra-56: al recorrer se registra TODO pedido de alojamiento que pasa, con lo que Casa Verde
+    // necesita para decir si cae en fechas libres; lo que no es un pedido no se registra.
+    @Test fun al_recorrer_se_registran_los_pedidos_con_fechas_y_personas() {
+        val hoy = java.time.LocalDate.of(2026, 10, 21)
+        val pubs = listOf(
+            Publicacion("Ana Souza", "Busco casa en Canasvieiras para 4 personas del 10 al 17 de enero", true),
+            Publicacion("Juan Pérez", "Buscamos depto en Canasvieiras para febrero, somos 3", true),
+            Publicacion("Grupo", "Alguien sabe cómo está el tráfico camino a Canasvieiras?", true),
+            Publicacion("Luis Gómez", "Busco alquiler anual en Canasvieiras", true))
+        // Aunque «Qué busco ahora» diga sólo por días, el registro guarda también lo mensual y lo anual.
+        val r = registrosDe(pubs, 1L, Busqueda(tipos = setOf("diaria")), emptyList(), emptyList(), hoy)
+        assertEquals(3, r.size)
+        assertEquals("2027-01-10", r[0].desde); assertEquals("2027-01-17", r[0].hasta); assertEquals(4, r[0].personas)
+        assertEquals("2027-02", r[1].mes); assertEquals(3, r[1].personas); assertEquals("", r[1].desde)
+        assertFalse(esPedidoParaRegistrar("Alquilo mi casa en Canasvieiras, consulte", Busqueda()))
+        assertFalse(esPedidoParaRegistrar("Busco casa en Bombinhas para enero", Busqueda()))
     }
 
     // pizarra-48: sólo la publicación que la persona elige responder (toca «Comentar» o el cuadro).

@@ -216,7 +216,7 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   hasta una semana, si no la parte libre de lo pedido (la mitad o más), si no
   las mismas noches dentro de 45 días; y si lo que falta es cupo, para cuántos
   hay lugar. **Al abrir el comentario —y sólo ahí— sale UN aviso con ventana**
-  (`Responder.avisarEleccion`, `tituloDeEleccion`: «✅ Hay lugar…» o «⛔ Sin
+  (`tituloDeEleccion`; hasta pizarra-55 por `Responder.avisarEleccion`: «✅ Hay lugar…» o «⛔ Sin
   lugar… · copié lo que sí hay») con la respuesta copiada a la vista; mientras
   se recorre sigue sin haber ninguno. **La capacidad se lee de cada espacio** (`capacidad` de
   `cabanas/`: `base`, `max` y `condicionMax`; pizarra-52, Mauro: «la base son 6,
@@ -239,7 +239,18 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   publicación abierta, todo lo de abajo; en el inicio, hasta la tarjeta
   siguiente), el aviso dice «⚠️ YA COMENTADA», NO se copia nada y el pedido queda
   respondido en la lista; si sólo se eligió antes en este teléfono
-  (`elegidaAntes`), el aviso dice el día y la respuesta se copia igual. Si cambian los
+  (`elegidaAntes`), el aviso dice el día y la respuesta se copia igual. **pizarra-56**
+  (Mauro, 21-oct: «que proponga un texto de respuesta al momento de poner para
+  escribir comentarios, pero que no malgaste notificaciones; guarda los registros
+  de todas las publicaciones y el sitio luego advierta qué publicaciones llenan los
+  huecos libres»): al tocar «Comentar» el aviso es un CARTEL que se va solo
+  (`cartel`, un Toast), no una notificación; y al recorrer
+  (`typeViewScrolled|typeWindowContentChanged`, una pasada cada 1,5 s) se registra
+  en silencio todo pedido de alojamiento de la zona (`registrosDe`,
+  `esPedidoParaRegistrar`: cualquier tipo, hasta 60, cualquier público), con lo que
+  se leyó de él (`DatosPedido`: `desde`/`hasta`, `mes`, `personas`, con la forma de
+  la regla). Casa Verde lo cruza con la ocupación (`CV2.huecoDelPedido`, la MISMA
+  cuenta que `lugarPara`: si cambia una, cambia la otra). Si cambian los
   valores de la búsqueda en la página o en la regla, cambian acá (el banco los
   compara si el sitio está al lado).
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):

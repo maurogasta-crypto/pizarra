@@ -20,7 +20,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Responder.kt — Del pedido de Facebook a la respuesta, con un toque.
-// Sello: pizarra-55
+// Sello: pizarra-56
 //
 // 18-oct-2026, Mauro: «llegar lo más directamente posible al mensaje en
 // cuestión a responder, sin el riesgo de que pueda ser denunciada y bloqueada
