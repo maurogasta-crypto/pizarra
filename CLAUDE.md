@@ -215,7 +215,7 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   respuesta diciendo lo que sí podemos ofrecer»): las mismas noches corridas
   hasta una semana, si no la parte libre de lo pedido (la mitad o más), si no
   las mismas noches dentro de 45 días; y si lo que falta es cupo, para cuántos
-  hay lugar. **Al abrir el comentario —y sólo ahí— sale UN aviso con ventana**
+  hay lugar. **Al abrir el comentario —y sólo ahí— sale UN aviso (desde pizarra-56, un cartel)**
   (`tituloDeEleccion`; hasta pizarra-55 por `Responder.avisarEleccion`: «✅ Hay lugar…» o «⛔ Sin
   lugar… · copié lo que sí hay») con la respuesta copiada a la vista; mientras
   se recorre sigue sin haber ninguno. **La capacidad se lee de cada espacio** (`capacidad` de
