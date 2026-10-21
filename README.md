@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-54` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-55` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -381,6 +381,10 @@ mira.
 - **Al abrir el comentario sale un aviso** —el único: mientras se recorre no
   hay ninguno— que dice «✅ Hay lugar…» o «⛔ Sin lugar… · copié lo que sí
   hay», con la respuesta copiada a la vista.
+- **Lo que ya se comentó se advierte** (pizarra-55): si abajo ya hay una
+  respuesta nuestra (con casaverdecanas.com.br), el aviso dice «⚠️ YA
+  COMENTADA», no copia nada y la marca respondida en Casa Verde; si sólo la
+  elegiste antes en este teléfono, dice el día.
 
 ## Si falla en el teléfono (pizarra-3)
 

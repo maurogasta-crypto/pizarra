@@ -151,6 +151,25 @@ class PantallaTest {
         assertFalse(esNombreDePersona("EN AUTO A FLORIPA Alquileres")); assertFalse(esNombreDePersona("Alquiler en Florianópolis"))
     }
 
+    // pizarra-55: lo que ya se comentó se advierte.
+    @Test fun una_publicación_ya_comentada_se_reconoce() {
+        val nuestra = "¡Hola! Tenemos cabañas en Canasvieiras. Mirá fotos y disponibilidad en casaverdecanas.com.br y escribinos por privado"
+        val conRespuesta = Nodo(hijos = listOf(Nodo(texto = pedidoAbierto), Nodo(texto = "Casa Verde Canas"), Nodo(texto = nuestra),
+            Nodo(texto = "Escribe un comentario público…", editable = true, foco = true)))
+        val e = publicacionElegida(conRespuesta)!!
+        assertEquals(pedidoAbierto, e.texto); assertTrue(yaComentadoEnPantalla(conRespuesta, e))
+        val sin = abierta(null); assertFalse(yaComentadoEnPantalla(sin, publicacionElegida(sin)!!))
+        // en el inicio, una respuesta nuestra en la tarjeta SIGUIENTE no cuenta para ésta
+        val inicio = Nodo(hijos = listOf(
+            Nodo(desc = "Más opciones para la publicación de Ana Souza"), Nodo(texto = p1), Nodo(texto = "Comentar", foco = true),
+            Nodo(desc = "Más opciones para la publicación de Juan Pérez"), Nodo(texto = p2), Nodo(texto = nuestra)))
+        assertFalse(yaComentadoEnPantalla(inicio, publicacionElegida(inicio)!!))
+        val p = pedidoDeLaElegida(e, 1, Busqueda())
+        assertTrue(tituloDeEleccion(p, YaRespondido(true)).startsWith("⚠️ YA COMENTADA"))
+        assertTrue(tituloDeEleccion(p, YaRespondido(false, "20/10")).startsWith("⚠️ Ya la elegiste el 20/10 · 📋"))
+        assertTrue(tituloDeEleccion(p).startsWith("📋"))
+    }
+
     @Test fun el_lector_SÓLO_LEE_y_sólo_dentro_de_Facebook() {
         val codigo = java.io.File("src/main/java/com/maurogasta/pizarra/Pantalla.kt").readText()
         for (accion in listOf("performAction", "dispatchGesture", "performGlobalAction", "ACTION_CLICK", "ACTION_SCROLL", "ACTION_SET_TEXT"))

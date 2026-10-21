@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-53
+// Sello: pizarra-55
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
@@ -185,8 +185,29 @@ fun pedidoDeLaElegida(p: Publicacion, ahora: Long, busqueda: Busqueda, ocup: Lis
     return PedidoPantalla(m, respuestaRapida(autor, p.texto, e, m.id.hashCode(), lugar), e, true, autor, lugar)
 }
 
+/** pizarra-55 (Mauro, 21-oct: «los avisos que ya se comentaron tienen que advertirse»): ¿ya hay
+ *  un comentario NUESTRO debajo de la publicación elegida? Todas nuestras respuestas llevan la
+ *  página, así que alcanza con buscarla en lo que viene después de la publicación. */
+fun yaComentadoEnPantalla(raiz: Nodo, elegida: Publicacion): Boolean {
+    val orden = enOrdenConVista(raiz).map { it.first }
+    // En una publicación abierta (se tocó el cuadro) todo lo de abajo son sus comentarios. En el
+    // inicio, sólo hasta la tarjeta siguiente, que empieza con su ⋮ («Más opciones para la publicación de…»).
+    val fin = if (focoEnCuadro(raiz)) orden.size
+        else orden.withIndex().firstOrNull { (i, t) -> i > elegida.pos && Regex("^(m[aá]s opciones para la publicaci|mais op[cç][oõ]es para a publica|more options for)", RegexOption.IGNORE_CASE).containsMatchIn(t) }?.index ?: orden.size
+    return (elegida.pos + 1 until fin).any { Regex("casaverdecanas", RegexOption.IGNORE_CASE).containsMatchIn(orden[it]) }
+}
+
+/** Cómo se enteró de que ya se respondió: en la pantalla, o porque se eligió antes en este teléfono (la fecha). */
+data class YaRespondido(val enPantalla: Boolean, val antes: String = "")
+
 /** El título del aviso que sale al abrir el comentario (pizarra-51): hay lugar o no, y qué quedó copiado. */
-fun tituloDeEleccion(p: PedidoPantalla): String = when (val l = p.lugar) {
+fun tituloDeEleccion(p: PedidoPantalla, ya: YaRespondido? = null): String = when {
+    ya?.enPantalla == true -> "⚠️ YA COMENTADA: hay una respuesta nuestra · no copié nada"
+    ya != null && ya.antes.isNotEmpty() -> "⚠️ Ya la elegiste el ${ya.antes} · " + tituloDeEleccion(p)
+    else -> tituloSegunLugar(p)
+}
+
+private fun tituloSegunLugar(p: PedidoPantalla): String = when (val l = p.lugar) {
     is Lugar.Hay -> "✅ Hay lugar " + rangoEnPalabras(l.desde, l.hasta, false) + (if (l.cabanas.size > 1) " (${l.cabanas.size} cabañas)" else "") +
         (if (l.conExtra) " · pasa la base: " + (l.cabanas.firstNotNullOfOrNull { it.condicion.takeIf { c -> c.isNotBlank() } } ?: "con extra por persona") else "") + " · respuesta copiada"
     is Lugar.MesConLugar -> "✅ Hay fechas libres en " + mesEnPalabras(l.mes, false) + " · respuesta copiada"
@@ -236,14 +257,19 @@ class LectorPantalla : AccessibilityService() {
             val rotulo = (fuente.text ?: fuente.contentDescription ?: e.text?.joinToString(" ") ?: "").toString()
             if (!esParaResponder(rotulo, fuente.isEditable)) return
             val raiz = rootInActiveWindow ?: return
-            val elegida = publicacionElegida(aNodo(raiz, 0, intArrayOf(0), fuente)) ?: return
+            val arbol = aNodo(raiz, 0, intArrayOf(0), fuente)
+            val elegida = publicacionElegida(arbol) ?: return
             if (!hablaDeAlojamiento(elegida.texto)) { Responder.noEsPedido(this); return }
             val p = pedidoDeLaElegida(elegida, System.currentTimeMillis(), Buscador.actual(this), Ocupado.ocupaciones(this), Ocupado.cabanas(this))
             if (p.m.id == ultimaElegida) return
             ultimaElegida = p.m.id
-            Pantalla.copiar(this, p)
-            Responder.avisarEleccion(this, p)
-            Pantalla.cargarPedidos(this, listOf(p))
+            // pizarra-55: ¿ya se comentó? Si la respuesta nuestra está a la vista, no se copia nada y
+            // en la lista queda respondida; si sólo se eligió antes en este teléfono, se avisa y se copia.
+            val ya = YaRespondido(yaComentadoEnPantalla(arbol, elegida), Pantalla.elegidaAntes(this, p.m.id))
+            Pantalla.recordarElegida(this, p.m.id)
+            if (!ya.enPantalla) Pantalla.copiar(this, p)
+            Responder.avisarEleccion(this, p, ya)
+            Pantalla.cargarPedidos(this, listOf(p), respondido = ya.enPantalla)
             Pantalla.anotar(this, leidas = 1, pedidos = 1)
         } catch (t: Throwable) {
             Bitacora.anotar(this, "pantalla: ${t.message ?: t.javaClass.simpleName}")
@@ -300,7 +326,23 @@ object Pantalla {
 
     /** Los pedidos, a «Pedidos de alquiler» de Casa Verde, con su respuesta rápida. Sin aviso
      *  flotante (pizarra-47): la respuesta se copia sola con `copiar`. */
-    fun cargarPedidos(c: Context, ps: List<PedidoPantalla>) {
+    /** Las publicaciones elegidas en este teléfono, con el día (pizarra-55). Techo de 500. */
+    fun elegidaAntes(c: Context, id: String): String = try {
+        org.json.JSONObject(p(c).getString("elegidas", "{}")!!).optString(id)
+    } catch (e: Exception) { "" }
+
+    @Synchronized fun recordarElegida(c: Context, id: String) {
+        try {
+            val o = org.json.JSONObject(p(c).getString("elegidas", "{}")!!)
+            if (!o.has(id)) {
+                val d = java.time.LocalDate.now(); o.put(id, "${d.dayOfMonth}/${d.monthValue}")
+                while (o.length() > 500) o.remove(o.keys().next())
+                p(c).edit().putString("elegidas", o.toString()).apply()
+            }
+        } catch (e: Exception) {}
+    }
+
+    fun cargarPedidos(c: Context, ps: List<PedidoPantalla>, respondido: Boolean = false) {
         val app = c.applicationContext
         thread(name = "pantalla") {
             Buscador.alDia(app)
@@ -310,6 +352,8 @@ object Pantalla {
                 if (!cv.conSesion) cv.ultimo = "falta entrar con la cuenta de Casa Verde"
                 else try {
                     nuevo = cv.crearPedido(p.m, respuesta = p.respuesta, fuente = "pantalla")
+                    // Ya había una respuesta nuestra en la publicación: queda respondida en la lista.
+                    if (respondido) cv.marcar(p.m.id, "respondido")
                     cv.ultimo = isoUtc(System.currentTimeMillis()).take(16) + (if (nuevo) " · pedido cargado (pantalla)" else " · ya estaba")
                 } catch (t: Throwable) {
                     cv.ultimo = "no se pudo cargar: " + (t.message ?: t.javaClass.simpleName)

@@ -232,7 +232,14 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   el nombre sale SÓLO del ⋮ de la publicación y sólo si `esNombreDePersona`
   (nombre y apellido, sin palabras de grupo ni de lugar), si no se saluda sin
   nombre; y lo elegido que no habla de alojamiento ni de la zona no se guarda
-  (`hablaDeAlojamiento`, aviso «No reconocí un pedido»). Si cambian los
+  (`hablaDeAlojamiento`, aviso «No reconocí un pedido»). **pizarra-55**
+  (Mauro, 21-oct: «los avisos que ya se comentaron tienen que advertirse»): si
+  debajo de la publicación elegida ya hay un comentario con casaverdecanas.com.br
+  —todas nuestras respuestas lo llevan— (`yaComentadoEnPantalla`: en una
+  publicación abierta, todo lo de abajo; en el inicio, hasta la tarjeta
+  siguiente), el aviso dice «⚠️ YA COMENTADA», NO se copia nada y el pedido queda
+  respondido en la lista; si sólo se eligió antes en este teléfono
+  (`elegidaAntes`), el aviso dice el día y la respuesta se copia igual. Si cambian los
   valores de la búsqueda en la página o en la regla, cambian acá (el banco los
   compara si el sitio está al lado).
 - **Mensajes entre las Pizarras** (pizarra-40, `Mensajes.kt`, 18-oct-2026):
