@@ -55,7 +55,7 @@ class MensajesTest {
         val av = listOf(Aviso("x", "casaverde", "pedido", "3 pedidos", "2026-10-18T15:00:00Z", false))
         val n = armarNovedades(ms, av, 2, 1, "2026-10-18T17:00:00Z", "yo", "Redmi 15")
         assertEquals(listOf("cv", "m:a", "a:x"), n.map { it.id })
-        assertTrue(n[0].texto.contains("2 pedidos") && n[0].texto.contains("1 cambio de"))
+        assertTrue(n[0].texto.contains("2 búsquedas de Facebook que coinciden") && n[0].texto.contains("1 cambio de"))
         assertEquals(2, armarNovedades(ms, av, 0, 0, "z", "yo", "Redmi 15").size)
     }
 }

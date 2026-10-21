@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-40
+// ecosistema en un widget. Sello: pizarra-57
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -121,7 +121,9 @@ fun armarNovedades(mensajes: List<Mensaje>, avisos: List<Aviso>, pedidosCV: Int,
     for (m in mensajes) l.add(Novedad("m:" + m.id, m.creado, "💬 " + firmaMensaje(m, yo, miTelefono), m.texto, "mensaje", m.de == yo))
     for (a in avisos) l.add(Novedad("a:" + a.id, a.creado, iconoTema(a.tema) + " " + nombreSitio(a.sitio), a.texto, "aviso"))
     if (pedidosCV > 0 || cambiosCV > 0) l.add(Novedad("cv", cuandoCV, "🏠 Casa Verde", listOfNotNull(
-        if (pedidosCV > 0) "$pedidosCV pedido${if (pedidosCV == 1) "" else "s"} de alquiler por responder" else null,
+        // pizarra-57 (Mauro, 21-oct: «no debería decir pedidos de alquiler para contestar, debería decir
+        // búsquedas de Facebook que coinciden»): son publicaciones que cuadran con «Qué busco ahora».
+        if (pedidosCV > 0) "$pedidosCV búsqueda${if (pedidosCV == 1) "" else "s"} de Facebook que coincide${if (pedidosCV == 1) "" else "n"}" else null,
         if (cambiosCV > 0) "$cambiosCV cambio${if (cambiosCV == 1) "" else "s"} de reservas para confirmar" else null).joinToString(" · "), "casaverde"))
     return l.sortedByDescending { it.cuando }.take(tope)
 }

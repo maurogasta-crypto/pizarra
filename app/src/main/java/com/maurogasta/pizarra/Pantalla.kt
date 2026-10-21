@@ -10,7 +10,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pantalla.kt — Lo que Facebook muestra, leído mientras alguien lo mira.
-// Sello: pizarra-56
+// Sello: pizarra-57
 //
 // 20-oct-2026, Mauro: «no funcionan las notificaciones push de facebook… armá
 // la lectura pasiva dentro de mi app… una vez abierta la APK de facebook puede
