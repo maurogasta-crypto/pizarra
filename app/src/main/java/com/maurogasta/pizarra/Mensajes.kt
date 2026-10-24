@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-64
+// ecosistema en un widget. Sello: pizarra-65
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -375,45 +375,57 @@ class CharlaActivity : Activity() {
         }
         clave = intent.getStringExtra("clave").orEmpty()
         val d = resources.displayMetrics.density
-        val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding((16 * d).toInt(), (14 * d).toInt(), (16 * d).toInt(), (10 * d).toInt()) }
-        caja.addView(TextView(this).apply { text = "💬 Mensajes"; textSize = 18f; setTypeface(typeface, android.graphics.Typeface.BOLD) })
-        caja.addView(TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#8A8F98")); text = "Desde este teléfono: ${nombreDelTelefono(this@CharlaActivity)}\n$AVISO_CLAUDE_LEE" })
+        fun dp(x: Int) = (x * d).toInt()
+        // pizarra-65 (Mauro, 24-oct: «cuando aparece el teclado no se reajusta la pantalla, se pierden los
+        // botones, y Mandar quedó deformado»): como cualquier chat. La lista toma lo que sobra (peso 1) y se
+        // achica con el teclado; abajo UNA línea con 📎 🎙 📞, el texto y ➤; Cerrar es la ✕ de arriba.
+        val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(12), dp(14), dp(8)) }
+        val arriba = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        arriba.addView(TextView(this).apply { text = "💬 Mensajes"; textSize = 18f; setTypeface(typeface, android.graphics.Typeface.BOLD) },
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        arriba.addView(TextView(this).apply { text = "✕"; textSize = 20f; gravity = Gravity.CENTER; contentDescription = "Cerrar"
+            setOnClickListener { finish() } }, LinearLayout.LayoutParams(dp(44), dp(44)))
+        caja.addView(arriba)
+        caja.addView(TextView(this).apply { textSize = 11f; setTextColor(Color.parseColor("#8A8F98")); text = "Desde este teléfono: ${nombreDelTelefono(this@CharlaActivity)}\n$AVISO_CLAUDE_LEE" })
         pestanas = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         caja.addView(android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(pestanas) },
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = (6 * d).toInt() })
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) })
         lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         scroll = ScrollView(this).apply { addView(lista) }
-        caja.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (resources.displayMetrics.heightPixels * 0.45).toInt()))
-        campo = EditText(this).apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE; maxLines = 4 }
-        caja.addView(campo)
+        caja.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         dice = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#8A8F98")) }
         caja.addView(dice)
         // pizarra-62: escuchar los audios solos, como un handy.
         caja.addView(android.widget.CheckBox(this).apply {
-            text = "Escuchar los audios solos"; textSize = 13f; isChecked = Handy.soloActivado(this@CharlaActivity)
+            text = "Escuchar los audios solos"; textSize = 12f; isChecked = Handy.soloActivado(this@CharlaActivity)
             setOnCheckedChangeListener { _, v -> Handy.elegirSolo(this@CharlaActivity, v) }
         })
-        val botones = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END }
-        botones.addView(Button(this).apply { text = "Cerrar"; setOnClickListener { finish() } })
-        botones.addView(botonHandy())
+        // La línea de abajo: botones chicos y del mismo ancho, que nunca se deforman.
+        fun icono(b: Button) = b.apply { textSize = 18f; minWidth = 0; minimumWidth = 0; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44)).apply { marginEnd = dp(2) } }
+        val linea = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         // pizarra-64: una foto o un documento, a la conversación elegida (o a todos).
-        botones.addView(Button(this).apply { text = "📎"; contentDescription = "Mandar una foto o un documento"; setOnClickListener {
+        linea.addView(icono(Button(this).apply { text = "📎"; contentDescription = "Mandar una foto o un documento"; setOnClickListener {
             val elegir = Intent(Intent.ACTION_GET_CONTENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
                 .putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "application/pdf", "text/*", "application/msword",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/zip"))
             try { startActivityForResult(Intent.createChooser(elegir, "Mandar"), 64) } catch (e: Throwable) { dice.text = "No hay dónde elegir un archivo." }
-        } })
+        } }))
+        linea.addView(icono(botonHandy()))
         // pizarra-63: llamar a la conversación elegida (en «Todos» no hay a quién).
-        llamar = Button(this).apply { text = "📞"; contentDescription = "Llamar"; setOnClickListener {
+        llamar = icono(Button(this).apply { text = "📞"; contentDescription = "Llamar"; setOnClickListener {
             if (clave.isEmpty()) return@setOnClickListener
             val yo = Nube(this@CharlaActivity).uid.orEmpty()
             val cs = conversaciones(with(Charla) { mensajesGuardados }, yo, nombreDelTelefono(this@CharlaActivity))
             val nombre = cs.firstOrNull { it.clave == clave }?.let { etiquetaConversacion(it, cs, yo).removePrefix("📱 ") }.orEmpty()
             startActivity(Intent(this@CharlaActivity, LlamadaActivity::class.java).putExtra("para", clave).putExtra("nombre", nombre))
-        } }
-        botones.addView(llamar)
-        val mandar = Button(this).apply { text = "Mandar" }
+        } })
+        linea.addView(llamar)
+        campo = EditText(this).apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            maxLines = 4; textSize = 15f }
+        linea.addView(campo, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        val mandar = icono(Button(this).apply { text = "➤"; contentDescription = "Mandar" })
         mandar.setOnClickListener {
             val t = campo.text.toString().trim()
             if (t.isEmpty()) { dice.text = "Escribí algo."; return@setOnClickListener }
@@ -427,10 +439,12 @@ class CharlaActivity : Activity() {
                 }
             }
         }
-        botones.addView(mandar)
-        caja.addView(botones)
+        linea.addView(mandar)
+        caja.addView(linea)
         setContentView(caja)
-        window.setLayout((resources.displayMetrics.widthPixels * 0.94).toInt(), WindowManager.LayoutParams.WRAP_CONTENT)
+        // Alto fijo de ventana (no «lo que mida»): así, con adjustResize, el teclado achica la LISTA y la línea de abajo queda a la vista.
+        window.setLayout((resources.displayMetrics.widthPixels * 0.94).toInt(), (resources.displayMetrics.heightPixels * 0.82).toInt())
+        @Suppress("DEPRECATION") window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         pintar()
         intent.getStringExtra("abrirArchivo")?.takeIf { it.isNotEmpty() }?.let { id ->
             dice.text = "Abriendo…"

@@ -87,4 +87,14 @@ class ConversacionesTest {
         assertEquals("Flor · Note → este teléfono", firmaMensaje(ms.first { it.id == "2" }, "yo", "Redmi 15"))
         assertEquals("Flor · Note → Redmi 15", firmaMensaje(ms.first { it.id == "2" }, "yo", "Redmi 13C"))
     }
+
+    @Test fun laCharlaSeAcomodaAlTeclado_yLosBotonesNoSeDeforman() {
+        // pizarra-65 (Mauro: «cuando aparece el teclado no se reajusta… el botón de mandar quedó deformado»).
+        val src = java.io.File("src/main/java/com/maurogasta/pizarra/Mensajes.kt").readText().substringAfter("class CharlaActivity").substringBefore("private fun pintar()")
+        assertTrue("la lista toma lo que sobra", src.contains("caja.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))"))
+        assertTrue("la ventana tiene alto fijo", !src.contains("WindowManager.LayoutParams.WRAP_CONTENT)"))
+        assertTrue(src.contains("SOFT_INPUT_ADJUST_RESIZE"))
+        assertTrue("botones de ancho fijo", src.contains("LinearLayout.LayoutParams(dp(44), dp(44))"))
+        assertTrue(!src.contains("text = \"Mandar\"") && !src.contains("text = \"Cerrar\""))
+    }
 }

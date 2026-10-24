@@ -356,6 +356,12 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   (no hay androidx): sólo lectura y sólo lo bajado a `cache/entrega`. **Es
   temporal**: cada Pizarra borra lo suyo a los 7 días (`Archivos.limpiar`). La
   ronda los ve y los puede bajar para mirarlos (`charla.mjs bajar`).
+- **La charla es como cualquier chat** (pizarra-65, 24-oct-2026, Mauro:
+  «cuando aparece el teclado no se reajusta la pantalla, se pierden los
+  botones, y el de Mandar quedó deformado»): la lista toma lo que sobra y se
+  achica con el teclado (alto de ventana fijo + `adjustResize`); abajo UNA
+  línea con 📎 🎙 📞 de 44 dp, el texto y ➤; Cerrar es la ✕ de arriba. Un botón
+  de texto en esa línea vuelve a deformarse: el banco lo impide.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:
