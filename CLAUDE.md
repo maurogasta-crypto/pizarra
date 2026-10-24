@@ -50,6 +50,12 @@ Se empuja a `main` directo (`PROTOCOLO-GENERAL.md` § 2.1 ter de `datos`).
 Verificación previa, no opcional: `./gradlew test assembleRelease lintRelease`
 sin errores, y que este archivo y el `README.md` digan la verdad.
 
+- **Ningún desarrollo pasa de los cupos gratuitos** (24-oct-2026, Mauro: «es
+  una condición para el desarrollo hoy día»). Cada cuenta en un plan que no
+  puede cobrar (Firebase Spark, Gemini sin facturación, Netlify y Cloudinary
+  gratis), y cada tanda que agrega uso dice cuánto, para 10 personas, contra
+  el cupo; lo que exige facturación no se hace. `PROTOCOLO-DESARROLLO.md` § 13
+  de `datos`.
 - **Tachar escribe EXACTAMENTE lo que el botón de Tiempos.** Si cambia «✔
   Hecha» en `app.js` de Tiempos, cambia `cuerpoTachar` acá en la misma tanda.
 - **El campo `pizarra` de `tareas` es de esta app.** Mapa uid → true, uno por
