@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-66
+// ecosistema en un widget. Sello: pizarra-67
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -363,7 +363,7 @@ class CharlaActivity : Activity() {
     private lateinit var scroll: ScrollView
     private lateinit var pestanas: LinearLayout
     private lateinit var dice: TextView
-    private lateinit var campo: EditText
+    private lateinit var campo: TextView
     private var llamar: Button? = null
     private var clave = ""
 
@@ -422,24 +422,14 @@ class CharlaActivity : Activity() {
             startActivity(Intent(this@CharlaActivity, LlamadaActivity::class.java).putExtra("para", clave).putExtra("nombre", nombre))
         } })
         linea.addView(llamar)
-        campo = EditText(this).apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
-            maxLines = 4; textSize = 15f }
+        // pizarra-67 (Mauro: «cuando se toca para escribir, una ventana flotante bien arriba… con un pequeño botón
+        // que sea el enviar»): acá no se escribe. Tocar abre EscribirActivity en la mitad de ARRIBA de la
+        // pantalla, lejos del teclado: ningún Android lo puede tapar ahí.
+        campo = TextView(this).apply { textSize = 15f; setTextColor(Color.parseColor("#AEB3BA")); setPadding(dp(10), dp(10), dp(10), dp(10))
+            background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = 18 * d; setColor(Color.parseColor("#2A2E35")) }
+            contentDescription = "Escribir un mensaje"
+            setOnClickListener { escribir() } }
         linea.addView(campo, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        val mandar = icono(Button(this).apply { text = "➤"; contentDescription = "Mandar" })
-        mandar.setOnClickListener {
-            val t = campo.text.toString().trim()
-            if (t.isEmpty()) { dice.text = "Escribí algo."; return@setOnClickListener }
-            mandar.isEnabled = false; dice.text = "Mandando…"
-            val para = clave
-            thread {
-                val error = try { Charla.mandar(this, t, para); null } catch (e: Throwable) { Bitacora.anotar(this, "mensajes: no salió: " + (e.message ?: e.javaClass.simpleName)); e.message ?: "no se pudo" }
-                runOnUiThread {
-                    mandar.isEnabled = true
-                    if (error == null) { campo.setText(""); dice.text = "✓ Mandado."; pintar() } else dice.text = "No salió: $error"
-                }
-            }
-        }
-        linea.addView(mandar)
         caja.addView(linea)
         // pizarra-66 (Mauro: «el teclado sigue tapando el texto que se escribe»): desde Android 15 (targetSdk 35)
         // adjustResize ya no achica la ventana: el teclado se dibuja ENCIMA y la app tiene que correrse sola. Se
@@ -462,6 +452,16 @@ class CharlaActivity : Activity() {
         }
         thread { Charla.ponerAlDia(this); runOnUiThread { pintar() } }
     }
+
+    /** Abre la ventana de escribir, arriba, para la conversación elegida. */
+    private fun escribir() {
+        val yo = Nube(this).uid.orEmpty()
+        val cs = conversaciones(with(Charla) { mensajesGuardados }, yo, nombreDelTelefono(this))
+        val a = cs.firstOrNull { it.clave == clave }?.let { etiquetaConversacion(it, cs, yo).removePrefix("📱 ") } ?: "todos"
+        startActivity(Intent(this, EscribirActivity::class.java).putExtra("clave", clave).putExtra("a", a))
+    }
+
+    override fun onResume() { super.onResume(); if (::lista.isInitialized) pintar() }
 
     /** Cuánto tapa abajo el teclado (o la barra del sistema), en esta ventana. */
     @Suppress("DEPRECATION")
@@ -537,7 +537,7 @@ class CharlaActivity : Activity() {
         pestanas.addView(chip("Todos", ""))
         for (x in cs) pestanas.addView(chip(etiquetaConversacion(x, cs, yo), x.clave))
         llamar?.visibility = if (c == null) android.view.View.GONE else android.view.View.VISIBLE
-        campo.hint = if (c == null) "Escribile a todos" else "Escribile a " + etiquetaConversacion(c, cs, yo).removePrefix("📱 ")
+        campo.text = "✎ " + (if (c == null) "Escribile a todos" else "Escribile a " + etiquetaConversacion(c, cs, yo).removePrefix("📱 "))
         // Las burbujas: lo mío a la derecha, lo del otro a la izquierda.
         lista.removeAllViews()
         val ms = (if (c == null) todos else todos.filter { enConversacion(it, c, yo, tel) }).take(40).reversed()
@@ -571,6 +571,50 @@ class CharlaActivity : Activity() {
 
 /** pizarra-62 (Mauro: «quiero que la IA pueda auditar las comunicaciones… siempre se incluirá la IA»): quien escribe o habla lo sabe antes. */
 const val AVISO_CLAUDE_LEE = "🤖 Claude lee y escucha esta charla para convertir propuestas en trabajo."
+
+/** La ventana de escribir, en la mitad de ARRIBA de la pantalla (pizarra-67): el texto grande, ✕ y ➤. */
+class EscribirActivity : Activity() {
+    override fun onCreate(estado: Bundle?) {
+        super.onCreate(estado)
+        val clave = intent.getStringExtra("clave").orEmpty()
+        val d = resources.displayMetrics.density
+        fun dp(x: Int) = (x * d).toInt()
+        val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(10), dp(14), dp(10)) }
+        val arriba = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        arriba.addView(TextView(this).apply { text = "✎ Para " + intent.getStringExtra("a").orEmpty().ifBlank { "todos" }; textSize = 15f
+            setTypeface(typeface, android.graphics.Typeface.BOLD) }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        arriba.addView(TextView(this).apply { text = "✕"; textSize = 20f; gravity = Gravity.CENTER; contentDescription = "Cerrar"
+            setOnClickListener { finish() } }, LinearLayout.LayoutParams(dp(44), dp(44)))
+        caja.addView(arriba)
+        val texto = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            textSize = 17f; gravity = Gravity.TOP or Gravity.START; hint = "Escribí acá"
+        }
+        caja.addView(texto, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        val abajo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val dice = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#8A8F98")) }
+        abajo.addView(dice, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        val mandar = Button(this).apply { text = "➤"; textSize = 20f; contentDescription = "Mandar"
+            minWidth = 0; minimumWidth = 0; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0) }
+        abajo.addView(mandar, LinearLayout.LayoutParams(dp(52), dp(48)))
+        caja.addView(abajo)
+        mandar.setOnClickListener {
+            val t = texto.text.toString().trim()
+            if (t.isEmpty()) { dice.text = "Escribí algo."; return@setOnClickListener }
+            mandar.isEnabled = false; dice.text = "Mandando…"
+            thread {
+                val error = try { Charla.mandar(this, t, clave); null } catch (e: Throwable) { Bitacora.anotar(this, "mensajes: no salió: " + (e.message ?: e.javaClass.simpleName)); e.message ?: "no se pudo" }
+                runOnUiThread { if (error == null) finish() else { mandar.isEnabled = true; dice.text = "No salió: $error" } }
+            }
+        }
+        setContentView(caja)
+        // Arriba de todo y media pantalla de alto: el teclado sale abajo y no tapa nada.
+        window.setGravity(Gravity.TOP)
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, (resources.displayMetrics.heightPixels * 0.45).toInt())
+        @Suppress("DEPRECATION") window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE or WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+        texto.requestFocus()
+    }
+}
 
 const val ACCION_PESTANA = "com.maurogasta.pizarra.MENSAJES_PESTANA"
 private val PESTANAS = intArrayOf(R.id.pestana_0, R.id.pestana_1, R.id.pestana_2, R.id.pestana_3)

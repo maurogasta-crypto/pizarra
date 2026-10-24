@@ -175,6 +175,15 @@
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
+        <!-- pizarra-67: escribir un mensaje en la mitad de ARRIBA de la pantalla, lejos del teclado. -->
+        <activity
+            android:name=".EscribirActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:windowSoftInputMode="stateAlwaysVisible|adjustNothing"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" />
+
         <!-- pizarra-62: el 🎙 del widget de mensajes: abre grabando. -->
         <activity
             android:name=".HandyActivity"

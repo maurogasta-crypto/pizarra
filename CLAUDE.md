@@ -366,7 +366,12 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   que se escribe»): con targetSdk 35 (Android 15) `adjustResize` ya no achica
   la ventana, así que la charla lee cuánto tapa el teclado
   (`WindowInsets.Type.ime()`) y lo pone de relleno abajo. Toda pantalla nueva
-  con un campo de texto abajo hace lo mismo.
+  con un campo de texto abajo hace lo mismo. **Y no alcanzó**: en el Redmi
+  15 el teclado seguía tapando. **Desde pizarra-67 en la charla no se
+  escribe** (Mauro: «una ventana flotante bien arriba… con un pequeño botón
+  que sea el enviar»): el renglón «✎ Escribile a…» abre `EscribirActivity`, la
+  mitad de ARRIBA de la pantalla (`Gravity.TOP`, `adjustNothing`), con el texto
+  grande, ✕ y ➤. El teclado sale abajo y no hay nada que tapar.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

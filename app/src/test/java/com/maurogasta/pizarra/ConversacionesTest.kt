@@ -98,5 +98,10 @@ class ConversacionesTest {
         assertTrue(src.contains("setOnApplyWindowInsetsListener") && java.io.File("src/main/java/com/maurogasta/pizarra/Mensajes.kt").readText().contains("WindowInsets.Type.ime()"))
         assertTrue("botones de ancho fijo", src.contains("LinearLayout.LayoutParams(dp(44), dp(44))"))
         assertTrue(!src.contains("text = \"Mandar\"") && !src.contains("text = \"Cerrar\""))
+        // pizarra-67: en la charla no se escribe: se toca y se abre la ventana de ARRIBA, lejos del teclado.
+        assertTrue(src.contains("setOnClickListener { escribir() }"))
+        val e = java.io.File("src/main/java/com/maurogasta/pizarra/Mensajes.kt").readText().substringAfter("class EscribirActivity").substringBefore("\n}\n")
+        assertTrue(e.contains("window.setGravity(Gravity.TOP)") && e.contains("SOFT_INPUT_ADJUST_NOTHING"))
+        assertTrue(java.io.File("src/main/AndroidManifest.xml").readText().contains(".EscribirActivity"))
     }
 }
