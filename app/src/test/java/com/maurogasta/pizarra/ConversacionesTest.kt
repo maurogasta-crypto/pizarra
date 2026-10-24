@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-// pizarra-61: las conversaciones por teléfono y las pestañas del widget.
+// pizarra-61/62: las conversaciones (por persona; mis teléfonos, uno por uno) y las pestañas del widget.
 class ConversacionesTest {
     private val docs = "projects/tiempos-71d42/databases/(default)/documents"
     private fun m(id: String, de: String, nombre: String, tel: String, para: String, t: String) =
@@ -23,28 +23,35 @@ class ConversacionesTest {
 
     @Test fun conFlorencia_esLaMismaDesdeCualquieraDeMisTelefonos() {
         val desde15 = conversaciones(ms, "yo", "Redmi 15")
-        val flor = desde15.first { it.clave == "flor|Note" }
+        val flor = desde15.first { it.clave == "flor|*" }
         assertEquals(listOf("2", "3", "4"), ms.filter { enConversacion(it, flor, "yo", "Redmi 15") }.map { it.id }.sorted())
-        val flor13 = conversaciones(ms, "yo", "Redmi 13C").first { it.clave == "flor|Note" }
+        val flor13 = conversaciones(ms, "yo", "Redmi 13C").first { it.clave == "flor|*" }
         assertEquals(listOf("2", "3", "4"), ms.filter { enConversacion(it, flor13, "yo", "Redmi 13C") }.map { it.id }.sorted())
     }
 
     @Test fun conMiOtroTelefono_esSoloEntreEsosDos_yEsteNoEsPestana() {
         val cs = conversaciones(ms, "yo", "Redmi 15")
-        assertEquals(setOf("flor|Note", "yo|Redmi 13C"), cs.map { it.clave }.toSet())
+        assertEquals(setOf("flor|*", "yo|Redmi 13C"), cs.map { it.clave }.toSet())
         val trece = cs.first { it.clave == "yo|Redmi 13C" }
         assertEquals(listOf("5", "6"), ms.filter { enConversacion(it, trece, "yo", "Redmi 15") }.map { it.id }.sorted())
         assertEquals("📱 Redmi 13C", etiquetaConversacion(trece, cs, "yo"))
-        assertEquals("Flor", etiquetaConversacion(cs.first { it.clave == "flor|Note" }, cs, "yo"))
+        assertEquals("Flor", etiquetaConversacion(cs.first { it.clave == "flor|*" }, cs, "yo"))
     }
 
-    @Test fun desdeElLadoDeFlorencia_cadaTelefonoMioEsUnaPestanaConSuNombre() {
+    @Test fun desdeElLadoDeFlorencia_MauroEsUnaSolaPestana_conTodosSusTelefonos() {
         val cs = conversaciones(ms, "flor", "Note")
-        assertEquals(setOf("yo|Redmi 15", "yo|Redmi 13C"), cs.map { it.clave }.toSet())
-        assertEquals("Mauro · Redmi 15", etiquetaConversacion(cs.first { it.clave == "yo|Redmi 15" }, cs, "flor"))
-        val a15 = cs.first { it.clave == "yo|Redmi 15" }
-        // Lo que Mauro le escribió a ella desde el 15, y lo que ella le mandó al 15. Lo de Mauro con su 13C no es de ella.
-        assertEquals(listOf("2", "4"), ms.filter { enConversacion(it, a15, "flor", "Note") }.map { it.id }.sorted())
+        assertEquals(setOf("yo|*"), cs.map { it.clave }.toSet())
+        assertEquals("Mauro", etiquetaConversacion(cs.single(), cs, "flor"))
+        // Lo que Mauro le escribió desde los dos teléfonos y lo que ella le mandó; lo de Mauro con su 13C no es de ella.
+        assertEquals(listOf("2", "3", "4"), ms.filter { enConversacion(it, cs.single(), "flor", "Note") }.map { it.id }.sorted())
+    }
+
+    @Test fun loQueLeEscriboALaPersona_leLlegaATodosSusTelefonos() {
+        val a = Mensaje("x", "yo", "Mauro", "Redmi 15", "hola", "2026-10-24T12:30:00Z", "flor|*")
+        assertTrue(esParaMi(a, "flor", "Note")); assertTrue(esParaMi(a, "flor", "Otro"))
+        assertFalse(esParaMi(a, "yo", "Redmi 13C"))
+        assertEquals("Yo · Redmi 15 → Flor", firmaMensaje(a, "yo", "Redmi 13C", mapOf("flor" to "Flor")))
+        assertEquals("Mauro · Redmi 15", firmaMensaje(a, "flor", "Note"))
     }
 
     @Test fun seAvisaSoloLoQueEsParaMi() {

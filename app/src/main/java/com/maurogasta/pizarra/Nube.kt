@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-61
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-62
 //
 // pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es para todo el equipo. Al
 // entrar se elige el SITIO (Avisos.kt, `SITIOS`): Tiempos para Mauro y
@@ -136,10 +136,36 @@ class Nube(contexto: Context) {
     }
 
     /** pizarra-40: los mensajes de la charla de Tiempos, los más nuevos primero. */
-    fun mensajes(): List<Mensaje> {
+    fun mensajes(desde: String = ""): List<Mensaje> {
         deTiempos()
         return mensajesDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
-            consultaMensajes().toString(), "application/json", token())))
+            consultaMensajes(desde = desde).toString(), "application/json", token())))
+    }
+
+    /** pizarra-62: un mensaje de VOZ. Primero el audio (`audios/`), después el mensaje que lo nombra. */
+    fun mandarAudio(datos: ByteArray, dur: Int, tipo: String, dispositivo: String, para: String = ""): String {
+        if (Nube.sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")
+        val yo = deTiempos()
+        val id = idNuevo()
+        commit(cuerpoAudio(BASE_DOCS, id, yo, datos, dur, tipo))
+        commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, textoDeAudio(dur), para, id, dur))
+        avisarCambio("mensajes")
+        return id
+    }
+
+    /** Los bytes de un audio, o null si ya no está (se borra a los 30 días). */
+    fun bajarAudio(id: String): ByteArray? {
+        deTiempos()
+        val r = JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:batchGet",
+            JSONObject().put("documents", JSONArray().put("$BASE_DOCS/$COLECCION_AUDIOS/$id")).toString(), "application/json", token()))
+        return bytesDeAudio(r)
+    }
+
+    /** Borra audios míos (la regla deja sólo los propios). */
+    fun borrarAudios(ids: List<String>) {
+        if (ids.isEmpty()) return
+        deTiempos()
+        commit(JSONObject().put("writes", JSONArray().apply { ids.forEach { put(JSONObject().put("delete", "$BASE_DOCS/$COLECCION_AUDIOS/$it")) } }))
     }
 
     /** Mi nombre, de mi ficha de `miembros/` (se guarda: no cambia). */

@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- pizarra-62: el handy (Handy.kt). Se pide al grabar por primera vez. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- pizarra-13: ubicación APROXIMADA, sólo para que Tiempos sepa en qué país
          estás (de qué casa sale la alarma de salir). Se pide al usarla. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -147,6 +149,14 @@
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- pizarra-62: el 🎙 del widget de mensajes: abre grabando. -->
+        <activity
+            android:name=".HandyActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" />
 
         <!-- pizarra-40: la charla (escribir y leer los mensajes), y los toques del widget de mensajes. -->
         <activity

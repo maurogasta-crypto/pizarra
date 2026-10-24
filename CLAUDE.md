@@ -299,6 +299,28 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   teléfono aparece en cuanto escribe su primer mensaje. Sólo avisa lo que es
   para mí (`esParaMi`). La gente de otros sitios (Romi, Esteban) todavía no:
   `mensajes/` vive en la base de Tiempos.
+  **Desde pizarra-62 la otra PERSONA es una sola pestaña** («<uid>|*», con
+  todos sus teléfonos; Mauro: «que pueda aparecer la persona con la que quiero
+  ver comunicaciones»); mis otros teléfonos siguen uno por uno. Y la charla
+  trae sólo lo NUEVO (`consultaMensajes(desde=)`, completa cada 6 h): con 10
+  teléfonos cada 10 minutos entra holgado en el cupo gratis de lecturas.
+- **El handy: mensajes de VOZ** (pizarra-62, `Handy.kt`, `general:C2` Fase A,
+  24-oct-2026, Mauro: «un sistema de comunicación tipo handy… sin utilizar
+  WhatsApp»). 🎙 en el widget abre grabando (`HandyActivity`); en la charla se
+  mantiene apretado y se suelta. El audio (Opus 16 kbps, hasta 60 s) va a
+  `audios/` de Tiempos y el mensaje lo nombra (`audio`, `dur`; reglas v18,
+  `cuerpoAudio`); el aviso instantáneo despierta al otro, que lo escucha SOLO
+  si es para él, tiene menos de 10 minutos, eligió «Escuchar los audios solos»
+  y el teléfono no está en silencio ni en una llamada (`debeSonarSolo`). Cada
+  Pizarra borra SUS audios a los 30 días (`limpiar`). **No va a Cloudinary**: es
+  la cuenta de las fotos de Casa Verde y borrar ahí pide el secreto. Permiso de
+  micrófono, pedido al grabar por primera vez. La llamada en vivo (Fase B,
+  WebRTC) espera que Mauro acepte la biblioteca. **Y Claude lee y escucha la
+  charla** (Mauro: «quiero que la IA pueda auditar las comunicaciones… serán
+  propuestas o trabajos de desarrollo en el que siempre se incluirá la IA»):
+  el agente lee `mensajes/` y `audios/` y la ronda los transcribe
+  (`herramientas/charla.mjs` de `datos`); la charla y el handy lo dicen a la
+  vista (`AVISO_CLAUDE_LEE`), y eso no se saca.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

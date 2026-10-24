@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-61
+// ecosistema en un widget. Sello: pizarra-62
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -66,6 +66,11 @@ import kotlin.concurrent.thread
 // escriben ese y éste (`enConversacion`). Un teléfono nuevo aparece en cuanto
 // escribe su primer mensaje. El widget muestra «Todo» y hasta tres pestañas
 // (las conversaciones más recientes); la charla, todas.
+// Desde pizarra-62 (Mauro: «que pueda aparecer la persona con la que quiero
+// ver comunicaciones») la conversación con OTRA persona es UNA, con todos sus
+// teléfonos: «<uid>|*» (lo que le escribo le llega a todos los suyos); mis
+// otros teléfonos siguen siendo uno por uno. Y un mensaje puede ser de VOZ
+// (Handy.kt): `audio` es el id en `audios/` y `dur`, los segundos.
 //
 // ── CADA CUÁNTO ──────────────────────────────────────────────────────────────
 // No hay un servidor que empuje: de 8 a 23 se pregunta cada 10 minutos (la
@@ -82,7 +87,10 @@ const val URL_PEDIDOS_CV = "https://casaverdecanas.com.br/interno/pedidos-alquil
 const val URL_RESERVAS_CV = "https://casaverdecanas.com.br/interno/reservas.html"
 
 data class Mensaje(val id: String, val de: String, val nombre: String, val dispositivo: String, val texto: String, val creado: String,
-                   val para: String = "")
+                   val para: String = "", val audio: String = "", val dur: Int = 0)
+
+/** La conversación con TODOS los teléfonos de una persona (pizarra-62). */
+fun claveDePersona(uid: String) = "$uid|*"
 
 /** La dirección de un teléfono: «<uid>|<nombre del teléfono>». Es lo que va en `para`. */
 fun claveDe(uid: String, dispositivo: String) = "$uid|$dispositivo"
@@ -95,8 +103,13 @@ data class Novedad(val id: String, val cuando: String, val titulo: String, val t
                    val url: String = "", val aviso: String = "")
 
 /** Los últimos mensajes, del más nuevo al más viejo. Sin filtro: no pide índice compuesto. */
-fun consultaMensajes(cuantos: Int = 150): JSONObject = JSONObject().put("structuredQuery", JSONObject()
+fun consultaMensajes(cuantos: Int = 150, desde: String = ""): JSONObject = JSONObject().put("structuredQuery", JSONObject()
     .put("from", JSONArray().put(JSONObject().put("collectionId", COLECCION_MENSAJES)))
+    // pizarra-62: después de la primera vez, sólo lo NUEVO (un filtro y un orden del mismo campo: sin índice compuesto).
+    // Cada pasada sin novedades cuesta UNA lectura, no 150: con 10 teléfonos cada 10 minutos entra holgado en el cupo gratis.
+    .apply { if (desde.isNotEmpty()) put("where", JSONObject().put("fieldFilter", JSONObject()
+        .put("field", JSONObject().put("fieldPath", "creadoEn")).put("op", "GREATER_THAN")
+        .put("value", JSONObject().put("timestampValue", desde)))) }
     .put("orderBy", JSONArray().put(JSONObject().put("field", JSONObject().put("fieldPath", "creadoEn")).put("direction", "DESCENDING")))
     .put("limit", cuantos))
 
@@ -107,15 +120,23 @@ fun mensajesDeConsulta(r: JSONArray): List<Mensaje> = (0 until r.length()).mapNo
     fun s(k: String) = f.optJSONObject(k)?.let { it.optString("stringValue", "").ifEmpty { it.optString("timestampValue", "") } }.orEmpty()
     val id = d.optString("name").substringAfterLast('/')
     if (id.isEmpty() || s("texto").isBlank() || s("de").isEmpty()) null
-    else Mensaje(id, s("de"), s("nombre").take(40), s("dispositivo").take(60), s("texto").take(2000), s("creadoEn"), s("para").take(140))
+    else Mensaje(id, s("de"), s("nombre").take(40), s("dispositivo").take(60), s("texto").take(2000), s("creadoEn"), s("para").take(140),
+        s("audio").take(40), (f.optJSONObject("dur")?.optString("integerValue")?.toIntOrNull() ?: 0).coerceIn(0, 60))
 }.sortedByDescending { it.creado }
 
+/** Lo guardado más lo nuevo, sin repetir, del más nuevo al más viejo. */
+fun mezclarMensajes(guardados: List<Mensaje>, nuevos: List<Mensaje>, tope: Int = 150): List<Mensaje> =
+    (nuevos + guardados).distinctBy { it.id }.sortedByDescending { it.creado }.take(tope)
+
 /** El mensaje nuevo, con la forma EXACTA que deja crear la regla de Tiempos: la v15 sin `para`, la v17 con él. */
-fun cuerpoMensaje(docs: String, id: String, uid: String, nombre: String, dispositivo: String, texto: String, para: String = ""): JSONObject {
+fun cuerpoMensaje(docs: String, id: String, uid: String, nombre: String, dispositivo: String, texto: String, para: String = "",
+                  audio: String = "", dur: Int = 0): JSONObject {
     fun s(v: String) = JSONObject().put("stringValue", v)
     val campos = JSONObject().put("de", s(uid)).put("nombre", s(nombre.take(40))).put("dispositivo", s(dispositivo.take(60)))
         .put("texto", s(texto.trim().take(2000)))
     if (para.isNotBlank()) campos.put("para", s(para.take(140)))
+    // pizarra-62 (reglas v18): un mensaje de voz lleva el id del audio y cuántos segundos dura.
+    if (audio.isNotBlank()) campos.put("audio", s(audio.take(40))).put("dur", JSONObject().put("integerValue", dur.coerceIn(1, 60).toString()))
     return JSONObject().put("writes", JSONArray().put(JSONObject()
         .put("update", JSONObject().put("name", "$docs/$COLECCION_MENSAJES/$id").put("fields", campos))
         .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "creadoEn").put("setToServerValue", "REQUEST_TIME")))
@@ -123,12 +144,14 @@ fun cuerpoMensaje(docs: String, id: String, uid: String, nombre: String, disposi
 }
 
 /** Quién y desde dónde: «Florencia · Redmi 13C»; lo tuyo, «Yo», y el teléfono sólo si es OTRO. */
-fun firmaMensaje(m: Mensaje, yo: String, miTelefono: String): String {
+fun firmaMensaje(m: Mensaje, yo: String, miTelefono: String, nombres: Map<String, String> = emptyMap()): String {
     val quien = if (m.de == yo) "Yo" else m.nombre.ifBlank { "Alguien" }
     val tel = m.dispositivo.ifBlank { "" }
     val base = if (tel.isEmpty() || (m.de == yo && tel == miTelefono)) quien else "$quien · $tel"
     if (m.para.isEmpty()) return base
     val (u, d) = m.para.substringBefore('|') to m.para.substringAfter('|')
+    // A una persona entera: si soy yo, no hace falta decirlo; si es otra, su nombre.
+    if (d == "*") return if (u == yo) base else "$base → ${nombres[u] ?: "su persona"}"
     val a = if (u == yo && d == miTelefono) "este teléfono" else d
     return "$base → $a"
 }
@@ -139,7 +162,7 @@ fun esParaMi(m: Mensaje, yo: String, miTelefono: String): Boolean =
 
 /** ¿Este mensaje es de la conversación con ese teléfono, vista desde este? */
 fun enConversacion(m: Mensaje, c: Conversacion, yo: String, miTelefono: String): Boolean =
-    if (c.uid != yo) (m.de == c.uid && m.dispositivo == c.dispositivo && m.para.startsWith("$yo|")) || (m.de == yo && m.para == c.clave)
+    if (c.uid != yo) (m.de == c.uid && m.para.startsWith("$yo|")) || (m.de == yo && m.para.startsWith("${c.uid}|"))
     else (m.de == yo && m.dispositivo == c.dispositivo && m.para == claveDe(yo, miTelefono)) ||
         (m.de == yo && m.dispositivo == miTelefono && m.para == c.clave)
 
@@ -149,24 +172,27 @@ fun conversaciones(ms: List<Mensaje>, yo: String, miTelefono: String): List<Conv
     val claves = LinkedHashSet<String>()
     for (m in ms) {
         if (m.dispositivo.isBlank()) continue
-        val k = claveDe(m.de, m.dispositivo)
         if (m.nombre.isNotBlank()) nombres.putIfAbsent(m.de, m.nombre)
+        // La otra persona, una sola vez con todos sus teléfonos; mis otros teléfonos, uno por uno.
+        val k = if (m.de == yo) claveDe(yo, m.dispositivo) else claveDePersona(m.de)
         if (k != claveDe(yo, miTelefono)) claves.add(k)
-        if (m.para.contains('|') && m.para != claveDe(yo, miTelefono)) claves.add(m.para)
+        if (m.para.contains('|')) {
+            val u = m.para.substringBefore('|')
+            val kp = if (u == yo) m.para else claveDePersona(u)
+            if (kp != claveDe(yo, miTelefono) && kp != claveDePersona(yo)) claves.add(kp)
+        }
     }
     return claves.map { k ->
         val u = k.substringBefore('|'); val d = k.substringAfter('|')
         val c0 = Conversacion(k, u, d, if (u == yo) "Yo" else nombres[u] ?: "Alguien", "")
         c0.copy(ultima = ms.filter { enConversacion(it, c0, yo, miTelefono) }.maxOfOrNull { it.creado }
-            ?: ms.filter { claveDe(it.de, it.dispositivo) == k }.maxOfOrNull { it.creado }.orEmpty())
+            ?: ms.filter { (if (it.de == yo) claveDe(yo, it.dispositivo) else claveDePersona(it.de)) == k }.maxOfOrNull { it.creado }.orEmpty())
     }.sortedByDescending { it.ultima }
 }
 
 /** El nombre de la pestaña: la persona; con el teléfono si tiene más de uno; mis otros teléfonos, por su nombre. */
 fun etiquetaConversacion(c: Conversacion, todas: List<Conversacion>, yo: String): String =
-    if (c.uid == yo) "📱 " + c.dispositivo.take(16)
-    else if (todas.count { it.uid == c.uid } > 1) "${c.nombre.take(10)} · ${c.dispositivo.take(10)}"
-    else c.nombre.take(16)
+    if (c.uid == yo) "📱 " + c.dispositivo.take(16) else c.nombre.take(16)
 
 /** Las pestañas del widget: hasta tres conversaciones, y la elegida siempre está. */
 fun pestanasDelWidget(cs: List<Conversacion>, elegida: String, cuantas: Int = 3): List<Conversacion> {
@@ -186,7 +212,8 @@ fun mensajesParaAvisar(l: List<Mensaje>, yo: String, miTelefono: String, mostrad
 fun armarNovedades(mensajes: List<Mensaje>, avisos: List<Aviso>, pedidosCV: Int, cambiosCV: Int, cuandoCV: String,
                    yo: String, miTelefono: String, tope: Int = 40): List<Novedad> {
     val l = mutableListOf<Novedad>()
-    for (m in mensajes) l.add(Novedad("m:" + m.id, m.creado, "💬 " + firmaMensaje(m, yo, miTelefono), m.texto, "mensaje", m.de == yo))
+    val nombres = mensajes.filter { it.nombre.isNotBlank() }.associate { it.de to it.nombre }
+    for (m in mensajes) l.add(Novedad("m:" + m.id, m.creado, "💬 " + firmaMensaje(m, yo, miTelefono, nombres), m.texto, "mensaje", m.de == yo))
     // pizarra-58: cada renglón sabe adónde lleva (Abrir.kt): el aviso, a lo que dice; Casa Verde, a lo que espera.
     for (a in avisos) l.add(Novedad("a:" + a.id, a.creado, iconoTema(a.tema) + " " + nombreSitio(a.sitio), a.texto, "aviso",
         url = destinoDeAviso(a), aviso = a.id))
@@ -214,10 +241,11 @@ object Charla {
     var Context.mensajesGuardados: List<Mensaje>
         get() = try { JSONArray(prefs(this).getString("lista", "[]")).let { a -> (0 until a.length()).map { i -> a.getJSONObject(i).let {
             Mensaje(it.optString("id"), it.optString("de"), it.optString("nombre"), it.optString("dispositivo"), it.optString("texto"), it.optString("creado"),
-                it.optString("para")) } } } }
+                it.optString("para"), it.optString("audio"), it.optInt("dur")) } } } }
             catch (e: Exception) { emptyList() }
         set(v) = prefs(this).edit().putString("lista", JSONArray().apply { v.take(150).forEach { put(JSONObject().put("id", it.id).put("de", it.de)
-            .put("nombre", it.nombre).put("dispositivo", it.dispositivo).put("texto", it.texto).put("creado", it.creado).put("para", it.para)) } }.toString()).apply()
+            .put("nombre", it.nombre).put("dispositivo", it.dispositivo).put("texto", it.texto).put("creado", it.creado).put("para", it.para)
+            .put("audio", it.audio).put("dur", it.dur)) } }.toString()).apply()
 
     /** La pestaña elegida en cada widget («» = Todo). */
     fun pestana(c: Context, widget: Int): String = prefs(c).getString("pestana_$widget", "").orEmpty()
@@ -240,12 +268,19 @@ object Charla {
         try {
             if (!nube.conSesion || !nube.esTiempos) { c.estadoCharla = "los mensajes son de Tiempos: entrá con tu cuenta"; return }
             val yo = nube.uid.orEmpty(); val tel = nombreDelTelefono(c)
-            val ms = nube.mensajes()
-            c.mensajesGuardados = ms
             val p = prefs(c)
+            // pizarra-62: completo cada 6 horas (por si alguien borró uno); en el medio, sólo lo nuevo.
+            val guardados = c.mensajesGuardados
+            val completo = guardados.isEmpty() || System.currentTimeMillis() - p.getLong("completo", 0) > 6 * 3600_000L
+            val ms = if (completo) nube.mensajes() else mezclarMensajes(guardados, nube.mensajes(guardados.maxOf { it.creado }))
+            if (completo) p.edit().putLong("completo", System.currentTimeMillis()).apply()
+            c.mensajesGuardados = ms
             val vistos = p.getStringSet("mostrados", emptySet()) ?: emptySet()
             val nuevos = mensajesParaAvisar(ms, yo, tel, vistos, System.currentTimeMillis())
             nuevos.forEach { avisar(c, it, yo, tel) }
+            // pizarra-62: un audio para mí, recién llegado, se escucha solo si así se eligió (Handy.kt).
+            try { Handy.alLlegar(c, nube, nuevos) } catch (e: Throwable) { Bitacora.anotar(c, "handy: ${e.javaClass.simpleName}") }
+            try { Handy.limpiar(c, nube) } catch (e: Throwable) { }
             p.edit().putStringSet("mostrados", (vistos intersect ms.map { it.id }.toSet()) + nuevos.map { it.id }).apply()
             // Lo de Casa Verde, sólo si este teléfono entró ahí. Si falla, no tapa lo demás.
             val cv = CuentaCasaVerde(c)
@@ -333,7 +368,7 @@ class CharlaActivity : Activity() {
         val d = resources.displayMetrics.density
         val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding((16 * d).toInt(), (14 * d).toInt(), (16 * d).toInt(), (10 * d).toInt()) }
         caja.addView(TextView(this).apply { text = "💬 Mensajes"; textSize = 18f; setTypeface(typeface, android.graphics.Typeface.BOLD) })
-        caja.addView(TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#8A8F98")); text = "Desde este teléfono: ${nombreDelTelefono(this@CharlaActivity)}" })
+        caja.addView(TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#8A8F98")); text = "Desde este teléfono: ${nombreDelTelefono(this@CharlaActivity)}\n$AVISO_CLAUDE_LEE" })
         pestanas = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         caja.addView(android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(pestanas) },
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = (6 * d).toInt() })
@@ -344,8 +379,14 @@ class CharlaActivity : Activity() {
         caja.addView(campo)
         dice = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#8A8F98")) }
         caja.addView(dice)
+        // pizarra-62: escuchar los audios solos, como un handy.
+        caja.addView(android.widget.CheckBox(this).apply {
+            text = "Escuchar los audios solos"; textSize = 13f; isChecked = Handy.soloActivado(this@CharlaActivity)
+            setOnCheckedChangeListener { _, v -> Handy.elegirSolo(this@CharlaActivity, v) }
+        })
         val botones = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END }
         botones.addView(Button(this).apply { text = "Cerrar"; setOnClickListener { finish() } })
+        botones.addView(botonHandy())
         val mandar = Button(this).apply { text = "Mandar" }
         mandar.setOnClickListener {
             val t = campo.text.toString().trim()
@@ -365,7 +406,49 @@ class CharlaActivity : Activity() {
         setContentView(caja)
         window.setLayout((resources.displayMetrics.widthPixels * 0.94).toInt(), WindowManager.LayoutParams.WRAP_CONTENT)
         pintar()
+        intent.getStringExtra("reproducir")?.takeIf { it.isNotEmpty() }?.let { id ->
+            dice.text = "▶ Escuchando…"; Handy.escuchar(this, id, intent.getIntExtra("dur", 30)) { t -> runOnUiThread { dice.text = t } }
+        }
         thread { Charla.ponerAlDia(this); runOnUiThread { pintar() } }
+    }
+
+    /** 🎙 mantener apretado: graba mientras se aprieta y al soltar lo manda a la pestaña elegida (pizarra-62). */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun botonHandy(): Button {
+        var g: Grabador? = null
+        return Button(this).apply {
+            text = "🎙"
+            contentDescription = "Mantener apretado para grabar"
+            setOnTouchListener { v, e ->
+                when (e.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        if (!Handy.tienePermiso(this@CharlaActivity)) {
+                            requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 62)
+                            dice.text = "Dale permiso al micrófono y volvé a mantener apretado."
+                        } else try {
+                            g = Grabador(this@CharlaActivity).also { it.empezar { } }
+                            dice.text = "🔴 Grabando… soltá para mandar"
+                        } catch (x: Throwable) { dice.text = "No se pudo grabar."; g = null }
+                        true
+                    }
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                        val gr = g; g = null
+                        if (gr != null) {
+                            val r = if (e.action == android.view.MotionEvent.ACTION_UP) gr.terminar() else { gr.cancelar(); null }
+                            if (r == null) dice.text = "Muy corto: no se mandó."
+                            else {
+                                dice.text = "Mandando…"
+                                Handy.mandar(this@CharlaActivity, r.first, r.second, gr.tipo, clave) { err ->
+                                    runOnUiThread { dice.text = err ?: "✓ Audio mandado."; pintar() }
+                                }
+                            }
+                        }
+                        v.performClick(); true
+                    }
+                    else -> true
+                }
+            }
+        }
     }
 
     private fun pintar() {
@@ -399,7 +482,11 @@ class CharlaActivity : Activity() {
             val mio = m.de == yo && m.dispositivo == tel
             val fila = LinearLayout(this).apply { gravity = if (mio) Gravity.END else Gravity.START; setPadding(0, (3 * d).toInt(), 0, (3 * d).toInt()) }
             fila.addView(TextView(this).apply {
-                text = (if (mio && c != null) "" else firmaMensaje(m, yo, tel) + "\n") + m.texto + "\n" + horaCorta(m.creado)
+                val cuerpo = if (m.audio.isNotEmpty()) "▶ 🎙 " + duracionTexto(m.dur) else m.texto
+                text = (if (mio && c != null) "" else firmaMensaje(m, yo, tel) + "\n") + cuerpo + "\n" + horaCorta(m.creado)
+                if (m.audio.isNotEmpty()) setOnClickListener {
+                    dice.text = "▶ Escuchando…"; Handy.escuchar(this@CharlaActivity, m.audio, m.dur) { t -> runOnUiThread { dice.text = t } }
+                }
                 textSize = 14f; setTextColor(Color.parseColor(if (mio) "#1B1D21" else "#F2F2F2"))
                 maxWidth = (resources.displayMetrics.widthPixels * 0.7).toInt()
                 setPadding((10 * d).toInt(), (6 * d).toInt(), (10 * d).toInt(), (6 * d).toInt())
@@ -410,6 +497,9 @@ class CharlaActivity : Activity() {
         scroll.post { scroll.fullScroll(ScrollView.FOCUS_DOWN) }
     }
 }
+
+/** pizarra-62 (Mauro: «quiero que la IA pueda auditar las comunicaciones… siempre se incluirá la IA»): quien escribe o habla lo sabe antes. */
+const val AVISO_CLAUDE_LEE = "🤖 Claude lee y escucha esta charla para convertir propuestas en trabajo."
 
 const val ACCION_PESTANA = "com.maurogasta.pizarra.MENSAJES_PESTANA"
 private val PESTANAS = intArrayOf(R.id.pestana_0, R.id.pestana_1, R.id.pestana_2, R.id.pestana_3)
@@ -478,6 +568,8 @@ class MensajesWidget : AppWidgetProvider() {
                 v.setTextViewText(R.id.vacia_mensajes, if (Nube(c).conSesion) "Nada todavía. Tocá ✎ para escribir." else "Tocá y entrá con tu cuenta de Tiempos.")
                 v.setTextViewText(R.id.estado_mensajes, with(Charla) { c.estadoCharla })
                 v.setOnClickPendingIntent(R.id.escribir_mensaje, escribir)
+                v.setOnClickPendingIntent(R.id.grabar_mensaje, PendingIntent.getActivity(c, 4700 + id, Intent(c, HandyActivity::class.java)
+                    .putExtra("clave", elegida).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 v.setOnClickPendingIntent(R.id.titulo_mensajes, escribir)
                 v.setOnClickPendingIntent(R.id.vacia_mensajes, escribir)
                 v.setOnClickPendingIntent(R.id.actualizar_mensajes, PendingIntent.getBroadcast(c, 43,
@@ -543,9 +635,9 @@ class Burbujas(private val c: Context, private val clave: String) : RemoteViewsS
         val m = filas.getOrNull(posicion) ?: return RemoteViews(c.packageName, R.layout.widget_burbuja_otro)
         val mio = m.de == yo && m.dispositivo == tel
         val v = RemoteViews(c.packageName, if (mio) R.layout.widget_burbuja_mia else R.layout.widget_burbuja_otro)
-        v.setTextViewText(R.id.burbuja_texto, m.texto)
+        v.setTextViewText(R.id.burbuja_texto, if (m.audio.isNotEmpty()) "▶ 🎙 " + duracionTexto(m.dur) + " · tocá para escuchar" else m.texto)
         v.setTextViewText(R.id.burbuja_hora, (if (mio) "" else firmaMensaje(m, yo, tel).substringBefore(" → ") + " · ") + horaCorta(m.creado))
-        v.setOnClickFillInIntent(R.id.burbuja, Intent().putExtra("clave", clave))
+        v.setOnClickFillInIntent(R.id.burbuja, Intent().putExtra("clave", clave).putExtra("reproducir", m.audio).putExtra("dur", m.dur))
         return v
     }
 }
