@@ -272,6 +272,11 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   (pizarra-57, Mauro: no «pedidos de alquiler para contestar»).
   Se pregunta cada 10 minutos de 8 a 23 (`Charla.agendar`, la cuenta de
   Tibio): no hay servidor que empuje.
+  **Desde pizarra-59 ese despertar pone al día TODO** (`Despertar.todo`):
+  mensajes, novedades, tareas, «Mi agenda», avisos de Claude y alarmas, menos
+  las luces (el cupo de Tuya). Es el único lugar que se llama para ponerse al
+  día, y el que va a llamar el aviso instantáneo (`general:C1`, fase 2): si
+  cambia el canal (Firebase Cloud Messaging, ntfy), no cambia esto.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

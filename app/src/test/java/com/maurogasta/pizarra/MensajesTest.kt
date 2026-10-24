@@ -91,4 +91,16 @@ class MensajesTest {
         assertFalse(codigo.contains("Respuesta lista ·")); assertFalse(codigo.contains("fun avisarLista"))
         assertFalse(codigo.contains("Responder.cerrar(this, id, \"respondido\")"))
     }
+
+    // pizarra-59: cada 10 minutos se pone al día TODO por un solo lugar, el mismo que va a usar el aviso instantáneo.
+    @Test fun despertarPoneTodoAlDia_sinPreguntarleATuya() {
+        val d = java.io.File("src/main/java/com/maurogasta/pizarra/Despertar.kt").readText()
+        for (x in listOf("Charla.ponerAlDia(", "PizarraWidget.actualizarDesdeLaRed(app, null, conLuces = false)", "AgendaWidget.actualizar(", "Alarmas.sincronizar("))
+            assertTrue("falta $x", d.contains(x))
+        assertFalse(d.contains("Luces("))
+        val m = java.io.File("src/main/java/com/maurogasta/pizarra/Mensajes.kt").readText()
+        assertTrue(m.contains("if (enHorario(LocalDateTime.now())) Despertar.todo(c)"))
+        val w = java.io.File("src/main/java/com/maurogasta/pizarra/PizarraWidget.kt").readText()
+        assertTrue(w.contains("if (conLuces) try { Luces(contexto)"))
+    }
 }

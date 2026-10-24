@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-58
+// ecosistema en un widget. Sello: pizarra-59
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -226,7 +226,8 @@ class CharlaReceptor : BroadcastReceiver() {
     override fun onReceive(c: Context, i: Intent) {
         val pendiente = goAsync()
         thread {
-            try { if (enHorario(LocalDateTime.now())) Charla.ponerAlDia(c) } catch (e: Throwable) { }
+            // pizarra-59: cada 10 minutos se pone al día TODO, no sólo los mensajes (Despertar.kt).
+            try { if (enHorario(LocalDateTime.now())) Despertar.todo(c) } catch (e: Throwable) { }
             finally { try { Charla.agendar(c) } catch (e: Throwable) { }; pendiente.finish() }
         }
     }

@@ -150,14 +150,15 @@ class PizarraWidget : AppWidgetProvider() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
         /** Trae las tareas, guarda la caché y redibuja. Nunca tira. */
-        fun actualizarDesdeLaRed(contexto: Context, pendiente: PendingResult?) {
+        fun actualizarDesdeLaRed(contexto: Context, pendiente: PendingResult?, conLuces: Boolean = true) {
             thread {
                 val cache = Cache(contexto)
                 try {
                     val nube = Nube(contexto)
                     // pizarra-25: de paso, cómo están las luces (así el próximo toque no
                     // tiene que preguntar) y la sesión de remate queda tibia.
-                    try { Luces(contexto).let { if (it.conSesion) it.luces() } } catch (e: Throwable) { }
+                    // pizarra-59: Despertar.todo (cada 10 min) no pregunta: el cupo de Tuya.
+                    if (conLuces) try { Luces(contexto).let { if (it.conSesion) it.luces() } } catch (e: Throwable) { }
                     if (nube.conSesion) {
                         cache.filas = paraLaPizarra(nube.tareas())
                         cache.estado = "al día · " + hora()
