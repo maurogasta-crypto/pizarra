@@ -355,6 +355,10 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   corta, `Llamadas.revisar` lo calla (`paraCallar`). La pantalla de llamada
   también vibra. En Android 14+ la pantalla completa pide permiso: la charla
   lo ofrece (`faltaPantallaCompleta`). Respeta silencio y vibrador.
+  **pizarra-69** arregla la caída del A15 de Florencia (`reportes/` de Tiempos,
+  24-oct): la pantalla de llamada se cerraba sin sesión y se caía al
+  destruirse; ahora anota por qué se cerró, y «📞 Atender» del aviso funciona
+  también con la pantalla ya abierta (`onNewIntent`). El banco la abre.
 - **Fotos y documentos por la charla** (pizarra-64, `Archivos.kt`, 24-oct-2026,
   Mauro: «enviar archivos… fotos o algún documento que se vaya a guardar
   temporalmente en la base»). 📎 en la charla; van a `archivos/` de Tiempos en

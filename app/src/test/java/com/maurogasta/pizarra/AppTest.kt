@@ -43,6 +43,14 @@ class AppTest {
     }
 
     // pizarra-17: «Olvidé la contraseña» en la entrada, y sin mail no pide nada.
+    // pizarra-69: en el A15 de Florencia la llamada se cerraba sin sesión y se caía al destruirse.
+    @Test fun laLlamadaSinSesion_seCierraSinCaerse() {
+        val i = android.content.Intent(RuntimeEnvironment.getApplication(), LlamadaActivity::class.java).putExtra("entrante", "x")
+        val c = Robolectric.buildActivity(LlamadaActivity::class.java, i).setup()
+        assertTrue(c.get().isFinishing)
+        c.destroy()
+    }
+
     @Test fun sinSesion_olvidéLaContraseña_pideElMailPrimero() {
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         shadowOf(Looper.getMainLooper()).idle()

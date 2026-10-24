@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Llamada.kt — Llamadas de voz entre Pizarras, sin WhatsApp. Sello: pizarra-68
+// Llamada.kt — Llamadas de voz entre Pizarras, sin WhatsApp. Sello: pizarra-69
 //
 // Mauro, 24-oct-2026 (general:C2, Fase B): «llamada directo en tiempo real…
 // que conecte teléfonos que tengan la apk de pizarra», con la condición «no
@@ -412,7 +412,10 @@ class LlamadaActivity : Activity() {
         if (Build.VERSION.SDK_INT >= 27) { setShowWhenLocked(true); setTurnScreenOn(true) }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val n = Nube(this)
-        if (!n.conSesion || !n.esTiempos) { finish(); return }
+        if (!n.conSesion || !n.esTiempos) {
+            Bitacora.anotar(this, "llamada: se cerró sin sesión de Tiempos (sesión ${n.conSesion}, sitio ${n.sitio.id})")
+            finish(); return
+        }
         val d = resources.displayMetrics.density
         val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
             setPadding((24 * d).toInt(), (40 * d).toInt(), (24 * d).toInt(), (24 * d).toInt()); setBackgroundColor(Color.parseColor("#1B1D21")) }
@@ -639,8 +642,15 @@ class LlamadaActivity : Activity() {
         try { startForegroundService(Intent(this, LlamadaServicio::class.java).putExtra("quien", quien)) } catch (e: Throwable) { }
     }
 
+    /** pizarra-69: con la pantalla ya abierta (la abrió el aviso), «📞 Atender» del aviso llega acá. */
+    override fun onNewIntent(i: Intent) {
+        super.onNewIntent(i)
+        if (i.getBooleanExtra("atender", false) && estado == "sonando" && i.getStringExtra("entrante") == id) atenderla()
+    }
+
     override fun onDestroy() {
-        if (!terminada) cortar("cortar", mostrar = false)
+        // pizarra-69: si se cerró antes de armar la pantalla (sin sesión), no hay botones que pintar: se caía al cerrarse.
+        if (::atender.isInitialized && !terminada) cortar("cortar", mostrar = false)
         reloj.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
