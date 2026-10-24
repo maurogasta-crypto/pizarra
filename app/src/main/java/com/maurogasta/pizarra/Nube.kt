@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-60
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-61
 //
 // pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es para todo el equipo. Al
 // entrar se elige el SITIO (Avisos.kt, `SITIOS`): Tiempos para Mauro y
@@ -160,11 +160,11 @@ class Nube(contexto: Context) {
         return nombre
     }
 
-    fun mandarMensaje(texto: String, dispositivo: String) {
+    fun mandarMensaje(texto: String, dispositivo: String, para: String = "") {
         if (Nube.sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")
         val yo = deTiempos()
         if (texto.isBlank()) throw ErrorNube("El mensaje está vacío.")
-        commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, texto))
+        commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, texto, para))
         avisarCambio("mensajes")
     }
 

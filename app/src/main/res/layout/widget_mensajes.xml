@@ -55,6 +55,18 @@
             android:contentDescription="Actualizar" />
     </LinearLayout>
 
+    <!-- pizarra-61: las pestañas. «Todo» y hasta tres conversaciones (Mensajes.kt). -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal">
+        <TextView android:id="@+id/pestana_0" style="@style/Pestana" android:text="Todo" />
+        <TextView android:id="@+id/pestana_1" style="@style/Pestana" android:visibility="gone" />
+        <TextView android:id="@+id/pestana_2" style="@style/Pestana" android:visibility="gone" />
+        <TextView android:id="@+id/pestana_3" style="@style/Pestana" android:visibility="gone" />
+    </LinearLayout>
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -66,6 +78,15 @@
             android:layout_height="match_parent"
             android:divider="@null"
             android:dividerHeight="0dp" />
+        <ListView
+            android:id="@+id/lista_charla"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:stackFromBottom="true"
+            android:transcriptMode="alwaysScroll"
+            android:visibility="gone" />
         <TextView
             android:id="@+id/vacia_mensajes"
             android:layout_width="match_parent"

@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-60` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-61` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -286,6 +286,11 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   Pizarra trae mensajes, tareas, la agenda, los avisos y las alarmas (antes,
   sólo los mensajes; lo demás, una vez por hora). Las luces no, por el cupo de
   Tuya. Es el mismo lugar que usa el aviso instantáneo.
+- **Mensajes como chat, por teléfono** (pizarra-61, `Mensajes.kt`): el widget
+  tiene pestañas, «Todo» y las conversaciones más recientes, y cada
+  conversación se ve en burbujas; la charla (✎) tiene una pestaña por
+  teléfono y «Todos». Escribir en una pestaña manda el mensaje a ESE teléfono
+  (`para`, reglas v17 de Tiempos: hay que publicarlas).
 - **Y en el acto, cuando alguien guarda algo** (pizarra-60, `Instantaneo.kt`,
   `general:C1` fase 2). Mandar un mensaje, tachar, agregar o fijar una tarea
   llama a `despertar` del Netlify de Casa Verde, que verifica la sesión y la

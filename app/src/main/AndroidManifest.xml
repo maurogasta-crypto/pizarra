@@ -225,6 +225,12 @@
             android:exported="false"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
 
+        <!-- pizarra-61: las burbujas de una conversación en el widget de mensajes. -->
+        <service
+            android:name=".BurbujasServicio"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
         <service
             android:name=".AgendaServicio"
             android:exported="false"

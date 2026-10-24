@@ -286,6 +286,19 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   día, y el que va a llamar el aviso instantáneo (`general:C1`, fase 2): si
   cambia el canal (Firebase Cloud Messaging, ntfy), no cambia esto.
   **Desde pizarra-60 lo llama también el aviso instantáneo** (`AvisoInstantaneo`).
+  **Desde pizarra-61 son CONVERSACIONES por teléfono** (Mauro, 24-oct: «una
+  interfaz como de chat… en pestañas dentro del mismo widget las
+  conversaciones con cada uno… con el teléfono de Florencia, con el Redmi 15,
+  el Redmi 13… además de una vista general»). Un mensaje puede llevar `para`
+  = «<uid>|<teléfono>» (reglas v17 de Tiempos; sin `para` es para todos). La
+  conversación con el teléfono de otra persona es la misma desde cualquiera de
+  los míos; con otro teléfono mío, sólo entre esos dos (`enConversacion`,
+  `conversaciones`). El widget tiene pestañas —«Todo» y las tres más
+  recientes (`pestanasDelWidget`), elegida por widget— y la conversación se ve
+  en burbujas (`BurbujasServicio`); la charla tiene todas las pestañas. Un
+  teléfono aparece en cuanto escribe su primer mensaje. Sólo avisa lo que es
+  para mí (`esParaMi`). La gente de otros sitios (Romi, Esteban) todavía no:
+  `mensajes/` vive en la base de Tiempos.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

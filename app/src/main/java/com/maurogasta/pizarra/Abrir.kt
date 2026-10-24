@@ -9,7 +9,7 @@ import android.widget.Toast
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Abrir.kt — Adónde lleva tocar un aviso o una novedad. Sello: pizarra-58
+// Abrir.kt — Adónde lleva tocar un aviso o una novedad. Sello: pizarra-61
 //
 // Mauro, 21-oct-2026: «revisá los avisos de la pizarra y la forma en la que
 // direccionan al hacer clic, algunas no hacen nada claro». Hasta pizarra-57
@@ -54,7 +54,8 @@ class AbrirActivity : Activity() {
                 thread(name = "leido") { try { Nube(app).marcarLeido(aviso) } catch (e: Throwable) { Bitacora.anotar(app, "avisos: no se pudo marcar leído: ${e.javaClass.simpleName}") } }
             }
             when {
-                intent.getStringExtra("que") == "charla" -> startActivity(Intent(this, CharlaActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                intent.getStringExtra("que") == "charla" -> startActivity(Intent(this, CharlaActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("clave", intent.getStringExtra("clave").orEmpty()))
                 url.isNotEmpty() -> try { startActivity(intentDe(this, url)) } catch (e: Throwable) {
                     Toast.makeText(this, "No hay con qué abrir $url", Toast.LENGTH_LONG).show() }
                 else -> startActivity(Intent(this, MainActivity::class.java).putExtra("avisos", true)
