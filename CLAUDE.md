@@ -361,7 +361,12 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   botones, y el de Mandar quedó deformado»): la lista toma lo que sobra y se
   achica con el teclado (alto de ventana fijo + `adjustResize`); abajo UNA
   línea con 📎 🎙 📞 de 44 dp, el texto y ➤; Cerrar es la ✕ de arriba. Un botón
-  de texto en esa línea vuelve a deformarse: el banco lo impide.
+  de texto en esa línea vuelve a deformarse: el banco lo impide. **Y desde
+  pizarra-66 el teclado se mide** (Mauro: «el teclado sigue tapando el texto
+  que se escribe»): con targetSdk 35 (Android 15) `adjustResize` ya no achica
+  la ventana, así que la charla lee cuánto tapa el teclado
+  (`WindowInsets.Type.ime()`) y lo pone de relleno abajo. Toda pantalla nueva
+  con un campo de texto abajo hace lo mismo.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

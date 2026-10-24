@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-65
+// ecosistema en un widget. Sello: pizarra-66
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -441,6 +441,13 @@ class CharlaActivity : Activity() {
         }
         linea.addView(mandar)
         caja.addView(linea)
+        // pizarra-66 (Mauro: «el teclado sigue tapando el texto que se escribe»): desde Android 15 (targetSdk 35)
+        // adjustResize ya no achica la ventana: el teclado se dibuja ENCIMA y la app tiene que correrse sola. Se
+        // mide cuánto tapa el teclado (`ime`) y ese alto va de relleno abajo: la línea sube y la lista se achica.
+        caja.setOnApplyWindowInsetsListener { v, ins ->
+            v.setPadding(dp(14), dp(12), dp(14), dp(8) + tapaAbajo(ins))
+            ins
+        }
         setContentView(caja)
         // Alto fijo de ventana (no «lo que mida»): así, con adjustResize, el teclado achica la LISTA y la línea de abajo queda a la vista.
         window.setLayout((resources.displayMetrics.widthPixels * 0.94).toInt(), (resources.displayMetrics.heightPixels * 0.82).toInt())
@@ -455,6 +462,12 @@ class CharlaActivity : Activity() {
         }
         thread { Charla.ponerAlDia(this); runOnUiThread { pintar() } }
     }
+
+    /** Cuánto tapa abajo el teclado (o la barra del sistema), en esta ventana. */
+    @Suppress("DEPRECATION")
+    private fun tapaAbajo(ins: android.view.WindowInsets): Int =
+        if (Build.VERSION.SDK_INT >= 30) ins.getInsets(android.view.WindowInsets.Type.ime() or android.view.WindowInsets.Type.systemBars()).bottom
+        else ins.systemWindowInsetBottom
 
     @Deprecated("startActivityForResult de siempre: la app no tiene androidx")
     override fun onActivityResult(codigo: Int, resultado: Int, datos: Intent?) {

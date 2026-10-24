@@ -94,6 +94,8 @@ class ConversacionesTest {
         assertTrue("la lista toma lo que sobra", src.contains("caja.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))"))
         assertTrue("la ventana tiene alto fijo", !src.contains("WindowManager.LayoutParams.WRAP_CONTENT)"))
         assertTrue(src.contains("SOFT_INPUT_ADJUST_RESIZE"))
+        // pizarra-66: desde Android 15 adjustResize no alcanza; el teclado se mide y se corre el contenido.
+        assertTrue(src.contains("setOnApplyWindowInsetsListener") && java.io.File("src/main/java/com/maurogasta/pizarra/Mensajes.kt").readText().contains("WindowInsets.Type.ime()"))
         assertTrue("botones de ancho fijo", src.contains("LinearLayout.LayoutParams(dp(44), dp(44))"))
         assertTrue(!src.contains("text = \"Mandar\"") && !src.contains("text = \"Cerrar\""))
     }
