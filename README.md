@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-59` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-60` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -285,7 +285,15 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
 - **Cada 10 minutos, todo al día** (pizarra-59, `Despertar.kt`): de 8 a 23 la
   Pizarra trae mensajes, tareas, la agenda, los avisos y las alarmas (antes,
   sólo los mensajes; lo demás, una vez por hora). Las luces no, por el cupo de
-  Tuya. Es el mismo lugar que va a usar el aviso instantáneo.
+  Tuya. Es el mismo lugar que usa el aviso instantáneo.
+- **Y en el acto, cuando alguien guarda algo** (pizarra-60, `Instantaneo.kt`,
+  `general:C1` fase 2). Mandar un mensaje, tachar, agregar o fijar una tarea
+  llama a `despertar` del Netlify de Casa Verde, que verifica la sesión y la
+  ficha y manda por Firebase Cloud Messaging (proyecto `avisos-23b6a`, aparte)
+  un aviso SIN contenido al tema `pizarra-<base>`. Cada Pizarra suscripta lo
+  recibe por la conexión que Google ya tiene abierta (no gasta batería de más)
+  y llama a `Despertar.todo` con su propia sesión. Si el aviso no llega, la
+  pasada de 10 minutos lo trae igual. Necesita `FCM_CUENTA` en Netlify.
 - **Cada toque lleva a algún lado** (pizarra-58, `Abrir.kt`, Mauro: «la forma
   en la que direccionan al hacer clic, algunas no hacen nada claro»). Un aviso
   de Claude —en la barra, en la lista de la app o en el widget— abre lo que

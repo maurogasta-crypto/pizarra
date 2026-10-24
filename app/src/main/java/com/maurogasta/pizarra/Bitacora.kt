@@ -13,7 +13,7 @@ import java.util.Date
 import java.util.Locale
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bitacora.kt — Que la app diga sola qué le pasó. Sello: pizarra-59
+// Bitacora.kt — Que la app diga sola qué le pasó. Sello: pizarra-60
 //
 // 5-oct-2026: pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro
 // «se traba, no deja ningún botón». El informe de fallos que ofreció HyperOS
@@ -39,10 +39,12 @@ class App : Application() {
         try { Tibio.agendar(this) } catch (e: Throwable) { }
         // pizarra-40: los mensajes, cada 10 minutos de 8 a 23 (si hay sesión de Tiempos).
         try { Charla.agendar(this) } catch (e: Throwable) { }
+        // pizarra-60: el aviso instantáneo (Firebase Cloud Messaging), suscripto al tema de su base.
+        try { Instantaneo.iniciar(this) } catch (e: Throwable) { }
     }
 }
 
-const val SELLO = "pizarra-59"
+const val SELLO = "pizarra-60"
 
 object Bitacora {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("bitacora", Context.MODE_PRIVATE)

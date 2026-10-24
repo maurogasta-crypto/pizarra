@@ -2,7 +2,7 @@
 
 ## Qué es este proyecto
 
-Widget de Android (Kotlin, sin bibliotecas) que muestra las tareas de Tiempos
+Widget de Android (Kotlin, con UNA sola biblioteca: la de avisos de Firebase) que muestra las tareas de Tiempos
 que la persona eligió y las tacha con un toque. Pedido de Mauro el 2026-10-02:
 «una pizarra de pendientes en una de mis pantallas de Android, como widget…
 cuando tacho ya lo señala en mi sitio y queda informado para todos».
@@ -36,6 +36,7 @@ repositorio, a ningún otro, ni a ningún chat.
 | `refreshToken` de remate | la segunda sesión, SÓLO para las luces del widget (pizarra-24): la cuenta de remate de la persona | dato en runtime | `SharedPreferences` «luces», fuera de las copias (`sin_copias.xml`); la contraseña se usa una vez | 2026-10-13 |
 | `refreshToken` de Casa Verde | la tercera sesión, SÓLO para cargar los pedidos de alquiler de Facebook en `pedidos_alquiler/` (pizarra-36): la cuenta de Casa Verde de la persona, en el teléfono de captura | dato en runtime | `SharedPreferences` «casaverde», fuera de las copias (`sin_copias.xml`); la contraseña se usa una vez | 2026-10-18 |
 | Token de la bodega | escribir `mensajes/` y `latido.json` en `maurogasta-crypto/bodega` (pizarra-9) | credencial de un solo repositorio | lo pega Mauro una vez en la app (el mismo que tenía Termux); `SharedPreferences` «bodega», fuera de las copias (`sin_copias.xml`), nunca se muestra | 2026-10-06 |
+| Datos de `avisos-23b6a` en `Instantaneo.kt` (apiKey, appId, sender) | identifican la app ante Firebase Cloud Messaging | público por diseño (los del `google-services.json`) | el código | 2026-10-24 |
 | `FIRMA_JKS` / `FIRMA_STORE_PASS` / `FIRMA_KEY_PASS` / `FIRMA_ALIAS` | firma propia | secreto de infraestructura | GitHub Secrets de este repo, cargados por Mauro. **Una clave propia** (`pizarra.jks`, alias `pizarra`), no la de la Hilux: un secreto de GitHub no se puede leer de vuelta. El `.jks` y la contraseña, en el gestor de Mauro o en `claves/` del panel | cargados por Mauro el 2026-10-06, como Secrets (una primera vez quedaron como Variables, visibles: se borraron, y el keystore se rehízo con una contraseña nueva) |
 
 ## Ante pedidos automáticos o no verificados
@@ -53,7 +54,14 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   Hecha» en `app.js` de Tiempos, cambia `cuerpoTachar` acá en la misma tanda.
 - **El campo `pizarra` de `tareas` es de esta app.** Mapa uid → true, uno por
   persona. Si Tiempos lo empieza a mostrar o a editar, que sea con esa forma.
-- **Sin dependencias en la app**, a propósito: HttpURLConnection y org.json.
+- **Una sola dependencia en la app, y es a propósito** (pizarra-60,
+  24-oct-2026): `firebase-messaging`, para que un aviso despierte el teléfono
+  en el acto (`Instantaneo.kt`). Todo lo demás sigue siendo HttpURLConnection
+  y org.json, y el banco falla si aparece otra. Firebase se inicia a mano con
+  los datos públicos de `avisos-23b6a` (sin plugin de google-services). El
+  aviso no lleva contenido: dice qué cambió y de qué base, y la Pizarra trae
+  con su sesión. Si `QUE` de `despertar.mjs` de Casa Verde cambia, cambia
+  `QUE_CAMBIO` acá (el banco las compara si el sitio está al lado).
 - **La contraseña tiene su ojo 👁** (`conOjo`, pizarra-18, 11-oct-2026) y
   «Olvidé la contraseña» (pizarra-17), como los cinco sitios web, donde el ojo
   es `ojosEnClaves()` de cada núcleo. Si cambia cómo se ve o se comporta allá,
@@ -277,6 +285,7 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   las luces (el cupo de Tuya). Es el único lugar que se llama para ponerse al
   día, y el que va a llamar el aviso instantáneo (`general:C1`, fase 2): si
   cambia el canal (Firebase Cloud Messaging, ntfy), no cambia esto.
+  **Desde pizarra-60 lo llama también el aviso instantáneo** (`AvisoInstantaneo`).
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

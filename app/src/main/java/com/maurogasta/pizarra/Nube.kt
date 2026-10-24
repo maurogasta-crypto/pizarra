@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-21
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-60
 //
 // pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es para todo el equipo. Al
 // entrar se elige el SITIO (Avisos.kt, `SITIOS`): Tiempos para Mauro y
@@ -47,6 +47,7 @@ class Nube(contexto: Context) {
         @Volatile var sinRed = false
     }
 
+    private val ctx = contexto.applicationContext
     private val prefs = contexto.getSharedPreferences("sesion", Context.MODE_PRIVATE)
 
     val uid: String? get() = prefs.getString("uid", null)
@@ -75,6 +76,7 @@ class Nube(contexto: Context) {
             .apply()
         idToken = j.getString("idToken")
         vence = System.currentTimeMillis() + 50 * 60 * 1000
+        Instantaneo.iniciar(ctx) // pizarra-60: los temas de ESTA base
     }
 
     /** pizarra-17: «Olvidé la contraseña». Firebase manda el mail para elegir
@@ -98,6 +100,7 @@ class Nube(contexto: Context) {
     fun salir() {
         prefs.edit().clear().apply()
         idToken = null
+        Instantaneo.iniciar(ctx) // sin sesión, sin temas
     }
 
     /** El token de una hora, renovado con el refreshToken cuando hace falta. */
@@ -162,7 +165,11 @@ class Nube(contexto: Context) {
         val yo = deTiempos()
         if (texto.isBlank()) throw ErrorNube("El mensaje está vacío.")
         commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, texto))
+        avisarCambio("mensajes")
     }
+
+    /** pizarra-60: después de escribir, las otras Pizarras se enteran en el acto (Instantaneo.kt). */
+    fun avisarCambio(que: String) = Instantaneo.avisar(ctx, sitio.id, que) { token() }
 
     /** Mis avisos del ecosistema, de la base del sitio con el que entré (pizarra-14). */
     fun avisos(): List<Aviso> {
@@ -220,16 +227,17 @@ class Nube(contexto: Context) {
         commit(cuerpoFalla(idNuevo(), yo, mail.orEmpty(), texto, gravedad))
     }
 
-    fun tachar(id: String, hecho: Boolean) = commit(cuerpoTachar(id, hecho, deTiempos()))
+    fun tachar(id: String, hecho: Boolean) { commit(cuerpoTachar(id, hecho, deTiempos())); avisarCambio("tareas") }
 
     /** pizarra-30: una tarea nueva, mía y en mi pizarra. Devuelve su id. */
     fun agregar(titulo: String): String {
         val id = idNuevo()
         commit(cuerpoNuevaTarea(id, titulo, deTiempos()))
+        avisarCambio("tareas")
         return id
     }
 
-    fun fijar(id: String, fijar: Boolean) = commit(cuerpoFijar(id, fijar, deTiempos()))
+    fun fijar(id: String, fijar: Boolean) { commit(cuerpoFijar(id, fijar, deTiempos())); avisarCambio("tareas") }
 
     private fun commit(cuerpo: JSONObject) {
         pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:commit", cuerpo.toString(), "application/json", token())

@@ -25,7 +25,7 @@ android {
         // El número de corrida de GitHub: sube en cada tanda y nunca retrocede,
         // que es lo que Android exige para instalar ENCIMA de la anterior.
         versionCode = (project.findProperty("codigoVersion") as String?)?.toIntOrNull() ?: 1
-        versionName = "pizarra-59"
+        versionName = "pizarra-60"
     }
 
     signingConfigs {
@@ -69,6 +69,12 @@ dependencies {
     // Sin dependencias en la app, a propósito: red con HttpURLConnection y
     // JSON con org.json, que vienen con Android. Menos cosas que actualizar
     // y nada que bajar en el teléfono.
+    // LA ÚNICA EXCEPCIÓN (pizarra-60, 24-oct-2026, Mauro: «ok», general:C1): la
+    // mensajería de Firebase, para que un aviso despierte la Pizarra en el acto
+    // por la conexión que Google ya tiene abierta. Sin ella no hay forma de
+    // recibir un aviso de Firebase Cloud Messaging. Se inicia a mano
+    // (Instantaneo.kt), sin el plugin de google-services.
+    implementation("com.google.firebase:firebase-messaging:24.0.3")
     testImplementation("junit:junit:4.13.2")
     // En las pruebas de la JVM org.json es un esqueleto vacío: ésta es la real.
     testImplementation("org.json:json:20240303")

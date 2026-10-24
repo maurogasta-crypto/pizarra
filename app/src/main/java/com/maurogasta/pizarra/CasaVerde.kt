@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CasaVerde.kt — Los pedidos de alquiler de Facebook, directo a la lista de
-// Casa Verde. Sello: pizarra-58
+// Casa Verde. Sello: pizarra-60
 //
 // 18-oct-2026, Mauro: que la lista de pedidos se llene sin despertar al chat
 // cada vez que aparece una notificación; el chat se despierta unas veces por
@@ -111,6 +111,7 @@ fun cuerpoMarcar(docs: String, id: String, estado: String, quien: String): JSONO
         .put("currentDocument", JSONObject().put("exists", true))))
 
 class CuentaCasaVerde(contexto: Context) {
+    private val ctx = contexto.applicationContext
     private val prefs = contexto.getSharedPreferences("casaverde", Context.MODE_PRIVATE)
     private val cv: Sitio = SITIOS.first { it.id == "casaverde" }
 
@@ -139,6 +140,7 @@ class CuentaCasaVerde(contexto: Context) {
         })
         prefs.edit().putString("refresh", j.getString("refreshToken")).putString("uid", j.getString("localId")).putString("mail", mail).apply()
         idToken = j.getString("idToken"); vence = System.currentTimeMillis() + 50 * 60 * 1000
+        Instantaneo.iniciar(ctx) // pizarra-60: suma el tema de Casa Verde
     }
 
     fun restablecer(mail: String) {
@@ -151,7 +153,7 @@ class CuentaCasaVerde(contexto: Context) {
         }
     }
 
-    fun salir() { prefs.edit().clear().apply(); idToken = null }
+    fun salir() { prefs.edit().clear().apply(); idToken = null; Instantaneo.iniciar(ctx) }
 
     private fun token(): String {
         idToken?.let { if (System.currentTimeMillis() < vence) return it }
