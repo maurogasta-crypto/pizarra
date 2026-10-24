@@ -35,6 +35,17 @@
                 android:maxLines="1" />
         </LinearLayout>
 
+        <!-- pizarra-63: llamar a la conversación elegida. -->
+        <TextView
+            android:id="@+id/llamar_mensaje"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="📞"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:visibility="gone"
+            android:contentDescription="Llamar" />
         <!-- pizarra-62: el handy. -->
         <TextView
             android:id="@+id/grabar_mensaje"

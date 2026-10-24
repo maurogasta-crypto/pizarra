@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-62
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-63
 //
 // pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es para todo el equipo. Al
 // entrar se elige el SITIO (Avisos.kt, `SITIOS`): Tiempos para Mauro y
@@ -152,6 +152,38 @@ class Nube(contexto: Context) {
         avisarCambio("mensajes")
         return id
     }
+
+    // ─── pizarra-63: las llamadas (Llamada.kt, reglas v19) ───
+    fun crearLlamada(para: String, oferta: String, dispositivo: String): String {
+        if (Nube.sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")
+        val yo = deTiempos(); val id = idNuevo()
+        commit(cuerpoLlamada(BASE_DOCS, id, yo, miNombre(), dispositivo, para, oferta))
+        avisarCambio("llamadas")
+        return id
+    }
+
+    fun leerLlamada(id: String): Llamada? {
+        deTiempos()
+        val r = JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:batchGet",
+            JSONObject().put("documents", JSONArray().put("$BASE_DOCS/$COLECCION_LLAMADAS/$id")).toString(), "application/json", token()))
+        return r.optJSONObject(0)?.optJSONObject("found")?.let { llamadaDeDoc(it) }
+    }
+
+    fun llamadasSonando(): List<Llamada> {
+        deTiempos()
+        return llamadasDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:runQuery",
+            consultaSonando().toString(), "application/json", token())))
+    }
+
+    /** Atender (con respuesta) o rechazar (null). */
+    fun atenderLlamada(id: String, dispositivo: String, respuesta: String?) {
+        deTiempos(); commit(cuerpoAtender(BASE_DOCS, id, dispositivo, respuesta)); avisarCambio("llamadas")
+    }
+
+    fun cortarLlamada(id: String, estado: String) { deTiempos(); commit(cuerpoCortar(BASE_DOCS, id, estado)); avisarCambio("llamadas") }
+
+    /** Los servidores de conexión, de la función `hielo` (el TURN tiene clave: no va en la app). */
+    fun hielo(): String = pedir(URL_HIELO, JSONObject().put("base", sitio.id).toString(), "application/json", token())
 
     /** Los bytes de un audio, o null si ya no está (se borra a los 30 días). */
     fun bajarAudio(id: String): ByteArray? {

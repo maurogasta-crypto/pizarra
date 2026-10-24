@@ -3,7 +3,7 @@ package com.maurogasta.pizarra
 import android.content.Context
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Despertar.kt — Ponerse al día ENTERA, de una vez. Sello: pizarra-59
+// Despertar.kt — Ponerse al día ENTERA, de una vez. Sello: pizarra-63
 //
 // Mauro, 24-oct-2026: «renovar todas las pizarras en cada modificación, además
 // de una vez por hora»; y después: «los mensajes en el ecosistema tienen que
@@ -25,6 +25,7 @@ object Despertar {
     /** Todo lo que se muestra o suena, al día. Cada parte en su hilo y ninguna tira. */
     fun todo(c: Context) {
         val app = c.applicationContext
+        try { Llamadas.revisar(app) } catch (e: Throwable) { }   // pizarra-63: si alguien está llamando, primero
         try { Charla.ponerAlDia(app) } catch (e: Throwable) { Bitacora.anotar(app, "despertar: mensajes: ${e.javaClass.simpleName}") }
         try { PizarraWidget.actualizarDesdeLaRed(app, null, conLuces = false) } catch (e: Throwable) { }
         try { AgendaWidget.actualizar(app, null) } catch (e: Throwable) { }

@@ -25,7 +25,10 @@ android {
         // El número de corrida de GitHub: sube en cada tanda y nunca retrocede,
         // que es lo que Android exige para instalar ENCIMA de la anterior.
         versionCode = (project.findProperty("codigoVersion") as String?)?.toIntOrNull() ?: 1
-        versionName = "pizarra-62"
+        versionName = "pizarra-63"
+        // pizarra-63: WebRTC trae su motor para cada procesador; los teléfonos
+        // del ecosistema son ARM (64 y 32 bits). Así el APK pesa la mitad.
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
     signingConfigs {
@@ -75,6 +78,11 @@ dependencies {
     // recibir un aviso de Firebase Cloud Messaging. Se inicia a mano
     // (Instantaneo.kt), sin el plugin de google-services.
     implementation("com.google.firebase:firebase-messaging:24.0.3")
+    // LA SEGUNDA Y ÚLTIMA (pizarra-63, 24-oct-2026, Mauro: «avanza con esto»,
+    // general:C2 Fase B): WebRTC, la voz en vivo de teléfono a teléfono. Es la
+    // compilación que mantiene Stream (Apache 2.0, sin otras dependencias):
+    // Google dejó de publicar la suya.
+    implementation("io.getstream:stream-webrtc-android:1.3.10")
     testImplementation("junit:junit:4.13.2")
     // En las pruebas de la JVM org.json es un esqueleto vacío: ésta es la real.
     testImplementation("org.json:json:20240303")

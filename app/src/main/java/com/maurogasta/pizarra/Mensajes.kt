@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-62
+// ecosistema en un widget. Sello: pizarra-63
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -356,6 +356,7 @@ class CharlaActivity : Activity() {
     private lateinit var pestanas: LinearLayout
     private lateinit var dice: TextView
     private lateinit var campo: EditText
+    private var llamar: Button? = null
     private var clave = ""
 
     override fun onCreate(estado: Bundle?) {
@@ -387,6 +388,15 @@ class CharlaActivity : Activity() {
         val botones = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END }
         botones.addView(Button(this).apply { text = "Cerrar"; setOnClickListener { finish() } })
         botones.addView(botonHandy())
+        // pizarra-63: llamar a la conversación elegida (en «Todos» no hay a quién).
+        llamar = Button(this).apply { text = "📞"; contentDescription = "Llamar"; setOnClickListener {
+            if (clave.isEmpty()) return@setOnClickListener
+            val yo = Nube(this@CharlaActivity).uid.orEmpty()
+            val cs = conversaciones(with(Charla) { mensajesGuardados }, yo, nombreDelTelefono(this@CharlaActivity))
+            val nombre = cs.firstOrNull { it.clave == clave }?.let { etiquetaConversacion(it, cs, yo).removePrefix("📱 ") }.orEmpty()
+            startActivity(Intent(this@CharlaActivity, LlamadaActivity::class.java).putExtra("para", clave).putExtra("nombre", nombre))
+        } }
+        botones.addView(llamar)
         val mandar = Button(this).apply { text = "Mandar" }
         mandar.setOnClickListener {
             val t = campo.text.toString().trim()
@@ -470,6 +480,7 @@ class CharlaActivity : Activity() {
         }
         pestanas.addView(chip("Todos", ""))
         for (x in cs) pestanas.addView(chip(etiquetaConversacion(x, cs, yo), x.clave))
+        llamar?.visibility = if (c == null) android.view.View.GONE else android.view.View.VISIBLE
         campo.hint = if (c == null) "Escribile a todos" else "Escribile a " + etiquetaConversacion(c, cs, yo).removePrefix("📱 ")
         // Las burbujas: lo mío a la derecha, lo del otro a la izquierda.
         lista.removeAllViews()
@@ -568,6 +579,12 @@ class MensajesWidget : AppWidgetProvider() {
                 v.setTextViewText(R.id.vacia_mensajes, if (Nube(c).conSesion) "Nada todavía. Tocá ✎ para escribir." else "Tocá y entrá con tu cuenta de Tiempos.")
                 v.setTextViewText(R.id.estado_mensajes, with(Charla) { c.estadoCharla })
                 v.setOnClickPendingIntent(R.id.escribir_mensaje, escribir)
+                // pizarra-63: 📞 sólo con una conversación elegida.
+                v.setViewVisibility(R.id.llamar_mensaje, if (elegida.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE)
+                if (elegida.isNotEmpty()) v.setOnClickPendingIntent(R.id.llamar_mensaje, PendingIntent.getActivity(c, 4800 + id,
+                    Intent(c, LlamadaActivity::class.java).putExtra("para", elegida)
+                        .putExtra("nombre", cs.firstOrNull { it.clave == elegida }?.let { etiquetaConversacion(it, cs, yo).removePrefix("📱 ") }.orEmpty())
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 v.setOnClickPendingIntent(R.id.grabar_mensaje, PendingIntent.getActivity(c, 4700 + id, Intent(c, HandyActivity::class.java)
                     .putExtra("clave", elegida).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 v.setOnClickPendingIntent(R.id.titulo_mensajes, escribir)

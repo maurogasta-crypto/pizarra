@@ -40,9 +40,9 @@ class InstantaneoTest {
         assertTrue(m.contains(".AvisoInstantaneo") && m.contains("com.google.firebase.MESSAGING_EVENT"))
     }
 
-    @Test fun firebaseEsLaUnicaBiblioteca() {
+    @Test fun lasUnicasBibliotecas_sonFirebaseYWebRTC() {
         val g = java.io.File("build.gradle.kts").readText()
         val deps = Regex("""^\s*implementation\("([^"]+)"\)""", RegexOption.MULTILINE).findAll(g).map { it.groupValues[1] }.toList()
-        assertEquals(listOf("com.google.firebase:firebase-messaging:24.0.3"), deps)
+        assertEquals(listOf("com.google.firebase:firebase-messaging:24.0.3", "io.getstream:stream-webrtc-android:1.3.10"), deps)
     }
 }

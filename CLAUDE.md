@@ -2,7 +2,7 @@
 
 ## Qué es este proyecto
 
-Widget de Android (Kotlin, con UNA sola biblioteca: la de avisos de Firebase) que muestra las tareas de Tiempos
+Widget de Android (Kotlin, con DOS bibliotecas: la de avisos de Firebase y WebRTC para las llamadas) que muestra las tareas de Tiempos
 que la persona eligió y las tacha con un toque. Pedido de Mauro el 2026-10-02:
 «una pizarra de pendientes en una de mis pantallas de Android, como widget…
 cuando tacho ya lo señala en mi sitio y queda informado para todos».
@@ -60,7 +60,10 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   Hecha» en `app.js` de Tiempos, cambia `cuerpoTachar` acá en la misma tanda.
 - **El campo `pizarra` de `tareas` es de esta app.** Mapa uid → true, uno por
   persona. Si Tiempos lo empieza a mostrar o a editar, que sea con esa forma.
-- **Una sola dependencia en la app, y es a propósito** (pizarra-60,
+- **Dos dependencias, y ninguna más** (pizarra-63): la de avisos de Firebase y
+  `io.getstream:stream-webrtc-android` para las llamadas (abajo). El banco
+  falla si aparece una tercera.
+- **La primera dependencia, y es a propósito** (pizarra-60,
   24-oct-2026): `firebase-messaging`, para que un aviso despierte el teléfono
   en el acto (`Instantaneo.kt`). Todo lo demás sigue siendo HttpURLConnection
   y org.json, y el banco falla si aparece otra. Firebase se inicia a mano con
@@ -327,6 +330,22 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   el agente lee `mensajes/` y `audios/` y la ronda los transcribe
   (`herramientas/charla.mjs` de `datos`); la charla y el handy lo dicen a la
   vista (`AVISO_CLAUDE_LEE`), y eso no se saca.
+- **Llamadas de voz entre Pizarras, sin WhatsApp** (pizarra-63, `Llamada.kt`,
+  `general:C2` Fase B, 24-oct-2026, Mauro: «llamada directo en tiempo real…
+  avanza con esto, y cualquier cosa se ajusta para tres o cuatro teléfonos»).
+  La voz va directo de teléfono a teléfono con WebRTC; por la base pasa sólo
+  cómo se encuentran, `llamadas/` de Tiempos (reglas v19, `cuerpoLlamada`,
+  `cuerpoAtender`, `cuerpoCortar`): la oferta con todos los caminos juntos, la
+  respuesta, y quién cortó. El aviso instantáneo con «llamadas» hace sonar al
+  destinatario sin esperar lo demás (`Llamadas.revisar`, `suenaAca`), con
+  pantalla completa aunque esté bloqueado; «a la persona» suena en todos sus
+  teléfonos y atiende el primero. 📞 en la charla y en el widget, con una
+  conversación elegida. Los servidores de conexión los da `hielo` del Netlify
+  (STUN gratis; TURN de cupo fijo sólo con sesión, porque tiene clave): sin
+  TURN, en un 4G cerrado no conecta y la pantalla lo dice. Nada se graba.
+  Unas 60 lecturas por llamada. Sólo ARM (`abiFilters`), para que el APK no
+  pese el doble. **No se puede probar en el banco** (WebRTC es nativo): lo
+  prueban dos teléfonos.
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

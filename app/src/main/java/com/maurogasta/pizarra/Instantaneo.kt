@@ -11,7 +11,7 @@ import java.net.URL
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Instantaneo.kt — El aviso que despierta la Pizarra en el acto. Sello: pizarra-60
+// Instantaneo.kt — El aviso que despierta la Pizarra en el acto. Sello: pizarra-63
 //
 // Mauro, 24-oct-2026 (general:C1, fase 2): «una conexión en tiempo real entre
 // todos los integrantes, sin un consumo extra que el de la comunicación», y
@@ -39,7 +39,7 @@ import kotlin.concurrent.thread
 
 const val PROYECTO_AVISOS = "avisos-23b6a"
 const val URL_DESPERTAR = "https://serene-scone-76bd4e.netlify.app/.netlify/functions/despertar"
-val QUE_CAMBIO = setOf("mensajes", "tareas", "agenda", "alertas", "avisos", "reservas", "pedidos", "plata", "todo")
+val QUE_CAMBIO = setOf("mensajes", "tareas", "agenda", "alertas", "avisos", "reservas", "pedidos", "plata", "llamadas", "todo")
 
 fun temaDe(base: String) = "pizarra-$base"
 
@@ -100,6 +100,8 @@ fun cuerpoDespertar(base: String, que: String): String =
 /** Llega el aviso: la Pizarra se pone al día con su propia sesión. */
 class AvisoInstantaneo : FirebaseMessagingService() {
     override fun onMessageReceived(m: RemoteMessage) {
+        // pizarra-63: una llamada no espera a que se ponga al día todo lo demás.
+        if (m.data["que"] == "llamadas") { Llamadas.revisar(applicationContext); return }
         try { Despertar.todo(applicationContext) } catch (e: Throwable) { }
     }
     // Con temas no hace falta guardar el token del teléfono en ningún lado.
