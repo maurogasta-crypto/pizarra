@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-63
+// ecosistema en un widget. Sello: pizarra-64
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -87,7 +87,8 @@ const val URL_PEDIDOS_CV = "https://casaverdecanas.com.br/interno/pedidos-alquil
 const val URL_RESERVAS_CV = "https://casaverdecanas.com.br/interno/reservas.html"
 
 data class Mensaje(val id: String, val de: String, val nombre: String, val dispositivo: String, val texto: String, val creado: String,
-                   val para: String = "", val audio: String = "", val dur: Int = 0)
+                   val para: String = "", val audio: String = "", val dur: Int = 0,
+                   val archivo: String = "", val nombreArchivo: String = "", val partes: Int = 0)
 
 /** La conversación con TODOS los teléfonos de una persona (pizarra-62). */
 fun claveDePersona(uid: String) = "$uid|*"
@@ -121,7 +122,8 @@ fun mensajesDeConsulta(r: JSONArray): List<Mensaje> = (0 until r.length()).mapNo
     val id = d.optString("name").substringAfterLast('/')
     if (id.isEmpty() || s("texto").isBlank() || s("de").isEmpty()) null
     else Mensaje(id, s("de"), s("nombre").take(40), s("dispositivo").take(60), s("texto").take(2000), s("creadoEn"), s("para").take(140),
-        s("audio").take(40), (f.optJSONObject("dur")?.optString("integerValue")?.toIntOrNull() ?: 0).coerceIn(0, 60))
+        s("audio").take(40), (f.optJSONObject("dur")?.optString("integerValue")?.toIntOrNull() ?: 0).coerceIn(0, 60),
+        s("archivo").take(40), s("nombreArchivo").take(120), (f.optJSONObject("partes")?.optString("integerValue")?.toIntOrNull() ?: 0).coerceIn(0, PARTES_MAX))
 }.sortedByDescending { it.creado }
 
 /** Lo guardado más lo nuevo, sin repetir, del más nuevo al más viejo. */
@@ -130,13 +132,16 @@ fun mezclarMensajes(guardados: List<Mensaje>, nuevos: List<Mensaje>, tope: Int =
 
 /** El mensaje nuevo, con la forma EXACTA que deja crear la regla de Tiempos: la v15 sin `para`, la v17 con él. */
 fun cuerpoMensaje(docs: String, id: String, uid: String, nombre: String, dispositivo: String, texto: String, para: String = "",
-                  audio: String = "", dur: Int = 0): JSONObject {
+                  audio: String = "", dur: Int = 0, archivo: String = "", nombreArchivo: String = "", partes: Int = 0): JSONObject {
     fun s(v: String) = JSONObject().put("stringValue", v)
     val campos = JSONObject().put("de", s(uid)).put("nombre", s(nombre.take(40))).put("dispositivo", s(dispositivo.take(60)))
         .put("texto", s(texto.trim().take(2000)))
     if (para.isNotBlank()) campos.put("para", s(para.take(140)))
     // pizarra-62 (reglas v18): un mensaje de voz lleva el id del audio y cuántos segundos dura.
     if (audio.isNotBlank()) campos.put("audio", s(audio.take(40))).put("dur", JSONObject().put("integerValue", dur.coerceIn(1, 60).toString()))
+    // pizarra-64 (reglas v20): un archivo, por su id, su nombre y en cuántas partes está.
+    if (archivo.isNotBlank()) campos.put("archivo", s(archivo.take(40))).put("nombreArchivo", s(nombreArchivo.take(120)))
+        .put("partes", JSONObject().put("integerValue", partes.coerceIn(1, PARTES_MAX).toString()))
     return JSONObject().put("writes", JSONArray().put(JSONObject()
         .put("update", JSONObject().put("name", "$docs/$COLECCION_MENSAJES/$id").put("fields", campos))
         .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "creadoEn").put("setToServerValue", "REQUEST_TIME")))
@@ -241,11 +246,13 @@ object Charla {
     var Context.mensajesGuardados: List<Mensaje>
         get() = try { JSONArray(prefs(this).getString("lista", "[]")).let { a -> (0 until a.length()).map { i -> a.getJSONObject(i).let {
             Mensaje(it.optString("id"), it.optString("de"), it.optString("nombre"), it.optString("dispositivo"), it.optString("texto"), it.optString("creado"),
-                it.optString("para"), it.optString("audio"), it.optInt("dur")) } } } }
+                it.optString("para"), it.optString("audio"), it.optInt("dur"), it.optString("archivo"), it.optString("nombreArchivo"),
+                it.optInt("partes")) } } } }
             catch (e: Exception) { emptyList() }
         set(v) = prefs(this).edit().putString("lista", JSONArray().apply { v.take(150).forEach { put(JSONObject().put("id", it.id).put("de", it.de)
             .put("nombre", it.nombre).put("dispositivo", it.dispositivo).put("texto", it.texto).put("creado", it.creado).put("para", it.para)
-            .put("audio", it.audio).put("dur", it.dur)) } }.toString()).apply()
+            .put("audio", it.audio).put("dur", it.dur).put("archivo", it.archivo).put("nombreArchivo", it.nombreArchivo)
+            .put("partes", it.partes)) } }.toString()).apply()
 
     /** La pestaña elegida en cada widget («» = Todo). */
     fun pestana(c: Context, widget: Int): String = prefs(c).getString("pestana_$widget", "").orEmpty()
@@ -281,6 +288,7 @@ object Charla {
             // pizarra-62: un audio para mí, recién llegado, se escucha solo si así se eligió (Handy.kt).
             try { Handy.alLlegar(c, nube, nuevos) } catch (e: Throwable) { Bitacora.anotar(c, "handy: ${e.javaClass.simpleName}") }
             try { Handy.limpiar(c, nube) } catch (e: Throwable) { }
+            try { Archivos.limpiar(c, nube) } catch (e: Throwable) { }
             p.edit().putStringSet("mostrados", (vistos intersect ms.map { it.id }.toSet()) + nuevos.map { it.id }).apply()
             // Lo de Casa Verde, sólo si este teléfono entró ahí. Si falla, no tapa lo demás.
             val cv = CuentaCasaVerde(c)
@@ -388,6 +396,14 @@ class CharlaActivity : Activity() {
         val botones = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END }
         botones.addView(Button(this).apply { text = "Cerrar"; setOnClickListener { finish() } })
         botones.addView(botonHandy())
+        // pizarra-64: una foto o un documento, a la conversación elegida (o a todos).
+        botones.addView(Button(this).apply { text = "📎"; contentDescription = "Mandar una foto o un documento"; setOnClickListener {
+            val elegir = Intent(Intent.ACTION_GET_CONTENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
+                .putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "application/pdf", "text/*", "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/zip"))
+            try { startActivityForResult(Intent.createChooser(elegir, "Mandar"), 64) } catch (e: Throwable) { dice.text = "No hay dónde elegir un archivo." }
+        } })
         // pizarra-63: llamar a la conversación elegida (en «Todos» no hay a quién).
         llamar = Button(this).apply { text = "📞"; contentDescription = "Llamar"; setOnClickListener {
             if (clave.isEmpty()) return@setOnClickListener
@@ -416,10 +432,23 @@ class CharlaActivity : Activity() {
         setContentView(caja)
         window.setLayout((resources.displayMetrics.widthPixels * 0.94).toInt(), WindowManager.LayoutParams.WRAP_CONTENT)
         pintar()
+        intent.getStringExtra("abrirArchivo")?.takeIf { it.isNotEmpty() }?.let { id ->
+            dice.text = "Abriendo…"
+            Archivos.abrir(this, id, intent.getIntExtra("partes", 1), intent.getStringExtra("nombreArchivo").orEmpty()) { t -> runOnUiThread { dice.text = t } }
+        }
         intent.getStringExtra("reproducir")?.takeIf { it.isNotEmpty() }?.let { id ->
             dice.text = "▶ Escuchando…"; Handy.escuchar(this, id, intent.getIntExtra("dur", 30)) { t -> runOnUiThread { dice.text = t } }
         }
         thread { Charla.ponerAlDia(this); runOnUiThread { pintar() } }
+    }
+
+    @Deprecated("startActivityForResult de siempre: la app no tiene androidx")
+    override fun onActivityResult(codigo: Int, resultado: Int, datos: Intent?) {
+        @Suppress("DEPRECATION") super.onActivityResult(codigo, resultado, datos)
+        val uri = datos?.data
+        if (codigo != 64 || resultado != RESULT_OK || uri == null) return
+        dice.text = "Mandando…"
+        Archivos.mandar(this, uri, clave) { err -> runOnUiThread { dice.text = err ?: "✓ Mandado."; pintar() } }
     }
 
     /** 🎙 mantener apretado: graba mientras se aprieta y al soltar lo manda a la pestaña elegida (pizarra-62). */
@@ -493,8 +522,12 @@ class CharlaActivity : Activity() {
             val mio = m.de == yo && m.dispositivo == tel
             val fila = LinearLayout(this).apply { gravity = if (mio) Gravity.END else Gravity.START; setPadding(0, (3 * d).toInt(), 0, (3 * d).toInt()) }
             fila.addView(TextView(this).apply {
-                val cuerpo = if (m.audio.isNotEmpty()) "▶ 🎙 " + duracionTexto(m.dur) else m.texto
+                val cuerpo = if (m.audio.isNotEmpty()) "▶ 🎙 " + duracionTexto(m.dur)
+                    else if (m.archivo.isNotEmpty()) m.texto + "\n(tocá para abrir)" else m.texto
                 text = (if (mio && c != null) "" else firmaMensaje(m, yo, tel) + "\n") + cuerpo + "\n" + horaCorta(m.creado)
+                if (m.archivo.isNotEmpty()) setOnClickListener {
+                    dice.text = "Abriendo…"; Archivos.abrir(this@CharlaActivity, m.archivo, m.partes, m.nombreArchivo) { t -> runOnUiThread { dice.text = t } }
+                }
                 if (m.audio.isNotEmpty()) setOnClickListener {
                     dice.text = "▶ Escuchando…"; Handy.escuchar(this@CharlaActivity, m.audio, m.dur) { t -> runOnUiThread { dice.text = t } }
                 }
@@ -652,9 +685,11 @@ class Burbujas(private val c: Context, private val clave: String) : RemoteViewsS
         val m = filas.getOrNull(posicion) ?: return RemoteViews(c.packageName, R.layout.widget_burbuja_otro)
         val mio = m.de == yo && m.dispositivo == tel
         val v = RemoteViews(c.packageName, if (mio) R.layout.widget_burbuja_mia else R.layout.widget_burbuja_otro)
-        v.setTextViewText(R.id.burbuja_texto, if (m.audio.isNotEmpty()) "▶ 🎙 " + duracionTexto(m.dur) + " · tocá para escuchar" else m.texto)
+        v.setTextViewText(R.id.burbuja_texto, if (m.audio.isNotEmpty()) "▶ 🎙 " + duracionTexto(m.dur) + " · tocá para escuchar"
+            else if (m.archivo.isNotEmpty()) m.texto + " · tocá para abrir" else m.texto)
         v.setTextViewText(R.id.burbuja_hora, (if (mio) "" else firmaMensaje(m, yo, tel).substringBefore(" → ") + " · ") + horaCorta(m.creado))
-        v.setOnClickFillInIntent(R.id.burbuja, Intent().putExtra("clave", clave).putExtra("reproducir", m.audio).putExtra("dur", m.dur))
+        v.setOnClickFillInIntent(R.id.burbuja, Intent().putExtra("clave", clave).putExtra("reproducir", m.audio).putExtra("dur", m.dur)
+            .putExtra("abrirArchivo", m.archivo).putExtra("partes", m.partes).putExtra("nombreArchivo", m.nombreArchivo))
         return v
     }
 }

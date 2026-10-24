@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-63` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-64` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -291,6 +291,10 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   conversación se ve en burbujas; la charla (✎) tiene una pestaña por
   teléfono y «Todos». Escribir en una pestaña manda el mensaje a ESE teléfono
   (`para`, reglas v17 de Tiempos: hay que publicarlas).
+- **Fotos y documentos** (pizarra-64, `Archivos.kt`): 📎 en la charla. La
+  foto se achica antes de salir; un documento va en partes, hasta unos 6 MB.
+  Se guardan 7 días en `archivos/` de Tiempos (reglas v20) y se abren al
+  tocarlos con la app que tenga el teléfono.
 - **Llamadas** (pizarra-63, `Llamada.kt`): 📞 en la charla o en el widget,
   con una conversación elegida. Suena en el otro teléfono aunque esté
   bloqueado; se atiende, se corta, altavoz y silenciar. La voz va directo

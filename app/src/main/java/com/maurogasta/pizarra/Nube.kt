@@ -8,7 +8,7 @@ import java.net.URL
 import java.net.URLEncoder
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-63
+// Nube.kt — Hablar con la base de Tiempos. Sello: pizarra-64
 //
 // pizarra-14 (tiempos:V10, 9-oct-2026): la Pizarra es para todo el equipo. Al
 // entrar se elige el SITIO (Avisos.kt, `SITIOS`): Tiempos para Mauro y
@@ -151,6 +151,31 @@ class Nube(contexto: Context) {
         commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, textoDeAudio(dur), para, id, dur))
         avisarCambio("mensajes")
         return id
+    }
+
+    // ─── pizarra-64: fotos y documentos (Archivos.kt, reglas v20) ───
+    /** Primero las partes, después el mensaje que las nombra. Devuelve el id del archivo. */
+    fun mandarArchivo(partes: List<ByteArray>, nombre: String, tipo: String, tam: Long, dispositivo: String, para: String = ""): String {
+        if (Nube.sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")
+        val yo = deTiempos(); val id = idNuevo()
+        partes.forEachIndexed { n, b -> commit(cuerpoParte(BASE_DOCS, id, n, partes.size, yo, b, nombre, tipo)) }
+        commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, textoDeArchivo(nombre, tipo, tam), para,
+            archivo = id, nombreArchivo = nombre, partes = partes.size))
+        avisarCambio("mensajes")
+        return id
+    }
+
+    fun bajarArchivo(id: String, partes: Int): ByteArray? {
+        deTiempos()
+        val docs = JSONArray().apply { (0 until partes).forEach { put("$BASE_DOCS/$COLECCION_ARCHIVOS/${idDeParte(id, it)}") } }
+        val r = JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:batchGet", JSONObject().put("documents", docs).toString(), "application/json", token()))
+        return partesDeRespuesta(r, partes)?.let { juntar(it) }
+    }
+
+    fun borrarArchivos(idsDePartes: List<String>) {
+        if (idsDePartes.isEmpty()) return
+        deTiempos()
+        commit(JSONObject().put("writes", JSONArray().apply { idsDePartes.forEach { put(JSONObject().put("delete", "$BASE_DOCS/$COLECCION_ARCHIVOS/$it")) } }))
     }
 
     // ─── pizarra-63: las llamadas (Llamada.kt, reglas v19) ───

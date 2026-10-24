@@ -346,6 +346,16 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   Unas 60 lecturas por llamada. Sólo ARM (`abiFilters`), para que el APK no
   pese el doble. **No se puede probar en el banco** (WebRTC es nativo): lo
   prueban dos teléfonos.
+- **Fotos y documentos por la charla** (pizarra-64, `Archivos.kt`, 24-oct-2026,
+  Mauro: «enviar archivos… fotos o algún documento que se vaya a guardar
+  temporalmente en la base»). 📎 en la charla; van a `archivos/` de Tiempos en
+  partes de hasta 700 KB (`partir`, hasta 10: unos 6 MB; reglas v20,
+  `cuerpoParte`) y el mensaje los nombra (`archivo`, `nombreArchivo`,
+  `partes`). La foto se achica antes (`achicarFoto`, 1600 px, JPEG 80). Se
+  abren al tocarlos con la app del teléfono por `Entrega`, un proveedor propio
+  (no hay androidx): sólo lectura y sólo lo bajado a `cache/entrega`. **Es
+  temporal**: cada Pizarra borra lo suyo a los 7 días (`Archivos.limpiar`). La
+  ronda los ve y los puede bajar para mirarlos (`charla.mjs bajar`).
 - **«Claude propone» se muestra, no se acepta acá** (pizarra-11): aceptar
   escribe la agenda con `actividadDePropuesta` de Tiempos, y esa lógica no se
   copia. El filtro (`propuestasDeConsulta`) es el de `mias()` de `propone.js`:

@@ -25,7 +25,7 @@ android {
         // El número de corrida de GitHub: sube en cada tanda y nunca retrocede,
         // que es lo que Android exige para instalar ENCIMA de la anterior.
         versionCode = (project.findProperty("codigoVersion") as String?)?.toIntOrNull() ?: 1
-        versionName = "pizarra-63"
+        versionName = "pizarra-64"
         // pizarra-63: WebRTC trae su motor para cada procesador; los teléfonos
         // del ecosistema son ARM (64 y 32 bits). Así el APK pesa la mitad.
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }

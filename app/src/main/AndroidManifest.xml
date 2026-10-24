@@ -153,6 +153,13 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- pizarra-64: entrega a la app que abre un archivo sólo lo bajado a cache/entrega (Archivos.kt). -->
+        <provider
+            android:name=".Entrega"
+            android:authorities="com.maurogasta.pizarra.entrega"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <!-- pizarra-63: la llamada (sale o entra), aunque el teléfono esté bloqueado. -->
         <activity
             android:name=".LlamadaActivity"
