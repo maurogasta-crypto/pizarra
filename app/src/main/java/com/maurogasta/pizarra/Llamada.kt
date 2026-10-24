@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Color
+import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.RingtoneManager
 import android.os.Build
@@ -37,7 +38,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Llamada.kt — Llamadas de voz entre Pizarras, sin WhatsApp. Sello: pizarra-63
+// Llamada.kt — Llamadas de voz entre Pizarras, sin WhatsApp. Sello: pizarra-68
 //
 // Mauro, 24-oct-2026 (general:C2, Fase B): «llamada directo en tiempo real…
 // que conecte teléfonos que tengan la apk de pizarra», con la condición «no
@@ -70,6 +71,9 @@ import kotlin.concurrent.thread
 const val COLECCION_LLAMADAS = "llamadas"
 const val URL_HIELO = "https://serene-scone-76bd4e.netlify.app/.netlify/functions/hielo"
 const val CANAL_LLAMADAS = "llamadas"
+/** pizarra-68: el canal que SUENA como un teléfono. Es otro id porque el sonido de un canal ya creado no se puede cambiar. */
+const val CANAL_TIMBRE = "llamadas_timbre"
+val VIBRA_TIMBRE = longArrayOf(0, 1000, 800, 1000, 800, 1000)
 const val SUENA_MS = 45_000L
 
 data class Llamada(val id: String, val de: String, val nombre: String, val dispositivo: String, val para: String,
@@ -256,6 +260,9 @@ class Motor(private val c: Context) {
 
 // ─── Quién suena ─────────────────────────────────────────────────────────────
 
+/** Las que sonaron acá y ya no están llamando (cortó quien llamaba, atendió otro teléfono): se callan. */
+fun paraCallar(sonadas: Set<String>, sonandoAca: Set<String>): Set<String> = sonadas - sonandoAca
+
 object Llamadas {
     private fun prefs(c: Context) = c.getSharedPreferences("llamadas", Context.MODE_PRIVATE)
 
@@ -267,7 +274,9 @@ object Llamadas {
             val yo = n.uid.orEmpty(); val tel = nombreDelTelefono(c)
             val p = prefs(c)
             val sonadas = p.getStringSet("sonadas", emptySet()) ?: emptySet()
-            val nuevas = n.llamadasSonando().filter { suenaAca(it, yo, tel, System.currentTimeMillis()) && it.id !in sonadas }
+            val aca = n.llamadasSonando().filter { suenaAca(it, yo, tel, System.currentTimeMillis()) }
+            for (id in paraCallar(sonadas, aca.map { it.id }.toSet())) callarAviso(c, id)
+            val nuevas = aca.filter { it.id !in sonadas }
             for (l in nuevas) sonar(c, l)
             if (nuevas.isNotEmpty()) p.edit().putStringSet("sonadas", (sonadas + nuevas.map { it.id }).toList().takeLast(50).toSet()).apply()
         } catch (e: Throwable) { Bitacora.anotar(c, "llamadas: ${e.javaClass.simpleName}") }
@@ -275,24 +284,62 @@ object Llamadas {
 
     private fun canal(c: Context): NotificationManager? {
         val nm = c.getSystemService(NotificationManager::class.java) ?: return null
-        nm.createNotificationChannel(NotificationChannel(CANAL_LLAMADAS, "Llamadas", NotificationManager.IMPORTANCE_HIGH)
-            .apply { description = "Cuando te llaman desde otra Pizarra." })
+        nm.createNotificationChannel(NotificationChannel(CANAL_LLAMADAS, "Llamadas perdidas", NotificationManager.IMPORTANCE_HIGH)
+            .apply { description = "Cuando te llamaron desde otra Pizarra y no atendiste." })
         return nm
     }
 
-    /** Pantalla completa (aunque esté bloqueado) y, si Android no la deja, un aviso arriba con Atender. */
+    /** pizarra-68 (Mauro: «la llamada es como una notificación, no suena como una alarma»): el tono de llamada del teléfono, vibrando. */
+    private fun canalTimbre(c: Context): NotificationManager? {
+        val nm = c.getSystemService(NotificationManager::class.java) ?: return null
+        val audio = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+        nm.createNotificationChannel(NotificationChannel(CANAL_TIMBRE, "Llamadas entrantes", NotificationManager.IMPORTANCE_HIGH).apply {
+            description = "Suena como el teléfono cuando te llaman desde otra Pizarra."
+            setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE), audio)
+            enableVibration(true); vibrationPattern = VIBRA_TIMBRE
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            setBypassDnd(false)
+        })
+        return nm
+    }
+
+    /** Si Android (14 o más) no deja abrir la pantalla completa, la charla ofrece el permiso. */
+    fun faltaPantallaCompleta(c: Context): Boolean =
+        Build.VERSION.SDK_INT >= 34 && c.getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() == false
+
+    fun pedirPantallaCompleta(c: Context) {
+        try {
+            c.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, android.net.Uri.parse("package:" + c.packageName))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: Throwable) {
+            try { c.startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, c.packageName)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e2: Throwable) { }
+        }
+    }
+
+    /** Pantalla completa (aunque esté bloqueado) y, si Android no la deja, un aviso que SUENA hasta atender, rechazar o que corten, con los dos botones. */
     private fun sonar(c: Context, l: Llamada) {
-        val nm = canal(c) ?: return
+        val nm = canalTimbre(c) ?: return
+        val banderas = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         val abrir = Intent(c, LlamadaActivity::class.java).putExtra("entrante", l.id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        val pi = PendingIntent.getActivity(c, l.id.hashCode(), abrir, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val pi = PendingIntent.getActivity(c, l.id.hashCode(), abrir, banderas)
+        val atender = PendingIntent.getActivity(c, ("atender:" + l.id).hashCode(),
+            Intent(c, LlamadaActivity::class.java).putExtra("entrante", l.id).putExtra("atender", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), banderas)
+        val rechazar = PendingIntent.getBroadcast(c, ("rechazar:" + l.id).hashCode(),
+            Intent(c, RechazarReceptor::class.java).putExtra("id", l.id), banderas)
         val quien = if (l.nombre.isBlank()) l.dispositivo else "${l.nombre} · ${l.dispositivo}"
-        val n = Notification.Builder(c, CANAL_LLAMADAS)
+        val n = Notification.Builder(c, CANAL_TIMBRE)
             .setSmallIcon(android.R.drawable.sym_call_incoming)
-            .setContentTitle("📞 Te llama $quien").setContentText("Tocá para atender")
+            .setContentTitle("📞 Te llama $quien").setContentText("Llamada de la Pizarra")
             .setCategory(Notification.CATEGORY_CALL).setFullScreenIntent(pi, true).setContentIntent(pi)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .addAction(Notification.Action.Builder(null, "Rechazar", rechazar).build())
+            .addAction(Notification.Action.Builder(null, "📞 Atender", atender).build())
             .setOngoing(true).setAutoCancel(true).setTimeoutAfter(SUENA_MS).build()
+        n.flags = n.flags or Notification.FLAG_INSISTENT
         try { nm.notify(("llamada:" + l.id).hashCode(), n) } catch (e: SecurityException) { }
-        Bitacora.anotar(c, "llamadas: suena")
+        Bitacora.anotar(c, "llamadas: suena" + if (faltaPantallaCompleta(c)) " (sin permiso de pantalla completa)" else "")
     }
 
     fun perdida(c: Context, quien: String) {
@@ -305,6 +352,20 @@ object Llamadas {
     }
 
     fun callarAviso(c: Context, id: String) { c.getSystemService(NotificationManager::class.java)?.cancel(("llamada:$id").hashCode()) }
+}
+
+/** «Rechazar» desde el aviso, sin abrir la pantalla. */
+class RechazarReceptor : android.content.BroadcastReceiver() {
+    override fun onReceive(c: Context, i: Intent) {
+        val id = i.getStringExtra("id").orEmpty()
+        if (id.isEmpty()) return
+        Llamadas.callarAviso(c, id)
+        val fin = goAsync()
+        thread {
+            try { Nube(c).atenderLlamada(id, nombreDelTelefono(c), null) } catch (e: Throwable) { Bitacora.anotar(c, "llamada: no se pudo rechazar (${e.javaClass.simpleName})") }
+            finally { fin.finish() }
+        }
+    }
 }
 
 /** Mientras dura la llamada: que Android no corte el micrófono con la pantalla apagada. */
@@ -391,7 +452,8 @@ class LlamadaActivity : Activity() {
                     if (l == null || l.estado != "llamando") { poner("cortada"); terminarLuego(); return@runOnUiThread }
                     quien = if (l.nombre.isBlank()) l.dispositivo else "${l.nombre} · ${l.dispositivo}"
                     nombre.text = quien; oferta = l.oferta
-                    poner("sonando"); sonarTono(); vigilar()
+                    poner("sonando"); vigilar()
+                    if (intent.getBooleanExtra("atender", false)) atenderla() else sonarTono()
                 }
             }
         }
@@ -523,17 +585,35 @@ class LlamadaActivity : Activity() {
 
     private fun terminarLuego() { terminada = true; reloj.postDelayed({ finish() }, 1800) }
 
+    /** Suena como el teléfono (tono de llamada, en bucle) y vibra; en vibrador, sólo vibra; en silencio, nada. */
     private fun sonarTono() {
         try {
             val am = getSystemService(AudioManager::class.java)
-            if (am != null && am.ringerMode != AudioManager.RINGER_MODE_NORMAL) return
+            val modo = am?.ringerMode ?: AudioManager.RINGER_MODE_NORMAL
+            if (modo != AudioManager.RINGER_MODE_SILENT) vibrar()
+            if (modo != AudioManager.RINGER_MODE_NORMAL) return
             tono = RingtoneManager.getRingtone(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))?.apply {
+                audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
                 if (Build.VERSION.SDK_INT >= 28) isLooping = true
                 play()
             }
         } catch (e: Throwable) { }
     }
-    private fun callarTono() { try { tono?.stop() } catch (e: Throwable) { }; tono = null }
+
+    @Suppress("DEPRECATION")
+    private fun vibrador(): android.os.Vibrator? =
+        if (Build.VERSION.SDK_INT >= 31) getSystemService(android.os.VibratorManager::class.java)?.defaultVibrator
+        else getSystemService(android.os.Vibrator::class.java)
+
+    private fun vibrar() {
+        try { vibrador()?.vibrate(android.os.VibrationEffect.createWaveform(VIBRA_TIMBRE, 1)) } catch (e: Throwable) { }
+    }
+
+    private fun callarTono() {
+        try { tono?.stop() } catch (e: Throwable) { }; tono = null
+        try { vibrador()?.cancel() } catch (e: Throwable) { }
+    }
 
     @Suppress("DEPRECATION")
     private fun modoLlamada(si: Boolean) {

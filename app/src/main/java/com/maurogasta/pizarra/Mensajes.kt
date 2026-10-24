@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mensajes.kt — Los mensajes entre las personas, y las novedades de todo el
-// ecosistema en un widget. Sello: pizarra-67
+// ecosistema en un widget. Sello: pizarra-68
 //
 // Mauro, 18-oct-2026: «los mensajes entre los usuarios de pizarra. Por el
 // momento Florencia y Mauro, pero pudiendo diferenciar cuál dispositivo. Un
@@ -360,6 +360,7 @@ class CharlaReceptor : BroadcastReceiver() {
 /** La charla: pestañas (Todos y una por teléfono), las burbujas y el campo para escribir (pizarra-61). */
 class CharlaActivity : Activity() {
     private lateinit var lista: LinearLayout
+    private lateinit var permisoLlamadas: TextView
     private lateinit var scroll: ScrollView
     private lateinit var pestanas: LinearLayout
     private lateinit var dice: TextView
@@ -387,6 +388,11 @@ class CharlaActivity : Activity() {
             setOnClickListener { finish() } }, LinearLayout.LayoutParams(dp(44), dp(44)))
         caja.addView(arriba)
         caja.addView(TextView(this).apply { textSize = 11f; setTextColor(Color.parseColor("#8A8F98")); text = "Desde este teléfono: ${nombreDelTelefono(this@CharlaActivity)}\n$AVISO_CLAUDE_LEE" })
+        // pizarra-68: sin este permiso (Android 14 o más) la llamada entrante es un aviso y no la pantalla de llamada.
+        permisoLlamadas = TextView(this).apply { textSize = 13f; setTextColor(Color.parseColor("#B26A00")); setPadding(0, dp(6), 0, dp(2))
+            text = "⚠️ Para que una llamada te aparezca en pantalla completa, tocá acá y permití «Pantalla completa»."
+            setOnClickListener { Llamadas.pedirPantallaCompleta(this@CharlaActivity) } }
+        caja.addView(permisoLlamadas)
         pestanas = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         caja.addView(android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(pestanas) },
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) })
@@ -461,7 +467,11 @@ class CharlaActivity : Activity() {
         startActivity(Intent(this, EscribirActivity::class.java).putExtra("clave", clave).putExtra("a", a))
     }
 
-    override fun onResume() { super.onResume(); if (::lista.isInitialized) pintar() }
+    override fun onResume() {
+        super.onResume()
+        if (::permisoLlamadas.isInitialized) permisoLlamadas.visibility = if (Llamadas.faltaPantallaCompleta(this)) android.view.View.VISIBLE else android.view.View.GONE
+        if (::lista.isInitialized) pintar()
+    }
 
     /** Cuánto tapa abajo el teclado (o la barra del sistema), en esta ventana. */
     @Suppress("DEPRECATION")

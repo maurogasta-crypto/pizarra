@@ -346,6 +346,15 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   Unas 60 lecturas por llamada. Sólo ARM (`abiFilters`), para que el APK no
   pese el doble. **No se puede probar en el banco** (WebRTC es nativo): lo
   prueban dos teléfonos.
+  **Desde pizarra-68 la llamada SUENA como un teléfono** (Mauro: «la llamada
+  es como una notificación, no suena como una alarma»): canal propio
+  `CANAL_TIMBRE` —otro id, porque el sonido de un canal creado no se cambia—
+  con el tono de llamada (`USAGE_NOTIFICATION_RINGTONE`), vibración y
+  `FLAG_INSISTENT` (repite hasta atender, rechazar o `SUENA_MS`); «📞
+  Atender» y «Rechazar» (`RechazarReceptor`) en el aviso; si el que llama
+  corta, `Llamadas.revisar` lo calla (`paraCallar`). La pantalla de llamada
+  también vibra. En Android 14+ la pantalla completa pide permiso: la charla
+  lo ofrece (`faltaPantallaCompleta`). Respeta silencio y vibrador.
 - **Fotos y documentos por la charla** (pizarra-64, `Archivos.kt`, 24-oct-2026,
   Mauro: «enviar archivos… fotos o algún documento que se vaya a guardar
   temporalmente en la base»). 📎 en la charla; van a `archivos/` de Tiempos en

@@ -170,6 +170,11 @@
             android:turnScreenOn="true"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
 
+        <!-- pizarra-68: «Rechazar» desde el aviso que suena, sin abrir la pantalla. -->
+        <receiver
+            android:name=".RechazarReceptor"
+            android:exported="false" />
+
         <service
             android:name=".LlamadaServicio"
             android:exported="false"

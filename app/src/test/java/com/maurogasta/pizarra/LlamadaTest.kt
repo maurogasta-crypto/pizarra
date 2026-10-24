@@ -71,4 +71,21 @@ class LlamadaTest {
         val f = java.io.File("../../casaverdecanas/netlify/functions/despertar.mjs")
         if (f.exists()) assertTrue(f.readText().contains("\"llamadas\""))
     }
+
+    // pizarra-68: «la llamada es como una notificación, no suena como una alarma».
+    @Test fun laQueYaNoLlama_secalla_yLaQueSigue_no() {
+        assertEquals(setOf("a", "c"), paraCallar(setOf("a", "b", "c"), setOf("b", "d")))
+        assertEquals(emptySet<String>(), paraCallar(emptySet(), setOf("b")))
+    }
+
+    @Test fun elAvisoSuenaComoUnTelefono_conAtenderYRechazar() {
+        val k = java.io.File("src/main/java/com/maurogasta/pizarra/Llamada.kt").readText()
+        val m = java.io.File("src/main/AndroidManifest.xml").readText()
+        assertTrue(k.contains("TYPE_RINGTONE") && k.contains("USAGE_NOTIFICATION_RINGTONE"))
+        assertTrue(k.contains("FLAG_INSISTENT"))
+        assertTrue(k.contains("Notification.Builder(c, CANAL_TIMBRE)"))
+        assertTrue(k.contains("\"Rechazar\"") && k.contains("\"📞 Atender\""))
+        assertTrue(m.contains(".RechazarReceptor"))
+        assertTrue(CANAL_TIMBRE != CANAL_LLAMADAS)
+    }
 }

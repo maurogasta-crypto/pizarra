@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-67` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-68` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -299,7 +299,12 @@ además los **pedidos de alquiler en Canasvieiras** de los grupos de Facebook.
   con una conversación elegida. Suena en el otro teléfono aunque esté
   bloqueado; se atiende, se corta, altavoz y silenciar. La voz va directo
   (WebRTC) y nada se graba. Reglas v19 de Tiempos y la función `hielo` del
-  Netlify (nueve funciones en el zip).
+  Netlify (nueve funciones en el zip). **Desde pizarra-68 suena como el
+  teléfono**: tono de llamada y vibración, repitiendo hasta atender, rechazar
+  o que el otro corte (máximo 45 s), con «📞 Atender» y «Rechazar» en el
+  aviso. En Android 14 o más, para que aparezca en pantalla completa hay que
+  permitir «Pantalla completa»: la charla lo ofrece arriba si falta. En
+  modo vibrador sólo vibra; en silencio, no suena.
 - **El handy** (pizarra-62, `Handy.kt`): 🎙 en el widget abre grabando;
   en la charla se mantiene apretado. El audio llega al otro teléfono en
   segundos y se escucha solo si así lo eligió y no está en silencio. Los
