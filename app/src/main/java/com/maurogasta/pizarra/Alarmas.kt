@@ -222,6 +222,7 @@ class AlarmaReceptor : BroadcastReceiver() {
                 Alarmas.asegurarTrabajo(c)
                 Tibio.agendar(c)                          // pizarra-26
                 Charla.agendar(c)                         // pizarra-40
+                EnlaceServicio.arrancar(c)                // pizarra-70: sólo si está prendido
             }
         }
     }

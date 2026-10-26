@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-69` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-70` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -433,6 +433,35 @@ mira.
   COMENTADA», no copia nada y la marca respondida en Casa Verde; si sólo la
   elegiste antes en este teléfono, dice el día.
 
+## 📡 El enlace cerca, sin datos (pizarra-70, `general:C4`)
+
+Dos Pizarras cercanas se avisan **sin internet**: en la casa por el mismo
+wi-fi, en el auto por Bluetooth. Mauro, 26-oct-2026: «que se pueda utilizar
+sin consumir datos… dentro del mismo auto o dentro de la misma casa, y que
+pueda despertar al teléfono».
+
+- **Cómo se prende**: en los ajustes, «📡 Enlace cerca», en las DOS. Una
+  muestra su código (diez letras, «ABCDE-FGHJK»); en la otra se escribe y se
+  toca «Usar ese código». «Probar» manda un aviso a la otra. Para el auto, los
+  dos teléfonos se emparejan UNA vez en los ajustes de Bluetooth de Android.
+  Conviene dejarle a Pizarra la batería sin restricciones.
+- **Escucha siempre** (`EnlaceServicio`, servicio en primer plano de tipo
+  dispositivo conectado, con su notificación fija): por eso lo que llega
+  despierta al teléfono. Al prender el teléfono vuelve solo.
+- **En la casa** cada Pizarra se anuncia en la red local (NSD, `_pizarra._tcp`)
+  y se conectan directo, sin salir a internet. **En el auto**, Bluetooth
+  clásico, SÓLO con teléfonos emparejados: no busca aparatos desconocidos.
+- **Todo va firmado** con una llave que sale del código (HMAC-SHA256): lo que
+  no trae esa firma, lo viejo (más de 10 minutos) y lo repetido no se lee. El
+  código no viaja nunca por la red.
+- **La puerta local** (`EnlaceProveedor`): la app de la Hilux, en el mismo
+  teléfono, le pasa a la Pizarra el viaje en vivo cada 2 s («🚙 82 km/h · 2.100
+  RPM · 5.ª · 34,2 km», una notificación quieta) y lo que pasa (empezó, terminó,
+  una línea fuera de lo normal: una notificación que suena). Sólo la atiende
+  esa app, por su nombre Y por la huella de su firma, y **nunca deja pasar una
+  coordenada**: la posición de la camioneta no viaja por acá.
+- **Cupo**: cero. No toca la base ni internet.
+
 ## Si falla en el teléfono (pizarra-3)
 
 pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro se trababa. El
@@ -513,5 +542,8 @@ crear una tarea que alguien borró.
 | `Imagenes.kt` | achicar y subir la captura a Cloudinary (preset sin firma, como el sitio) |
 | `Sirena.kt` | la alarma sonando: servicio en primer plano, sonido de alarma en bucle, Apagar |
 | `Bodega.kt` | leer las notificaciones de Airbnb y subirlas a la bodega, y el latido |
+| `Enlace.kt` | el enlace cerca: el código, la firma y leer con desconfianza. Sin Android ni red |
+| `EnlaceServicio.kt` | el enlace escuchando y mandando por wi-fi (NSD) y Bluetooth, y las notificaciones de lo que llega |
+| `EnlaceProveedor.kt` | la puerta local: sólo la app de la Hilux, por paquete y firma |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |

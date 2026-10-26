@@ -151,7 +151,7 @@ class MainActivity : Activity() {
         when {
             !nube.conSesion -> pintarEntrada()
             nube.esTiempos -> { pintarAvisos(); pintarEleccion() }
-            else -> { pintarAvisos(); pintarCuenta() }
+            else -> { pintarAvisos(); pintarEnlace(); pintarCuenta() }
         }
     }
 
@@ -500,6 +500,7 @@ class MainActivity : Activity() {
         pintarBodega()
         pintarCasaVerde()
         pintarLuces()
+        pintarEnlace()
         raiz.addView(texto("Entraste como ${nube.mail ?: "—"} · $SELLO", 12f, "#6F757B"))
         raiz.addView(boton("🩺 Mandar diagnóstico a Claude") { mandarDiagnostico() })
         raiz.addView(boton("Salir") {
@@ -510,6 +511,58 @@ class MainActivity : Activity() {
         })
         listaVista = lista
         cargar()
+    }
+
+    /* ── pizarra-70: el enlace CERCA, sin datos (Enlace.kt, general:C4) ──
+       Dos Pizarras con el mismo código se hablan por el wi-fi de la casa o por
+       Bluetooth en el auto, sin internet. El resultado se dice AL LADO. */
+    private fun pintarEnlace() {
+        raiz.addView(subtitulo("📡 Enlace cerca (sin datos)"))
+        raiz.addView(texto("Para que dos Pizarras cercanas se avisen sin internet: en la casa por el mismo wi-fi, en el auto por Bluetooth. Prendelo en las dos y escribí en una el código de la otra. Para el auto, emparejá los dos teléfonos UNA vez en los ajustes de Bluetooth de Android. Si el teléfono es el de la Hilux, la app de la camioneta le pasa a esta Pizarra el viaje en vivo y lo que pase, y ella lo manda a la otra. Conviene dejarle a Pizarra la batería «sin restricciones».", 13f, "#9AA0A6"))
+        val dice = texto("", 14f, "#E8D3A2")
+        fun estado() { dice.text = if (EnlaceAjustes.prendido(this)) "Estado: ${EnlaceServicio.estado}" else "Apagado." }
+        val prender = CheckBox(this).apply {
+            text = "Prender el enlace en este teléfono"
+            textSize = 15f
+            setTextColor(Color.parseColor("#F2F2F2"))
+            isChecked = EnlaceAjustes.prendido(this@MainActivity)
+            setOnCheckedChangeListener { _, si ->
+                EnlaceAjustes.prender(this@MainActivity, si)
+                Bitacora.anotar(this@MainActivity, "enlace: ${if (si) "prendido" else "apagado"}")
+                if (si) { permisosEnlace(); EnlaceServicio.arrancar(this@MainActivity) } else EnlaceServicio.detener(this@MainActivity)
+                estado()
+            }
+        }
+        raiz.addView(prender)
+        raiz.addView(texto("El código de este teléfono: ${codigoParaLeer(EnlaceAjustes.codigo(this))}", 15f, "#F2F2F2"))
+        val otro = campo("Código de la otra Pizarra", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
+        raiz.addView(otro)
+        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fila.addView(boton("Usar ese código") {
+            if (!EnlaceAjustes.usarCodigo(this, otro.text.toString())) { dice.text = "Eso no es un código: son 10 letras y números, como ABCDE-FGHJK."; return@boton }
+            Bitacora.anotar(this, "enlace: usa el código de otra Pizarra")
+            if (EnlaceAjustes.prendido(this)) { EnlaceServicio.detener(this); EnlaceServicio.arrancar(this) }
+            pintar()
+        })
+        fila.addView(boton("Probar") {
+            if (!EnlaceAjustes.prendido(this)) { dice.text = "Primero prendé el enlace."; return@boton }
+            EnlaceServicio.enviar(this, org.json.JSONObject().put("v", VERSION_ENLACE).put("app", "pizarra").put("tipo", "prueba")
+                .put("texto", "Prueba del enlace").put("t", System.currentTimeMillis()).put("de", nombreDelTelefono(this)))
+            dice.text = "Mandé una prueba. En la otra Pizarra tiene que aparecer un aviso. Estado: ${EnlaceServicio.estado}"
+        })
+        raiz.addView(fila)
+        raiz.addView(dice)
+        estado()
+    }
+
+    /** Bluetooth (Android 12+) y notificaciones: sin el primero el auto no conecta; sin el segundo no se ve nada. */
+    private fun permisosEnlace() {
+        val faltan = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= 31 && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+            faltan.add(Manifest.permission.BLUETOOTH_CONNECT)
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+            faltan.add(Manifest.permission.POST_NOTIFICATIONS)
+        if (faltan.isNotEmpty()) requestPermissions(faltan.toTypedArray(), 43)
     }
 
     /* ── pizarra-9: los mensajes de Airbnb a la bodega (Bodega.kt) ──

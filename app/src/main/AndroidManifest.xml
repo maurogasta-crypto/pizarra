@@ -23,6 +23,20 @@
     <!-- pizarra-6: la sirena es un servicio en primer plano que reproduce el sonido de alarma -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- pizarra-70: el enlace CERCA, sin datos (Enlace.kt): el wi-fi de la casa (NSD) y el
+         Bluetooth del auto, sólo con teléfonos emparejados. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+
+    <!-- pizarra-70: para ver la firma de la app de la Hilux (EnlaceProveedor). -->
+    <queries>
+        <package android:name="uy.gasta.sitd_hilux" />
+    </queries>
 
 
     <application
@@ -293,5 +307,17 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+        <!-- pizarra-70: el enlace cerca: escucha siempre, con su notificación fija. -->
+        <service
+            android:name=".EnlaceServicio"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- pizarra-70: la puerta local; sólo atiende a la app de la Hilux, por paquete y firma. -->
+        <provider
+            android:name=".EnlaceProveedor"
+            android:authorities="com.maurogasta.pizarra.enlace"
+            android:exported="true" />
+
     </application>
 </manifest>

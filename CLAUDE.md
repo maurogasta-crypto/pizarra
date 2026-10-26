@@ -452,6 +452,20 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   su resultado al lado de su botón, no con `decir()`. **Si cambian los alias de `TUYA_LUCES` o la forma del
   registro en `luces.html`, cambia acá en la misma tanda** (`LUCES_WIDGET`,
   `cuerpoRegistroLuz`).
+- **El enlace CERCA, sin datos** (pizarra-70, `Enlace.kt`, `general:C4`,
+  26-oct-2026, Mauro: «que se pueda utilizar sin consumir datos… dentro del
+  mismo auto o dentro de la misma casa, y que pueda despertar al teléfono»).
+  Dos Pizarras con el mismo código (diez letras, se escribe una vez) se hablan
+  por el wi-fi de la casa (NSD + TCP directo) o por Bluetooth en el auto (sólo
+  emparejados). **Sin biblioteca nueva**: todo viene con Android. Cada renglón
+  va firmado (HMAC con una llave que sale del código); lo viejo y lo repetido
+  no se lee. `EnlaceServicio` escucha siempre si está prendido (primer plano,
+  `connectedDevice`) y vuelve al prender el teléfono. **La puerta local**
+  (`EnlaceProveedor`) atiende SÓLO a la app de la Hilux, por paquete y por la
+  huella de su firma (`HUELLA_HILUX`, la de `empaquetado` de `proyectos/hilux`):
+  **si la Hilux cambia de clave, cambia acá en la misma tanda.** Lo que pasa
+  se lee con desconfianza (`mensajeDeApp`) y **nunca lleva una coordenada**.
+  El texto de lo que llega no va a la bitácora. Cupo: cero.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 
