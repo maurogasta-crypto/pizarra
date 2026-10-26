@@ -466,6 +466,21 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   **si la Hilux cambia de clave, cambia acá en la misma tanda.** Lo que pasa
   se lee con desconfianza (`mensajeDeApp`) y **nunca lleva una coordenada**.
   El texto de lo que llega no va a la bitácora. Cupo: cero.
+  **Desde pizarra-71, el handy cerca y el enlace lejos** (`general:C4` pasos 3
+  y 4). **La radio** (`Radio.kt`, «📻 Handy cerca»): mientras el botón está
+  apretado la voz sale EN VIVO por el mismo enlace (PCM 8 kHz en trozos de
+  100 ms, tipo «voz», firmados como todo) y suena en la otra Pizarra; uno por
+  vez, no suena en silencio ni en una llamada, y **no se graba en ningún
+  lado** (por eso Claude no la escucha: eso es la charla). Ninguna otra app
+  puede mandar voz por la puerta local (`TIPOS_DE_APP`). **Lejos**
+  (`EnlaceLejos.kt`): sin nadie cerca y con cuenta de Tiempos, un evento va a
+  `enlace/{par}/cosas/e-<t>` de Tiempos (reglas v21, `CAMPOS_ENLACE`; el banco
+  la compara si `tiempos` está al lado) y despierta con «todo»; el vivo sube
+  cada 10 s SÓLO mientras alguien tiene abierta «🚙 En vivo» (`mira`). `par`
+  es un resumen del código, nunca el código. **No hay canal directo WebRTC, a
+  propósito**: la base anda siempre que haya internet y cabe en el cupo; el
+  directo queda para si 10 s no alcanzan. Cupo para 10 personas: menos de
+  10.000 lecturas y escrituras por día (el detalle, arriba de `EnlaceLejos.kt`).
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

@@ -207,6 +207,36 @@ class Nube(contexto: Context) {
 
     fun cortarLlamada(id: String, estado: String) { deTiempos(); commit(cuerpoCortar(BASE_DOCS, id, estado)); avisarCambio("llamadas") }
 
+    // ─── pizarra-71: el enlace lejos (EnlaceLejos.kt, reglas v21) ───
+    fun enlaceEscribir(par: String, o: JSONObject) {
+        val yo = deTiempos()
+        commit(cuerpoEnlace(BASE_DOCS, par, yo, o) ?: throw ErrorNube("Ese mensaje no va por la base."))
+    }
+
+    fun enlaceNuevos(par: String, desde: Long): List<JSONObject> {
+        deTiempos()
+        return enlaceDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS/$COLECCION_ENLACE/$par:runQuery",
+            consultaEnlace(desde).toString(), "application/json", token())))
+    }
+
+    fun enlaceLeer(par: String, id: String): JSONObject? {
+        deTiempos()
+        val r = JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:batchGet",
+            JSONObject().put("documents", JSONArray().put("$BASE_DOCS/$COLECCION_ENLACE/$par/$SUBCOLECCION_ENLACE/$id")).toString(), "application/json", token()))
+        return r.optJSONObject(0)?.optJSONObject("found")?.let { enlaceDeDoc(it) }
+    }
+
+    /** Lo mío de antes de [antes] (la regla deja borrar sólo lo propio). */
+    fun enlaceBorrarViejos(par: String, antes: Long) {
+        val yo = deTiempos()
+        val viejos = enlaceDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS/$COLECCION_ENLACE/$par:runQuery",
+            consultaEnlace(0, antes).toString(), "application/json", token()))).filter { it.optString("uid") == yo }
+        if (viejos.isEmpty()) return
+        commit(JSONObject().put("writes", JSONArray().apply {
+            viejos.forEach { put(JSONObject().put("delete", "$BASE_DOCS/$COLECCION_ENLACE/$par/$SUBCOLECCION_ENLACE/${it.optString("id")}")) }
+        }))
+    }
+
     /** Los servidores de conexión, de la función `hielo` (el TURN tiene clave: no va en la app). */
     fun hielo(): String = pedir(URL_HIELO, JSONObject().put("base", sitio.id).toString(), "application/json", token())
 

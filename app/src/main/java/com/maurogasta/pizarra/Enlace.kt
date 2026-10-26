@@ -7,7 +7,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Enlace.kt — El enlace CERCA entre Pizarras, sin datos. Sello: pizarra-70
+// Enlace.kt — El enlace CERCA entre Pizarras, sin datos. Sello: pizarra-71
 //
 // Mauro, 26-oct-2026 (general:C4): «me interesa que se pueda utilizar sin
 // consumir datos, para que ande offline en el caso de tener dos dispositivos
@@ -98,6 +98,7 @@ fun leerRenglon(llave: ByteArray, renglon: String, ahora: Long, ultimoDe: Mutabl
     if (!MessageDigest.isEqual(firma.toByteArray(), firmar(llave, json).toByteArray())) return null
     val o = try { JSONObject(json) } catch (e: Throwable) { return null }
     if (o.optInt("v") != VERSION_ENLACE) return null
+    if (o.optString("tipo") !in TIPOS_ENLACE) return null
     val t = o.optLong("t", 0L)
     if (t <= 0L || kotlin.math.abs(ahora - t) > VENTANA_MS) return null
     val de = o.optString("de").take(60)
@@ -107,8 +108,10 @@ fun leerRenglon(llave: ByteArray, renglon: String, ahora: Long, ultimoDe: Mutabl
     return o
 }
 
-/** Los tipos que hay. Lo demás no se manda ni se lee. */
-val TIPOS_ENLACE = setOf("vivo", "evento", "prueba")
+/** Los tipos que hay. Lo demás no se manda ni se lee. «voz» es el handy cerca (pizarra-71, Radio.kt). */
+val TIPOS_ENLACE = setOf("vivo", "evento", "prueba", "voz")
+/** Lo que puede mandar otra app por la puerta local: la voz, no (es de la Pizarra). */
+val TIPOS_DE_APP = setOf("vivo", "evento", "prueba")
 
 /**
  * Lo que manda la app de la Hilux, leído con desconfianza: sólo `tipo` conocido,
@@ -119,7 +122,7 @@ fun mensajeDeApp(app: String, json: String, de: String, ahora: Long): JSONObject
     if (json.length > LARGO_MAXIMO) return null
     val o = try { JSONObject(json) } catch (e: Throwable) { return null }
     val tipo = o.optString("tipo")
-    if (tipo !in TIPOS_ENLACE) return null
+    if (tipo !in TIPOS_DE_APP) return null
     val salida = JSONObject().put("v", VERSION_ENLACE).put("app", app).put("tipo", tipo).put("t", ahora).put("de", de.take(60))
     for (k in o.keys()) {
         if (k in setOf("v", "app", "tipo", "t", "de") || k.lowercase() in setOf("lat", "lon", "latitud", "longitud", "posicion")) continue

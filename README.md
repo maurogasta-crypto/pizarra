@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-70` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-71` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -433,7 +433,7 @@ mira.
   COMENTADA», no copia nada y la marca respondida en Casa Verde; si sólo la
   elegiste antes en este teléfono, dice el día.
 
-## 📡 El enlace cerca, sin datos (pizarra-70, `general:C4`)
+## 📡 El enlace entre Pizarras: cerca sin datos, y lejos (pizarra-70 y 71, `general:C4`)
 
 Dos Pizarras cercanas se avisan **sin internet**: en la casa por el mismo
 wi-fi, en el auto por Bluetooth. Mauro, 26-oct-2026: «que se pueda utilizar
@@ -460,7 +460,19 @@ pueda despertar al teléfono».
   una línea fuera de lo normal: una notificación que suena). Sólo la atiende
   esa app, por su nombre Y por la huella de su firma, y **nunca deja pasar una
   coordenada**: la posición de la camioneta no viaja por acá.
-- **Cupo**: cero. No toca la base ni internet.
+- **Cupo**: cero cerca. No toca la base ni internet.
+- **📻 Handy cerca** (pizarra-71, `Radio.kt`): con el enlace conectado, se
+  mantiene apretado el botón y la voz sale en vivo en la otra Pizarra, por el
+  wi-fi de la casa o el Bluetooth del auto, sin datos. Uno por vez, como una
+  radio; no se graba. Se abre desde Ajustes, desde la notificación fija del
+  enlace («📻 Hablar») o tocando el aviso «Te habla…». En la otra no suena si
+  está en silencio, en una llamada o si apagó «Escuchar el handy».
+- **Lejos, por internet** (pizarra-71, `EnlaceLejos.kt`): si no hay nadie
+  cerca y la Pizarra entró con la cuenta de Tiempos, los avisos de la Hilux
+  van por la base de Tiempos (`enlace/`, reglas v21) y suenan igual en la
+  otra. **«🚙 En vivo»** muestra el viaje mientras está abierta: cerca, cada
+  2 s; lejos, cada 10 s (sólo mientras alguien la mira se sube algo). Hay que
+  publicar las reglas v21 de Tiempos.
 
 ## Si falla en el teléfono (pizarra-3)
 
@@ -545,5 +557,7 @@ crear una tarea que alguien borró.
 | `Enlace.kt` | el enlace cerca: el código, la firma y leer con desconfianza. Sin Android ni red |
 | `EnlaceServicio.kt` | el enlace escuchando y mandando por wi-fi (NSD) y Bluetooth, y las notificaciones de lo que llega |
 | `EnlaceProveedor.kt` | la puerta local: sólo la app de la Hilux, por paquete y firma |
+| `EnlaceLejos.kt` | el enlace por internet, por la base de Tiempos: los eventos, y el vivo mientras alguien mira |
+| `Radio.kt` | el handy cerca en vivo, y las pantallas «📻 Handy cerca» y «🚙 En vivo» |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |

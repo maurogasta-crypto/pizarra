@@ -30,5 +30,6 @@ object Despertar {
         try { PizarraWidget.actualizarDesdeLaRed(app, null, conLuces = false) } catch (e: Throwable) { }
         try { AgendaWidget.actualizar(app, null) } catch (e: Throwable) { }
         try { Alarmas.sincronizar(app) } catch (e: Throwable) { }
+        try { EnlaceLejos.ponerAlDia(app) } catch (e: Throwable) { }   // pizarra-71: lo que dejó la otra Pizarra por internet
     }
 }

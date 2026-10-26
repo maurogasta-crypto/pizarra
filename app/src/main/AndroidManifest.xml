@@ -313,6 +313,21 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
+        <!-- pizarra-71: el handy cerca (Radio.kt) y lo que manda el detector, cerca o lejos. -->
+        <activity
+            android:name=".RadioActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" />
+
+        <activity
+            android:name=".EnVivoActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" />
+
         <!-- pizarra-70: la puerta local; sólo atiende a la app de la Hilux, por paquete y firma. -->
         <provider
             android:name=".EnlaceProveedor"

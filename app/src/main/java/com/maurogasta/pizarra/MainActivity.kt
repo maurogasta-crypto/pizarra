@@ -518,7 +518,7 @@ class MainActivity : Activity() {
        Bluetooth en el auto, sin internet. El resultado se dice AL LADO. */
     private fun pintarEnlace() {
         raiz.addView(subtitulo("📡 Enlace cerca (sin datos)"))
-        raiz.addView(texto("Para que dos Pizarras cercanas se avisen sin internet: en la casa por el mismo wi-fi, en el auto por Bluetooth. Prendelo en las dos y escribí en una el código de la otra. Para el auto, emparejá los dos teléfonos UNA vez en los ajustes de Bluetooth de Android. Si el teléfono es el de la Hilux, la app de la camioneta le pasa a esta Pizarra el viaje en vivo y lo que pase, y ella lo manda a la otra. Conviene dejarle a Pizarra la batería «sin restricciones».", 13f, "#9AA0A6"))
+        raiz.addView(texto("Para que dos Pizarras se avisen y se hablen: en la casa por el mismo wi-fi y en el auto por Bluetooth, sin datos; lejos, por internet (con la cuenta de Tiempos). Prendelo en las dos y escribí en una el código de la otra. Para el auto, emparejá los dos teléfonos UNA vez en los ajustes de Bluetooth de Android. Si el teléfono es el de la Hilux, la app de la camioneta le pasa a esta Pizarra el viaje en vivo y lo que pase, y ella lo manda a la otra. Conviene dejarle a Pizarra la batería «sin restricciones».", 13f, "#9AA0A6"))
         val dice = texto("", 14f, "#E8D3A2")
         fun estado() { dice.text = if (EnlaceAjustes.prendido(this)) "Estado: ${EnlaceServicio.estado}" else "Apagado." }
         val prender = CheckBox(this).apply {
@@ -551,6 +551,11 @@ class MainActivity : Activity() {
             dice.text = "Mandé una prueba. En la otra Pizarra tiene que aparecer un aviso. Estado: ${EnlaceServicio.estado}"
         })
         raiz.addView(fila)
+        // pizarra-71: la radio (cerca, en vivo) y lo que manda el detector (cerca o por internet).
+        val fila2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fila2.addView(boton("📻 Handy cerca") { startActivity(Intent(this, RadioActivity::class.java)) })
+        fila2.addView(boton("🚙 En vivo") { startActivity(Intent(this, EnVivoActivity::class.java)) })
+        raiz.addView(fila2)
         raiz.addView(dice)
         estado()
     }
