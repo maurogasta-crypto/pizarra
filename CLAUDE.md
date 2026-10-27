@@ -490,6 +490,21 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   prueba», «📻 la escuchó» o «no sonó: tiene el teléfono en silencio o
   vibrador»), el que no suena avisa por qué, y si las dos Pizarras están
   conectadas con **códigos distintos** el estado lo dice (`esDeOtroCodigo`).
+- **«Compartir → Mandar a otro teléfono»** (pizarra-73, `Compartir.kt`,
+  `general:C5`, 27-oct-2026, Mauro: «si estoy ante una imagen o un archivo… y
+  toco compartir, quiero que aparezca la pizarra para enviarlo a alguno de los
+  otros teléfonos de forma directa»; eligió esto y no un «drive» propio).
+  `EnviarActivity` acepta cualquier cosa (`*/*`, uno o varios) y ofrece: el
+  teléfono conectado CERCA (el archivo entero por el enlace, en trozos firmados
+  de 2.400 bytes, tipo «archivo», hasta 200 MB, sin datos ni base), cada
+  conversación de la charla y «Todos» (por internet, con `Archivos.mandar`:
+  hasta 6 MB, la foto achicada, se borra a los 7 días). Un texto o link va
+  siempre por la charla. Lo que llega cerca se arma en la caché
+  (`RecepcionCerca`: un trozo perdido descarta el archivo entero), avisa,
+  se abre por `Entrega` y trae «Guardar en Descargas» (`GuardarReceptor`,
+  Android 10+, sin permisos). Otra app no puede mandar archivos por la puerta
+  local. **Sin regla nueva**, cupo cero cerca. «Agendar en Tiempos» sigue
+  igual, al lado. La bitácora no lleva nombres de archivo.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

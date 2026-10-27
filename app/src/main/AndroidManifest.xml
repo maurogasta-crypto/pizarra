@@ -313,6 +313,31 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
+        <!-- pizarra-73: «Compartir → Mandar a otro teléfono» desde cualquier app (Compartir.kt):
+             cerca por el enlace, sin datos; lejos por la charla. -->
+        <activity
+            android:name=".EnviarActivity"
+            android:exported="true"
+            android:label="Mandar a otro teléfono"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">
+            <intent-filter android:label="Mandar a otro teléfono">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter android:label="Mandar a otro teléfono">
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".GuardarReceptor"
+            android:exported="false" />
+
         <!-- pizarra-71: el handy cerca (Radio.kt) y lo que manda el detector, cerca o lejos. -->
         <activity
             android:name=".RadioActivity"

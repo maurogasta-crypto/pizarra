@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-72` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-73` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -479,6 +479,23 @@ pueda despertar al teléfono».
   están conectadas con códigos distintos, el estado lo dice. **Las dos tienen
   que MOSTRAR el mismo código**: se escribe el de una en la otra, en una sola.
 
+## 📤 Mandar cualquier cosa a otro teléfono (pizarra-73, `general:C5`)
+
+Desde cualquier app: **Compartir → «Mandar a otro teléfono»** (la Pizarra).
+Una foto, un video, un PDF, varios a la vez, o un texto o un link.
+
+- **📡 Cerca** (si el enlace está conectado con el otro teléfono): el archivo
+  va entero por el wi-fi de la casa o el Bluetooth, sin datos, hasta 200 MB, y
+  la foto sin achicar. Del otro lado suena un aviso: tocarlo lo abre, y
+  «Guardar en Descargas» lo deja en el teléfono. Al terminar, el que mandó ve
+  «✔ … llegó».
+- **Por internet** (a una persona, a un teléfono o a todos): va por la
+  charla, como el 📎: hasta unos 6 MB, la foto achicada, y se borra a los 7
+  días.
+- Un texto o un link va siempre por la charla.
+
+«Agendar en Tiempos» sigue en el mismo menú, para la IA y los gastos.
+
 ## Si falla en el teléfono (pizarra-3)
 
 pizarra-2 pasó el banco y compiló, y en el teléfono de Mauro se trababa. El
@@ -563,6 +580,7 @@ crear una tarea que alguien borró.
 | `EnlaceServicio.kt` | el enlace escuchando y mandando por wi-fi (NSD) y Bluetooth, y las notificaciones de lo que llega |
 | `EnlaceProveedor.kt` | la puerta local: sólo la app de la Hilux, por paquete y firma |
 | `EnlaceLejos.kt` | el enlace por internet, por la base de Tiempos: los eventos, y el vivo mientras alguien mira |
+| `Compartir.kt` | «Compartir → Mandar a otro teléfono»: cerca por el enlace, lejos por la charla, y lo que llega cerca |
 | `Radio.kt` | el handy cerca en vivo, y las pantallas «📻 Handy cerca» y «🚙 En vivo» |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |

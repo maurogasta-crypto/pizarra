@@ -7,7 +7,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Enlace.kt — El enlace CERCA entre Pizarras, sin datos. Sello: pizarra-72
+// Enlace.kt — El enlace CERCA entre Pizarras, sin datos. Sello: pizarra-73
 //
 // Mauro, 26-oct-2026 (general:C4): «me interesa que se pueda utilizar sin
 // consumir datos, para que ande offline en el caso de tener dos dispositivos
@@ -133,6 +133,7 @@ fun textoDeAcuse(o: JSONObject): String {
     return when (o.optString("que")) {
         "prueba" -> "✔ $quien recibió la prueba"
         "voz" -> "📻 $quien: ${o.optString("como").ifBlank { "llegó" }}"
+        "archivo" -> "✔ $quien: ${o.optString("como").ifBlank { "llegó" }}"
         else -> "✔ $quien: ${o.optString("como")}"
     }
 }
@@ -141,7 +142,7 @@ fun textoDeAcuse(o: JSONObject): String {
  * Los tipos que hay. Lo demás no se manda ni se lee. «voz» es el handy cerca (pizarra-71, Radio.kt);
  * «recibido» es el acuse que contesta la otra Pizarra a una prueba o a una voz (pizarra-72).
  */
-val TIPOS_ENLACE = setOf("vivo", "evento", "prueba", "voz", "recibido")
+val TIPOS_ENLACE = setOf("vivo", "evento", "prueba", "voz", "recibido", "archivo")
 /** Lo que puede mandar otra app por la puerta local: la voz, no (es de la Pizarra). */
 val TIPOS_DE_APP = setOf("vivo", "evento", "prueba")
 

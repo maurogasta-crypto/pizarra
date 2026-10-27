@@ -35,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EnlaceServicio.kt — La escucha y el envío del enlace cerca. Sello: pizarra-72
+// EnlaceServicio.kt — La escucha y el envío del enlace cerca. Sello: pizarra-73
 // Ver Enlace.kt: qué es, por qué así y qué viaja.
 //
 // Mientras el enlace está prendido, este servicio:
@@ -101,6 +101,16 @@ class EnlaceServicio : Service() {
         /** pizarra-72: lo último que contestó la otra Pizarra («✔ recibió la prueba», «📻 la escuchó»). */
         @Volatile var ultimoAcuse: String? = null; private set
         @Volatile var ultimoAcuseEn = 0L; private set
+
+        /** pizarra-73: el teléfono que está conectado cerca ahora (lo que dice su `de`), o null. */
+        fun cercano(): String? = activo?.let { s -> if (s.conexiones.isEmpty()) null else s.ultimoDeCerca }
+
+        /**
+         * pizarra-73: manda [o] cerca y ESPERA a que salga, en el mismo orden que todo lo demás.
+         * Es para un archivo grande: trozo por trozo, sin llenar la memoria con una cola de miles.
+         * `false` si no hay nadie cerca o se cortó.
+         */
+        fun mandarCercaYEsperar(o: JSONObject): Boolean = activo?.mandarYEsperar(o) ?: false
 
         /** El último «vivo» que llegó cerca (para «🚙 En vivo»). */
         @Volatile var ultimoVivo: JSONObject? = null; private set
@@ -235,12 +245,15 @@ class EnlaceServicio : Service() {
                     continue
                 }
                 if (estado.contains("OTRO código")) estado = "conectado por ${c.por} con ${c.quien}"
+                ultimoDeCerca = o.optString("de").ifBlank { null }
                 when (o.optString("tipo")) {
                     "voz" -> {
                         Altavoz.tocar(this, o)                // en este hilo: el sonido no espera
                         if (o.optBoolean("fin")) mandar(acuse(nombreDelTelefono(this), "voz", Altavoz.comoFue.ifBlank { "llegó" }))
                     }
                     "recibido" -> { ultimoAcuse = textoDeAcuse(o); ultimoAcuseEn = System.currentTimeMillis() }
+                    // pizarra-73: un archivo que alguien compartió, en trozos; al completarse avisa y contesta.
+                    "archivo" -> RecepcionCerca.recibir(this, o)?.let { nombre -> mandar(acuse(nombreDelTelefono(this), "archivo", "llegó $nombre")) }
                     else -> {
                         if (o.optString("tipo") == "vivo") ultimoVivo = o
                         if (o.optString("tipo") == "prueba") mandar(acuse(nombreDelTelefono(this), "prueba", "llegó"))
@@ -261,6 +274,8 @@ class EnlaceServicio : Service() {
     /* ── Mandar ───────────────────────────────────────────────────────────── */
 
     @Volatile private var ultimoT = 0L
+    /** pizarra-73: quién es el de cerca, por el `de` de lo último que llegó firmado. */
+    @Volatile var ultimoDeCerca: String? = null; private set
     /**
      * pizarra-72: TODO lo que sale, en orden y por un solo hilo. Hasta pizarra-71 cada mensaje salía
      * en su hilo, la voz (diez trozos por segundo) llegaba desordenada y la otra Pizarra tiraba
@@ -287,6 +302,21 @@ class EnlaceServicio : Service() {
                 for (c in conexiones) try { synchronized(c) { c.salida.write(renglon); c.salida.flush() } } catch (e: Throwable) { cerrar(c) }
             }
         } catch (e: Throwable) { }   // apagándose: lo que no salió, no sale
+    }
+
+    fun mandarYEsperar(o: JSONObject): Boolean {
+        if (conexiones.isEmpty()) return false
+        if (!o.has("de")) o.put("de", nombreDelTelefono(this))
+        if (!o.has("v")) o.put("v", VERSION_ENLACE)
+        synchronized(this) { ultimoT = maxOf(System.currentTimeMillis(), ultimoT + 1); o.put("t", ultimoT) }
+        val renglon = renglonFirmado(EnlaceAjustes.llave(this), o.toString()).toByteArray(Charsets.UTF_8)
+        return try {
+            salida.submit<Boolean> {
+                var salio = false
+                for (c in conexiones) try { synchronized(c) { c.salida.write(renglon); c.salida.flush() }; salio = true } catch (e: Throwable) { cerrar(c) }
+                salio
+            }.get()
+        } catch (e: Throwable) { false }
     }
 
     /** La otra Pizarra: primero en la red local; si en 8 s no apareció, entre los emparejados. */
