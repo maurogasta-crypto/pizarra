@@ -534,12 +534,14 @@ class MainActivity : Activity() {
             }
         }
         raiz.addView(prender)
-        raiz.addView(texto("El código de este teléfono: ${codigoParaLeer(EnlaceAjustes.codigo(this))}", 15f, "#F2F2F2"))
+        raiz.addView(texto("El código del enlace en este teléfono: ${codigoParaLeer(EnlaceAjustes.codigo(this))}", 15f, "#F2F2F2"))
+        // pizarra-72: el 27-oct se escribió el código en las DOS, cruzado, y quedaron con códigos distintos.
+        raiz.addView(texto("Las dos Pizarras tienen que mostrar el MISMO código. Escribí éste en la otra (en una sola: la otra pasa a mostrar éste).", 13f, "#E8D3A2"))
         val otro = campo("Código de la otra Pizarra", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
         raiz.addView(otro)
         val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         fila.addView(boton("Usar ese código") {
-            if (!EnlaceAjustes.usarCodigo(this, otro.text.toString())) { dice.text = "Eso no es un código: son 10 letras y números, como ABCDE-FGHJK."; return@boton }
+            if (!EnlaceAjustes.usarCodigo(this, otro.text.toString())) { dice.text = "Eso no es un código: son 10 letras y números, como el que muestra la otra Pizarra."; return@boton }
             Bitacora.anotar(this, "enlace: usa el código de otra Pizarra")
             if (EnlaceAjustes.prendido(this)) { EnlaceServicio.detener(this); EnlaceServicio.arrancar(this) }
             pintar()
@@ -549,6 +551,12 @@ class MainActivity : Activity() {
             EnlaceServicio.enviar(this, org.json.JSONObject().put("v", VERSION_ENLACE).put("app", "pizarra").put("tipo", "prueba")
                 .put("texto", "Prueba del enlace").put("t", System.currentTimeMillis()).put("de", nombreDelTelefono(this)))
             dice.text = "Mandé una prueba. En la otra Pizarra tiene que aparecer un aviso. Estado: ${EnlaceServicio.estado}"
+            // pizarra-72: la otra contesta; si en 6 s no contestó, se dice por qué puede ser.
+            val desde = System.currentTimeMillis()
+            dice.postDelayed({
+                dice.text = if (EnlaceServicio.ultimoAcuseEn >= desde) EnlaceServicio.ultimoAcuse
+                else "La otra Pizarra no contestó. Estado: ${EnlaceServicio.estado}. Mirá que las dos muestren el mismo código y tengan el enlace prendido."
+            }, 6_000)
         })
         raiz.addView(fila)
         // pizarra-71: la radio (cerca, en vivo) y lo que manda el detector (cerca o por internet).

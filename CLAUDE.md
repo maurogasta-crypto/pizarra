@@ -481,6 +481,15 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   propósito**: la base anda siempre que haya internet y cabe en el cupo; el
   directo queda para si 10 s no alcanzan. Cupo para 10 personas: menos de
   10.000 lecturas y escrituras por día (el detalle, arriba de `EnlaceLejos.kt`).
+  **pizarra-72 arregla la primera prueba en dos teléfonos** (27-oct, Mauro: «no
+  andan los botones de debajo»). La radio transmitía («radio: habló 2 s» en la
+  bitácora) pero cada mensaje salía en SU hilo: la voz llegaba desordenada y la
+  otra Pizarra tiraba todo lo que no avanzaba. **Lo que sale va por UN solo
+  hilo, en orden** (`salida`, el banco lo comprueba). Y lo que fallaba en
+  silencio ahora se dice: la otra contesta un **acuse** («✔ recibió la
+  prueba», «📻 la escuchó» o «no sonó: tiene el teléfono en silencio o
+  vibrador»), el que no suena avisa por qué, y si las dos Pizarras están
+  conectadas con **códigos distintos** el estado lo dice (`esDeOtroCodigo`).
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

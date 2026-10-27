@@ -162,7 +162,7 @@ class EnlaceTest {
         }
         val t = textos(a.window.decorView)
         assertTrue(t.any { it.contains("📡 Enlace cerca") })
-        assertTrue(t.any { it.startsWith("El código de este teléfono: ") && it.contains("-") })
+        assertTrue(t.any { it.startsWith("El código del enlace en este teléfono: ") && it.contains("-") })
         // Probar sin prender no manda nada y lo dice
         botones(a.window.decorView).first { it.text == "Probar" }.performClick()
         shadowOf(Looper.getMainLooper()).idle()

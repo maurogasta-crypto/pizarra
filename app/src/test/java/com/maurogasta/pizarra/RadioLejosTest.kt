@@ -60,6 +60,37 @@ class RadioLejosTest {
         assertFalse(radioPuedeSonar(activado = true, hablandoYo = false, enLlamada = false, enSilencio = true))
     }
 
+    // ── pizarra-72: lo que el 27-oct no se veía ──
+    @Test fun otroCodigo_seReconoce() {
+        val o = JSONObject().put("v", VERSION_ENLACE).put("tipo", "prueba").put("t", 5L).put("de", "Note 9").toString()
+        val deOtro = renglonFirmado(llaveDe("ZZZZZZZZZZ"), o)
+        assertTrue(esDeOtroCodigo(llave, deOtro))
+        assertFalse("con el mismo código no", esDeOtroCodigo(llave, renglonFirmado(llave, o)))
+        assertFalse("basura no es otro código", esDeOtroCodigo(llave, "hola"))
+    }
+
+    @Test fun elAcuse_viajaYSeLee() {
+        val a = acuse("Redmi Note 9", "voz", "no sonó: tiene el teléfono en silencio o vibrador").put("t", 9L).put("de", "Redmi Note 9")
+        val leido = leerRenglon(llave, renglonFirmado(llave, a.toString()), 9L, mutableMapOf())!!
+        assertEquals("📻 Redmi Note 9: no sonó: tiene el teléfono en silencio o vibrador", textoDeAcuse(leido))
+        assertEquals("✔ Redmi 15 recibió la prueba", textoDeAcuse(acuse("Redmi 15", "prueba", "llegó")))
+        assertNull("otra app no manda acuses", mensajeDeApp("hilux", """{"tipo":"recibido"}""", "x", 1L))
+    }
+
+    @Test fun porQueNoSonó_enPalabras() {
+        assertNull(porQueNoSuena(activado = true, hablandoYo = false, enLlamada = false, enSilencio = false))
+        assertEquals("tiene el teléfono en silencio o vibrador", porQueNoSuena(activado = true, hablandoYo = false, enLlamada = false, enSilencio = true))
+        assertEquals("tiene el handy apagado", porQueNoSuena(activado = false, hablandoYo = false, enLlamada = false, enSilencio = true))
+    }
+
+    @Test fun loQueSale_vaEnOrden_porUnSoloHilo() {
+        // pizarra-71 mandaba cada mensaje en su hilo: la voz llegaba desordenada y la otra la tiraba.
+        val f = listOf("src/main/java/com/maurogasta/pizarra/EnlaceServicio.kt", "app/src/main/java/com/maurogasta/pizarra/EnlaceServicio.kt")
+            .map { java.io.File(it) }.first { it.exists() }.readText()
+        assertTrue(f.contains("newSingleThreadExecutor()"))
+        assertFalse(f.contains("thread(name = \"enlace-manda\")"))
+    }
+
     // ── El enlace lejos ──
     @Test fun elPar_esUnResumenDelCodigo_nuncaElCodigo() {
         val p = parDe("ABCDEFGHJK")

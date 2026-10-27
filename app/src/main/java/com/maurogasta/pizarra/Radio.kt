@@ -30,7 +30,7 @@ import java.util.Base64
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Radio.kt — El handy EN VIVO por el enlace cerca, sin datos. Sello: pizarra-71
+// Radio.kt — El handy EN VIVO por el enlace cerca, sin datos. Sello: pizarra-72
 //
 // general:C4, paso 3. Mauro, 26-oct-2026: «se activaría también para la
 // comunicación tipo handy», y antes: «que se pueda utilizar sin consumir
@@ -73,7 +73,16 @@ fun pcmDeVoz(o: JSONObject): ByteArray? = try {
 
 /** Si lo que llega puede sonar acá. */
 fun radioPuedeSonar(activado: Boolean, hablandoYo: Boolean, enLlamada: Boolean, enSilencio: Boolean): Boolean =
-    activado && !hablandoYo && !enLlamada && !enSilencio
+    porQueNoSuena(activado, hablandoYo, enLlamada, enSilencio) == null
+
+/** pizarra-72: por qué NO sonó, en palabras (para el acuse y para el aviso de acá), o null si suena. */
+fun porQueNoSuena(activado: Boolean, hablandoYo: Boolean, enLlamada: Boolean, enSilencio: Boolean): String? = when {
+    !activado -> "tiene el handy apagado"
+    hablandoYo -> "estaba hablando"
+    enLlamada -> "estaba en una llamada"
+    enSilencio -> "tiene el teléfono en silencio o vibrador"
+    else -> null
+}
 
 object Radio {
     @Volatile var hablando = false; private set
@@ -126,6 +135,8 @@ object Radio {
 object Altavoz {
     private var pista: AudioTrack? = null
     private var ronda = ""
+    /** Qué pasó con la ronda que está llegando: «la escuchó» o por qué no. Va en el acuse. */
+    @Volatile var comoFue = ""; private set
     private val principal = Handler(Looper.getMainLooper())
     private val apagar = Runnable { callar() }
 
@@ -134,7 +145,17 @@ object Altavoz {
         val am = c.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val enLlamada = am.mode == AudioManager.MODE_IN_CALL || am.mode == AudioManager.MODE_IN_COMMUNICATION
         val enSilencio = am.ringerMode != AudioManager.RINGER_MODE_NORMAL
-        if (!radioPuedeSonar(EnlaceAjustes.radio(c), Radio.hablando, enLlamada, enSilencio)) return
+        val r = o.optString("ronda")
+        val nuevo = r != ronda
+        if (nuevo) ronda = r
+        val porQue = porQueNoSuena(EnlaceAjustes.radio(c), Radio.hablando, enLlamada, enSilencio)
+        if (porQue != null) {
+            // pizarra-72: antes no sonaba y nadie se enteraba. Ahora se avisa acá y se le contesta al que habló.
+            comoFue = "no sonó: $porQue"
+            if (nuevo) avisar(c, o.optString("de"), "no sonó: $porQue")
+            return
+        }
+        comoFue = "la escuchó"
         try {
             if (pista == null) {
                 pista = AudioTrack.Builder()
@@ -145,8 +166,7 @@ object Altavoz {
                     .setBufferSizeInBytes(RADIO_TROZO_BYTES * 8).setTransferMode(AudioTrack.MODE_STREAM).build()
                     .also { it.play() }
             }
-            val r = o.optString("ronda")
-            if (r != ronda) { ronda = r; avisar(c, o.optString("de")) }
+            if (nuevo) avisar(c, o.optString("de"), "Tocá para contestar")
             if (pcm.isNotEmpty()) pista?.write(pcm, 0, pcm.size)
             principal.removeCallbacks(apagar)
             principal.postDelayed(apagar, if (o.optBoolean("fin")) 600L else 2_000L)
@@ -160,13 +180,13 @@ object Altavoz {
     }
 
     /** Una notificación callada: quién habla, y con un toque se contesta. */
-    private fun avisar(c: Context, de: String) {
+    private fun avisar(c: Context, de: String, texto: String) {
         try {
             crearCanales(c)
             val abrir = PendingIntent.getActivity(c, 71, Intent(c, RadioActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE)
             (c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(7072,
                 Notification.Builder(c, CANAL_ENLACE).setSmallIcon(android.R.drawable.stat_sys_speakerphone)
-                    .setContentTitle("📻 Te habla ${de.ifBlank { "la otra Pizarra" }}").setContentText("Tocá para contestar")
+                    .setContentTitle("📻 Te habla ${de.ifBlank { "la otra Pizarra" }}").setContentText(texto)
                     .setAutoCancel(true).setTimeoutAfter(60_000).setContentIntent(abrir).build())
         } catch (e: Throwable) { }
     }
@@ -213,7 +233,12 @@ class RadioActivity : Activity() {
     }
 
     private fun tic() {
-        dice.text = if (Radio.hablando) "🔴 Hablando…" else "Enlace: ${EnlaceServicio.estado}"
+        val acuse = EnlaceServicio.ultimoAcuse.takeIf { System.currentTimeMillis() - EnlaceServicio.ultimoAcuseEn < 20_000L }
+        dice.text = when {
+            Radio.hablando -> "🔴 Hablando…"
+            acuse != null -> "$acuse\nEnlace: ${EnlaceServicio.estado}"
+            else -> "Enlace: ${EnlaceServicio.estado}"
+        }
         reloj.postDelayed({ tic() }, 500)
     }
 

@@ -35,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EnlaceServicio.kt — La escucha y el envío del enlace cerca. Sello: pizarra-71
+// EnlaceServicio.kt — La escucha y el envío del enlace cerca. Sello: pizarra-72
 // Ver Enlace.kt: qué es, por qué así y qué viaja.
 //
 // Mientras el enlace está prendido, este servicio:
@@ -97,6 +97,10 @@ class EnlaceServicio : Service() {
         }
 
         fun detener(c: Context) { c.stopService(Intent(c, EnlaceServicio::class.java)); estado = "apagado" }
+
+        /** pizarra-72: lo último que contestó la otra Pizarra («✔ recibió la prueba», «📻 la escuchó»). */
+        @Volatile var ultimoAcuse: String? = null; private set
+        @Volatile var ultimoAcuseEn = 0L; private set
 
         /** El último «vivo» que llegó cerca (para «🚙 En vivo»). */
         @Volatile var ultimoVivo: JSONObject? = null; private set
@@ -164,6 +168,7 @@ class EnlaceServicio : Service() {
         try { servidorTcp?.close() } catch (e: Throwable) { }
         try { servidorBt?.close() } catch (e: Throwable) { }
         for (c in conexiones) cerrar(c)
+        try { salida.shutdown() } catch (e: Throwable) { }
         try { candado?.release() } catch (e: Throwable) { }
         Bitacora.anotar(this, "enlace: apagado")
         super.onDestroy()
@@ -219,10 +224,28 @@ class EnlaceServicio : Service() {
             val r = BufferedReader(InputStreamReader(c.entrada, Charsets.UTF_8))
             while (vivo) {
                 val renglon = r.readLine() ?: break
-                val o = leerRenglon(EnlaceAjustes.llave(this), renglon, System.currentTimeMillis(), ultimoDe) ?: continue
+                val llave = EnlaceAjustes.llave(this)
+                val o = leerRenglon(llave, renglon, System.currentTimeMillis(), ultimoDe)
+                if (o == null) {
+                    // pizarra-72: conectados pero con distinto código no se entienden; ahora se dice.
+                    if (esDeOtroCodigo(llave, renglon) && !estado.contains("OTRO código")) {
+                        estado = "conectado con ${c.quien}, pero con OTRO código: las dos Pizarras tienen que mostrar el mismo"
+                        Bitacora.anotar(this, "enlace: la otra Pizarra tiene otro código")
+                    }
+                    continue
+                }
+                if (estado.contains("OTRO código")) estado = "conectado por ${c.por} con ${c.quien}"
                 when (o.optString("tipo")) {
-                    "voz" -> Altavoz.tocar(this, o)           // en este hilo: el sonido no espera
-                    else -> { if (o.optString("tipo") == "vivo") ultimoVivo = o; principal.post { AvisosEnlace.mostrar(this, o) } }
+                    "voz" -> {
+                        Altavoz.tocar(this, o)                // en este hilo: el sonido no espera
+                        if (o.optBoolean("fin")) mandar(acuse(nombreDelTelefono(this), "voz", Altavoz.comoFue.ifBlank { "llegó" }))
+                    }
+                    "recibido" -> { ultimoAcuse = textoDeAcuse(o); ultimoAcuseEn = System.currentTimeMillis() }
+                    else -> {
+                        if (o.optString("tipo") == "vivo") ultimoVivo = o
+                        if (o.optString("tipo") == "prueba") mandar(acuse(nombreDelTelefono(this), "prueba", "llegó"))
+                        principal.post { AvisosEnlace.mostrar(this, o) }
+                    }
                 }
             }
         } catch (e: Throwable) { }
@@ -238,6 +261,12 @@ class EnlaceServicio : Service() {
     /* ── Mandar ───────────────────────────────────────────────────────────── */
 
     @Volatile private var ultimoT = 0L
+    /**
+     * pizarra-72: TODO lo que sale, en orden y por un solo hilo. Hasta pizarra-71 cada mensaje salía
+     * en su hilo, la voz (diez trozos por segundo) llegaba desordenada y la otra Pizarra tiraba
+     * todo lo que no avanzaba: la radio transmitía y del otro lado no se oía nada.
+     */
+    private val salida = java.util.concurrent.Executors.newSingleThreadExecutor()
 
     fun mandar(o: JSONObject) {
         if (!o.has("de")) o.put("de", nombreDelTelefono(this))
@@ -253,9 +282,11 @@ class EnlaceServicio : Service() {
             if (!porInternet && tipo in TIPOS_QUE_ESPERAN && pendientes.size < PENDIENTES_MAX) pendientes.add(o)
             buscar(); return
         }
-        thread(name = "enlace-manda") {
-            for (c in conexiones) try { synchronized(c) { c.salida.write(renglon); c.salida.flush() } } catch (e: Throwable) { cerrar(c) }
-        }
+        try {
+            salida.execute {
+                for (c in conexiones) try { synchronized(c) { c.salida.write(renglon); c.salida.flush() } } catch (e: Throwable) { cerrar(c) }
+            }
+        } catch (e: Throwable) { }   // apagándose: lo que no salió, no sale
     }
 
     /** La otra Pizarra: primero en la red local; si en 8 s no apareció, entre los emparejados. */

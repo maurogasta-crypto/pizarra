@@ -7,7 +7,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Enlace.kt — El enlace CERCA entre Pizarras, sin datos. Sello: pizarra-71
+// Enlace.kt — El enlace CERCA entre Pizarras, sin datos. Sello: pizarra-72
 //
 // Mauro, 26-oct-2026 (general:C4): «me interesa que se pueda utilizar sin
 // consumir datos, para que ande offline en el caso de tener dos dispositivos
@@ -108,8 +108,40 @@ fun leerRenglon(llave: ByteArray, renglon: String, ahora: Long, ultimoDe: Mutabl
     return o
 }
 
-/** Los tipos que hay. Lo demás no se manda ni se lee. «voz» es el handy cerca (pizarra-71, Radio.kt). */
-val TIPOS_ENLACE = setOf("vivo", "evento", "prueba", "voz")
+/**
+ * pizarra-72: un renglón que tiene la forma del enlace y la firma de OTRO código. Es lo que pasa
+ * cuando las dos Pizarras no muestran el mismo código: se conectan y no se entienden, en silencio.
+ * Con esto se puede decir en pantalla.
+ */
+fun esDeOtroCodigo(llave: ByteArray, renglon: String): Boolean {
+    val r = renglon.trimEnd('\n', '\r')
+    if (r.length > LARGO_MAXIMO || r.indexOf('\t') != 64) return false
+    val json = r.substring(65)
+    val o = try { JSONObject(json) } catch (e: Throwable) { return false }
+    if (o.optInt("v") != VERSION_ENLACE) return false
+    return !MessageDigest.isEqual(r.substring(0, 64).toByteArray(), firmar(llave, json).toByteArray())
+}
+
+/** El acuse a una prueba o a una voz: quién la recibió y qué pasó («la escuchó», «en silencio»…). */
+fun acuse(de: String, que: String, como: String): JSONObject =
+    JSONObject().put("v", VERSION_ENLACE).put("app", "pizarra").put("tipo", "recibido").put("que", que.take(20))
+        .put("como", como.take(80)).put("quien", de.take(60))
+
+/** Lo que dice la pantalla de quien mandó, al llegar el acuse. */
+fun textoDeAcuse(o: JSONObject): String {
+    val quien = o.optString("quien").ifBlank { o.optString("de") }.ifBlank { "la otra Pizarra" }
+    return when (o.optString("que")) {
+        "prueba" -> "✔ $quien recibió la prueba"
+        "voz" -> "📻 $quien: ${o.optString("como").ifBlank { "llegó" }}"
+        else -> "✔ $quien: ${o.optString("como")}"
+    }
+}
+
+/**
+ * Los tipos que hay. Lo demás no se manda ni se lee. «voz» es el handy cerca (pizarra-71, Radio.kt);
+ * «recibido» es el acuse que contesta la otra Pizarra a una prueba o a una voz (pizarra-72).
+ */
+val TIPOS_ENLACE = setOf("vivo", "evento", "prueba", "voz", "recibido")
 /** Lo que puede mandar otra app por la puerta local: la voz, no (es de la Pizarra). */
 val TIPOS_DE_APP = setOf("vivo", "evento", "prueba")
 

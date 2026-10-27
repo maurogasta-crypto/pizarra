@@ -176,7 +176,7 @@ object EnlaceLejos {
                     n.avisarCambio("todo")
                     Bitacora.anotar(app, "enlace: un $tipo por internet")
                 }
-            } catch (e: Throwable) { Bitacora.anotar(app, "enlace lejos: no subió (${e.javaClass.simpleName})") }
+            } catch (e: Throwable) { Bitacora.anotar(app, "enlace lejos: no subió (${e.message?.take(80) ?: e.javaClass.simpleName})") }
         }
         return true
     }
