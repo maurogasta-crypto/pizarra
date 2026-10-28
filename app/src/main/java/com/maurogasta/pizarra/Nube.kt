@@ -153,6 +153,9 @@ class Nube(contexto: Context) {
         return limpiezaDeRespuesta(r)
     }
 
+    /** pizarra-78: el parte de salud de este aparato (reglas v24 de Tiempos). */
+    fun subirSalud(cuerpo: JSONObject) { deTiempos(); commit(cuerpo) }
+
     /** pizarra-62: un mensaje de VOZ. Primero el audio (`audios/`), después el mensaje que lo nombra. */
     fun mandarAudio(datos: ByteArray, dur: Int, tipo: String, dispositivo: String, para: String = "", handy: Boolean = false): String {
         if (Nube.sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")

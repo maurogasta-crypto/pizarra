@@ -175,6 +175,8 @@ class EnlaceServicio : Service() {
     }
 
     private val conexiones = CopyOnWriteArrayList<Conexion>()
+    /** pizarra-78: por quien habla, su ronda de voz y el trozo que se esperaba (Salud.huecosDeVoz). */
+    private val vozVista = ConcurrentHashMap<String, Pair<String, Int>>()
     private val pendientes = CopyOnWriteArrayList<JSONObject>()
     private val ultimoDe = ConcurrentHashMap<String, Long>()
     private val principal = Handler(Looper.getMainLooper())
@@ -280,6 +282,7 @@ class EnlaceServicio : Service() {
                 val ahora = System.currentTimeMillis()
                 for (c in conexiones) if (estaMuda(c.ultimo, ahora)) {
                     Bitacora.anotar(this, "enlace: se cortó con ${c.de ?: c.quien} (${c.por}, sin latido)")
+                    Salud.contar(this, "enlace.cortesSinLatido")
                     cerrar(c)
                 }
                 if (conexiones.isNotEmpty() && ahora - ultimoLatido >= LATIDO_MS) {
@@ -311,6 +314,7 @@ class EnlaceServicio : Service() {
 
     private fun agregar(c: Conexion) {
         conexiones.add(c)
+        Salud.contar(this, "enlace.conexiones")
         estado = "conectado por ${c.por} con ${c.quien}"
         Bitacora.anotar(this, "enlace: $estado")
         thread(name = "enlace-lee") { leer(c) }
@@ -330,6 +334,7 @@ class EnlaceServicio : Service() {
                 if (o == null) {
                     // pizarra-72: conectados pero con distinto código no se entienden; ahora se dice.
                     if (esDeOtroCodigo(llave, renglon) && !estado.contains("OTRO código")) {
+                        Salud.contar(this, "enlace.otroCodigo")
                         estado = "conectado con ${c.quien}, pero con OTRO código: las dos Pizarras tienen que mostrar el mismo"
                         Bitacora.anotar(this, "enlace: la otra Pizarra tiene otro código")
                     }
@@ -342,10 +347,14 @@ class EnlaceServicio : Service() {
                     "voz" -> {
                         // pizarra-75: la voz de una conversación es sólo para ese teléfono (o esa persona).
                         if (!vozParaMi(o.optString("para"), Nube(this).uid, nombreDelTelefono(this))) continue
+                        // pizarra-78: rondas oídas y trozos perdidos, para el parte de salud.
+                        val (nueva, perdidos) = huecosDeVoz(vozVista, o.optString("de"), o.optString("ronda"), o.optInt("n"))
+                        if (nueva) Salud.contar(this, "voz.rondasOidas")
+                        if (perdidos > 0) Salud.contar(this, "voz.trozosPerdidos", perdidos)
                         Altavoz.tocar(this, o)                // en este hilo: el sonido no espera
                         if (o.optBoolean("fin")) mandar(acuse(nombreDelTelefono(this), "voz", Altavoz.comoFue.ifBlank { "llegó" }))
                     }
-                    "recibido" -> { ultimoAcuse = textoDeAcuse(o); ultimoAcuseEn = System.currentTimeMillis() }
+                    "recibido" -> { ultimoAcuse = textoDeAcuse(o); ultimoAcuseEn = System.currentTimeMillis(); Salud.contar(this, contadorDeAcuse(o)) }
                     // pizarra-73: un archivo que alguien compartió, en trozos; al completarse avisa y contesta.
                     "archivo" -> RecepcionCerca.recibir(this, o)?.let { nombre -> mandar(acuse(nombreDelTelefono(this), "archivo", "llegó $nombre")) }
                     else -> {

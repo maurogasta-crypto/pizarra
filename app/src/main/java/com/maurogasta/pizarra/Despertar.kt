@@ -86,6 +86,8 @@ object Despertar {
         val cuales = partesPeriodicas(ahora, p.getLong("todo", 0L))
         if (cuales.size == PARTES.size) p.edit().putLong("todo", ahora).apply()
         partes(c, cuales)
+        // pizarra-78: el parte de salud, una vez por hora (Salud.kt).
+        kotlin.concurrent.thread(name = "salud") { try { Salud.subir(c.applicationContext) } catch (e: Throwable) { } }
     }
 
     /** Cada parte en su hilo y ninguna tira. Las que se trajeron hace poco esperan su turno, una sola vez. */

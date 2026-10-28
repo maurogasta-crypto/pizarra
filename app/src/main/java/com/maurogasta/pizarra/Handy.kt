@@ -142,12 +142,14 @@ object Handy {
         thread {
             val error = try {
                 val id = Nube(app).mandarAudio(datos, dur, tipo, nombreDelTelefono(app), para, handy)
+                Salud.contar(app, if (handy) "handy.mandadosPorInternet" else "audio.mandados")
                 val p = prefs(app)
                 val mios = JSONObject(p.getString("mios", "{}") ?: "{}").put(id, System.currentTimeMillis())
                 p.edit().putString("mios", mios.toString()).apply()
                 Charla.ponerAlDia(app); null
             } catch (e: Throwable) {
                 Bitacora.anotar(app, "handy: no salió: " + (e.message ?: e.javaClass.simpleName))
+                Salud.contar(app, "audio.noSalieron")
                 val m = e.message ?: "no se pudo"
                 if (m.startsWith("La base no deja")) (if (handy) "Para el handy por internet hay que publicar las reglas v22 de Tiempos." else "Para mandar audios hay que publicar las reglas v18 de Tiempos.") else m
             }
@@ -161,8 +163,16 @@ object Handy {
         val sonar = nuevos.filter { debeSonarSolo(it, yo, tel, System.currentTimeMillis(), soloActivado(c)) }.sortedBy { it.creado }
         if (sonar.isEmpty()) return
         val am = c.getSystemService(AudioManager::class.java)
-        if (am != null && (am.ringerMode != AudioManager.RINGER_MODE_NORMAL || am.mode != AudioManager.MODE_NORMAL)) return
-        for (m in sonar) nube.bajarAudio(m.audio)?.let { reproducir(c, it, m.dur) }
+        if (am != null && (am.ringerMode != AudioManager.RINGER_MODE_NORMAL || am.mode != AudioManager.MODE_NORMAL)) {
+            // pizarra-78: no sonó, y por qué, para el parte de salud.
+            Salud.contar(c, if (am.mode != AudioManager.MODE_NORMAL) "audio.noSonoLlamada" else "audio.noSonoSilencio", sonar.size)
+            return
+        }
+        for (m in sonar) {
+            val b = nube.bajarAudio(m.audio)
+            if (b == null) { Salud.contar(c, "audio.faltaElAudio"); Bitacora.anotar(c, "handy: un audio que llegó no está en la base") }
+            else { reproducir(c, b, m.dur); Salud.contar(c, if (m.handy) "handy.sonoAlLlegar" else "audio.sonoAlLlegar") }
+        }
     }
 
     /** Trae y reproduce un audio (el ▶ de una burbuja). En su hilo. */

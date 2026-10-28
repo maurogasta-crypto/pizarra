@@ -44,7 +44,7 @@ class App : Application() {
     }
 }
 
-const val SELLO = "pizarra-77"
+const val SELLO = "pizarra-78"
 
 object Bitacora {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("bitacora", Context.MODE_PRIVATE)
@@ -57,6 +57,7 @@ object Bitacora {
         val l = renglones(p.getString("anillo", null)) + (hora.format(Date()) + " " + t.take(300))
         val e = p.edit().putString("anillo", JSONArray(l.takeLast(80)).toString())
         if (ya) e.commit() else e.apply()
+        Salud.evento(c, t)   // pizarra-78: lo de comunicación va también al parte de salud
         Unit
     }
 

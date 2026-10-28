@@ -121,7 +121,7 @@ class MainActivity : Activity() {
             "Lector de Facebook: " + Pantalla.estado(this))
         val texto = Bitacora.armarDiagnostico(estado, Bitacora.ultimos(this, 120))
         decir("Mandando…")
-        enSegundo({ nube.mandarFalla(texto, "traba") }) { decir("Mandado a Claude. Contale en el chat qué estabas tocando.") }
+        enSegundo({ Salud.subir(this, ya = true); nube.mandarFalla(texto, "traba") }) { decir("Mandado a Claude. Contale en el chat qué estabas tocando.") }
     }
 
     // El widget con la app ya abierta: singleTop entrega acá.

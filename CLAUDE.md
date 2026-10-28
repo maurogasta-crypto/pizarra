@@ -565,6 +565,19 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   cada Pizarra lo mira al ponerse al día (`limpiezaCharla`, una lectura) y, si
   es nuevo, trae la charla entera (`hayQueTraerTodo`): lo borrado desaparece de
   su lista en menos de 10 minutos (de 8 a 23) o al abrir la charla.
+- **pizarra-78: cada teléfono sube su PARTE DE SALUD de la comunicación**
+  (28-oct-2026, Mauro: «encontrar errores… al hacer las comunicaciones entre
+  los teléfonos, para confirmar que no se estén perdiendo datos, mensajes o
+  transmisiones de handy»). La base sabe lo que se mandó; lo que llegó, sonó o
+  se cortó lo sabe cada teléfono. `Salud.kt` lo cuenta y lo sube una vez por
+  hora (y al «🩺 Mandar diagnóstico») a `salud/<uid>|<aparato>` de Tiempos
+  (reglas v24): contadores (rondas de handy cerca mandadas y oídas, trozos
+  perdidos, acuses, cortes sin latido, otro código, audios mandados y fallidos,
+  handy por internet que sonó o no y por qué), los ids de los mensajes para
+  ese aparato de la semana que tiene, y los últimos 40 renglones de
+  comunicación de la bitácora. **Nunca texto ni sonido.** `charla.mjs salud`
+  de `datos` lo cruza con lo mandado y dice qué se perdió. Cupo: una escritura
+  por hora por teléfono.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

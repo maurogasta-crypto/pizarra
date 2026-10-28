@@ -123,6 +123,7 @@ object Radio {
     fun hablar(c: Context, para: String = "", alTerminar: (Int) -> Unit = {}) {
         if (hablando || !tienePermiso(c)) return
         hablando = true
+        Salud.contar(c, "voz.rondasMandadas")   // pizarra-78
         Altavoz.callar()                       // uno por vez
         val app = c.applicationContext
         thread(name = "radio-habla") {
