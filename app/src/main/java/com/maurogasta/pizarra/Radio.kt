@@ -30,7 +30,7 @@ import java.util.Base64
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Radio.kt — El handy EN VIVO por el enlace cerca, sin datos. Sello: pizarra-72
+// Radio.kt — El handy EN VIVO por el enlace cerca, sin datos. Sello: pizarra-75
 //
 // general:C4, paso 3. Mauro, 26-oct-2026: «se activaría también para la
 // comunicación tipo handy», y antes: «que se pueda utilizar sin consumir
@@ -52,6 +52,18 @@ import kotlin.concurrent.thread
 // · No va por internet: lejos está la llamada (pizarra-63).
 // · No suena si el otro teléfono está en silencio, en una llamada, hablando
 //   él mismo, o apagó «Escuchar el handy cerca».
+//
+// ── pizarra-75: EL HANDY ELIGE SOLO EL CAMINO (`Pulsador`) ──────────────────
+// Mauro, 28-oct: «el botón tipo handy tiene que activar directamente el audio
+// en el otro dispositivo… si está cerca, en la misma red wi-fi o por
+// Bluetooth, directo; cuando no, que lo mande por internet y despierte el
+// teléfono a distancia… optando siempre por la conexión directa». Al APRETAR
+// se mira si el teléfono de la conversación está conectado cerca
+// (`destinoCerca`): si está, la voz sale en vivo por acá, sólo para él (`para`
+// en cada trozo, `vozParaMi`); si no, se graba y al soltar va como mensaje de
+// voz por Tiempos con `handy: true` (reglas v22), que despierta al otro y suena
+// solo al llegar. Lo de internet SÍ queda en la charla (y Claude lo escucha):
+// es un mensaje; lo de cerca no queda en ningún lado.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val RADIO_HZ = 8000
@@ -60,10 +72,28 @@ const val RADIO_TROZO_BYTES = RADIO_HZ * 2 * RADIO_TROZO_MS / 1000
 /** Como mucho esto de una sola vez: un botón trabado no transmite para siempre. */
 const val RADIO_MAXIMO_MS = 60_000L
 
-/** Un trozo de voz, listo para el enlace. */
-fun mensajeVoz(ronda: String, n: Int, pcm: ByteArray, fin: Boolean): JSONObject =
+/** Un trozo de voz, listo para el enlace. [para] es la conversación («uid|teléfono», «uid|*» o «» = todos). */
+fun mensajeVoz(ronda: String, n: Int, pcm: ByteArray, fin: Boolean, para: String = ""): JSONObject =
     JSONObject().put("v", VERSION_ENLACE).put("app", "pizarra").put("tipo", "voz").put("ronda", ronda.take(20)).put("n", n)
-        .put("b64", Base64.getEncoder().encodeToString(pcm)).put("fin", fin)
+        .put("b64", Base64.getEncoder().encodeToString(pcm)).put("fin", fin).apply { if (para.isNotEmpty()) put("para", para.take(140)) }
+
+/** pizarra-75: ¿la voz que llega es para este teléfono? El mismo criterio que un mensaje de la charla. */
+fun vozParaMi(para: String, yo: String?, miTelefono: String): Boolean =
+    para.isEmpty() || (yo != null && (para == claveDe(yo, miTelefono) || para == claveDePersona(yo)))
+
+/**
+ * pizarra-75: ¿el destino de [clave] está conectado CERCA ahora? «» (todos) alcanza con cualquiera; una
+ * persona («uid|*»), con cualquiera de sus teléfonos ([telefonosDe]); un teléfono, con ése.
+ */
+fun destinoCerca(clave: String, cercanos: Set<String>, telefonosDe: (String) -> Set<String>): Boolean {
+    if (cercanos.isEmpty()) return false
+    if (clave.isEmpty()) return true
+    val uid = clave.substringBefore('|'); val tel = clave.substringAfter('|', "")
+    return if (tel == "*") telefonosDe(uid).any { it in cercanos } else tel in cercanos
+}
+
+/** Los teléfonos que se le conocen a una persona, por los mensajes que mandó. */
+fun telefonosConocidos(ms: List<Mensaje>, uid: String): Set<String> = ms.filter { it.de == uid }.map { it.dispositivo }.filter { it.isNotEmpty() }.toSet()
 
 /** El sonido de un trozo, con desconfianza: si no es voz o es más grande de lo que puede ser, nada. */
 fun pcmDeVoz(o: JSONObject): ByteArray? = try {
@@ -90,7 +120,7 @@ object Radio {
     fun tienePermiso(c: Context) = c.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
     /** Empieza a transmitir hasta [soltar]. [alTerminar] recibe los segundos. Nunca tira. */
-    fun hablar(c: Context, alTerminar: (Int) -> Unit = {}) {
+    fun hablar(c: Context, para: String = "", alTerminar: (Int) -> Unit = {}) {
         if (hablando || !tienePermiso(c)) return
         hablando = true
         Altavoz.callar()                       // uno por vez
@@ -112,14 +142,14 @@ object Radio {
                     var leido = 0
                     while (leido < trozo.size) { val k = g.read(trozo, leido, trozo.size - leido); if (k <= 0) break; leido += k }
                     if (leido <= 0) break
-                    EnlaceServicio.enviar(app, mensajeVoz(ronda, n++, trozo.copyOf(leido), false))
+                    EnlaceServicio.enviarSoloCerca(mensajeVoz(ronda, n++, trozo.copyOf(leido), false, para))
                 }
             } catch (e: Throwable) {
                 Bitacora.anotar(app, "radio: no se pudo hablar (${e.javaClass.simpleName})")
             } finally {
                 try { r?.stop() } catch (e: Throwable) { }
                 try { r?.release() } catch (e: Throwable) { }
-                try { EnlaceServicio.enviar(app, mensajeVoz(ronda, n, ByteArray(0), true)) } catch (e: Throwable) { }
+                try { EnlaceServicio.enviarSoloCerca(mensajeVoz(ronda, n, ByteArray(0), true, para)) } catch (e: Throwable) { }
                 hablando = false
                 val s = ((System.currentTimeMillis() - empezo) / 1000).toInt()
                 Bitacora.anotar(app, "radio: habló $s s")
@@ -129,6 +159,61 @@ object Radio {
     }
 
     fun soltar() { hablando = false }
+}
+
+/**
+ * pizarra-75: el botón del handy de cada conversación. Al apretar decide el camino —cerca y en vivo si el
+ * otro teléfono está conectado; si no, por internet— y al soltar termina. [dice] recibe lo que pasa, en
+ * palabras, para mostrar al lado del botón.
+ */
+object Pulsador {
+    @Volatile var modo = ""; private set          // «cerca», «internet» o «»
+    private var grabador: Grabador? = null
+    private var para = ""
+
+    /** Devuelve false si falta el permiso del micrófono (lo pide quien llama). */
+    fun apretar(c: Context, clave: String, nombre: String, dice: (String) -> Unit): Boolean {
+        if (!Radio.tienePermiso(c)) return false
+        if (modo.isNotEmpty()) return true
+        para = clave
+        val ms = with(Charla) { c.mensajesGuardados }
+        val cerca = EnlaceAjustes.prendido(c) && destinoCerca(clave, EnlaceServicio.cercanos()) { telefonosConocidos(ms, it) }
+        val a = nombre.ifBlank { "todos" }
+        if (cerca) {
+            modo = "cerca"
+            Radio.hablar(c, clave)
+            dice("📻 En VIVO, directo con $a (cerca, sin datos)…")
+            return true
+        }
+        val n = Nube(c)
+        if (!n.conSesion || !n.esTiempos) { dice("Nadie cerca, y sin cuenta de Tiempos no puede ir por internet."); return true }
+        if (clave.isEmpty()) { dice("Nadie cerca. Por internet el handy va a UNA conversación: elegí a quién."); return true }
+        try {
+            grabador = Grabador(c).also { it.empezar { } }
+            modo = "internet"
+            dice("🌐 $a no está cerca: grabando, va por internet y le suena al llegar…")
+        } catch (e: Throwable) { grabador = null; dice("No se pudo grabar.") }
+        if (EnlaceAjustes.prendido(c)) EnlaceServicio.buscarYa(c)   // para la próxima, quizás ya esté cerca
+        return true
+    }
+
+    fun soltar(c: Context, cancelar: Boolean, dice: (String) -> Unit) {
+        when (modo) {
+            "cerca" -> { Radio.soltar(); dice(if (cancelar) "Cortado." else "✓ Dicho en vivo. Esperando que conteste…") }
+            "internet" -> {
+                val g = grabador; grabador = null
+                if (g != null) {
+                    val r = if (cancelar) { g.cancelar(); null } else g.terminar()
+                    if (r == null) dice(if (cancelar) "Cortado: no se mandó." else "Muy corto: no se mandó.")
+                    else {
+                        dice("Mandando por internet…")
+                        Handy.mandar(c, r.first, r.second, g.tipo, para, handy = true) { err -> dice(err ?: "✓ Mandado: le suena al llegar.") }
+                    }
+                }
+            }
+        }
+        modo = ""
+    }
 }
 
 /** Lo que llega de la otra Pizarra, al parlante. Lo llama el hilo que lee el enlace. */

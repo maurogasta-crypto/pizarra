@@ -44,7 +44,7 @@ class App : Application() {
     }
 }
 
-const val SELLO = "pizarra-74"
+const val SELLO = "pizarra-75"
 
 object Bitacora {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("bitacora", Context.MODE_PRIVATE)

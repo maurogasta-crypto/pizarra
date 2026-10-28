@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-74` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-75` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -478,6 +478,19 @@ pueda despertar al teléfono».
   escuchó o no sonó (silencio, vibrador, llamada, handy apagado); y si las dos
   están conectadas con códigos distintos, el estado lo dice. **Las dos tienen
   que MOSTRAR el mismo código**: se escribe el de una en la otra, en una sola.
+
+## 📻 El handy que elige solo (pizarra-75)
+
+- **Sin código:** las Pizarras con cuenta de Tiempos se reconocen solas
+  (`enlace_llave/familia`, reglas v22). El código a mano queda en «Avanzado».
+- **Cada teléfono con su nombre y su color:** en la charla, arriba, «📱 Estás
+  en…»; tocándolo se le cambia el nombre.
+- **El botón 📻 HANDY**, grande y aparte: mantenerlo apretado y hablar. Si el
+  otro teléfono está cerca (mismo wi-fi o Bluetooth), se oye en vivo; si no,
+  va por internet y le suena solo al llegar. El botón dice cuál va a ser
+  (verde: cerca; azul: por internet).
+- **La conexión cerca ya no se corta sola:** un latido cada 10 s, y la que se
+  muere se cierra y se vuelve a buscar.
 
 ## 📉 Ponerse al día gastando poco (pizarra-74, `tiempos:A42`)
 

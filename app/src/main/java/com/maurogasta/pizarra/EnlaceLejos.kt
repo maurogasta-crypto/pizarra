@@ -95,6 +95,24 @@ fun cuerpoEnlace(docs: String, par: String, uid: String, o: JSONObject): JSONObj
     return JSONObject().put("writes", JSONArray().put(w))
 }
 
+/**
+ * pizarra-75 (reglas v22 de Tiempos): la llave del enlace sale de la CUENTA, no de un código a mano. Es un
+ * código como los de siempre, guardado una vez en `enlace_llave/familia`; lo crea la primera Pizarra que lo
+ * pide, sin pisar uno que ya esté, y nadie lo cambia. Lo leen sólo los miembros: el agente no.
+ */
+const val COLECCION_LLAVE = "enlace_llave"
+fun cuerpoLlaveFamilia(docs: String, uid: String, codigo: String): JSONObject =
+    JSONObject().put("writes", JSONArray().put(JSONObject()
+        .put("update", JSONObject().put("name", "$docs/$COLECCION_LLAVE/familia").put("fields", JSONObject()
+            .put("codigo", JSONObject().put("stringValue", codigo)).put("creadoPor", JSONObject().put("stringValue", uid))))
+        .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "creadoEn").put("setToServerValue", "REQUEST_TIME")))
+        .put("currentDocument", JSONObject().put("exists", false))))
+
+/** El código guardado en la respuesta de un batchGet de `enlace_llave/familia`, si está y tiene forma. */
+fun codigoDeLlave(r: JSONArray): String? =
+    r.optJSONObject(0)?.optJSONObject("found")?.optJSONObject("fields")?.optJSONObject("codigo")?.optString("stringValue")
+        ?.let { normalizarCodigo(it) }
+
 /** Lo que llegó después de [desde] (por `t`, sin índice compuesto). */
 fun consultaEnlace(desde: Long, antes: Long? = null): JSONObject {
     fun filtro(op: String, v: Long) = JSONObject().put("fieldFilter", JSONObject()

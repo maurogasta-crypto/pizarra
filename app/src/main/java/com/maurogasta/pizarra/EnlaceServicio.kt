@@ -35,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EnlaceServicio.kt — La escucha y el envío del enlace cerca. Sello: pizarra-73
+// EnlaceServicio.kt — La escucha y el envío del enlace cerca. Sello: pizarra-75
 // Ver Enlace.kt: qué es, por qué así y qué viaja.
 //
 // Mientras el enlace está prendido, este servicio:
@@ -49,8 +49,17 @@ import kotlin.concurrent.thread
 //   · si no hay nadie cerca y hay una cuenta de Tiempos, un evento va por
 //     internet, por la base (pizarra-71, EnlaceLejos.kt), y el vivo también,
 //     pero sólo mientras alguien lo mira. La voz no: es cerca o nada.
-// Gasta poco: un puerto y un Bluetooth esperando. Buscar se hace sólo cuando
-// hay algo para mandar, y como mucho cada BUSCAR_CADA_MS.
+// Gasta poco: un puerto y un Bluetooth esperando. Buscar se hace cuando hay
+// algo para mandar (como mucho cada BUSCAR_CADA_MS) y, sin nadie conectado,
+// cada BUSCAR_SOLO_MS.
+//
+// pizarra-75 (28-oct, Mauro: «funciona aleatoriamente: de rato se conecta y
+// después se desconecta»): una conexión que muere sin avisar —el wi-fi que
+// duerme con la pantalla apagada, un cambio de red— se veía VIVA: el teléfono
+// seguía mandando la voz a un enchufe muerto y no buscaba de nuevo. Ahora cada
+// conexión manda un LATIDO cada LATIDO_MS, la que calla más de MUDA_MS se
+// cierra (`vigia`), sin nadie se vuelve a buscar sola, y mientras hay una
+// conexión por wi-fi el wi-fi no se duerme (`despierto`).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val CANAL_ENLACE = "enlace"
@@ -60,6 +69,12 @@ private const val ID_VIVO = 7071
 private const val BUSCAR_CADA_MS = 30_000L
 private const val VIVO_SE_VA_MS = 30_000L
 private const val PENDIENTES_MAX = 20
+const val LATIDO_MS = 10_000L
+const val MUDA_MS = 35_000L
+const val BUSCAR_SOLO_MS = 60_000L
+
+/** Una conexión que calla más de MUDA_MS está muerta, aunque el enchufe diga que no. */
+fun estaMuda(ultimo: Long, ahora: Long): Boolean = ahora - ultimo > MUDA_MS
 /** Lo que espera a que aparezca alguien: un vivo viejo o una voz de hace un rato no sirven. */
 private val TIPOS_QUE_ESPERAN = setOf("evento", "prueba")
 
@@ -68,12 +83,28 @@ object EnlaceAjustes {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("enlace", Context.MODE_PRIVATE)
     fun prendido(c: Context) = prefs(c).getBoolean("prendido", false)
     fun prender(c: Context, v: Boolean) = prefs(c).edit().putBoolean("prendido", v).apply()
-    /** El código de este teléfono; si no hay, se crea. */
-    fun codigo(c: Context): String = prefs(c).getString("codigo", null) ?: codigoNuevo().also { prefs(c).edit().putString("codigo", it).apply() }
+    /**
+     * El código con el que firma este teléfono. Desde pizarra-75, el de la CUENTA (`porCuenta`, traído de
+     * Tiempos por `traerDeLaCuenta`); si no hay cuenta de Tiempos, el de a mano de siempre.
+     */
+    fun codigo(c: Context): String = porCuenta(c) ?: aMano(c)
+    /** El de a mano (Avanzado): el de antes de pizarra-75, para un teléfono sin cuenta de Tiempos. */
+    fun aMano(c: Context): String = prefs(c).getString("codigo", null) ?: codigoNuevo().also { prefs(c).edit().putString("codigo", it).apply() }
+    fun porCuenta(c: Context): String? = if (prefs(c).getBoolean("usarAMano", false)) null else prefs(c).getString("codigoCuenta", null)
+    /** Usar el código a mano aunque haya cuenta (para hablar con un teléfono sin cuenta de Tiempos). */
+    fun usarAMano(c: Context, v: Boolean) = prefs(c).edit().putBoolean("usarAMano", v).apply()
+    fun usaAMano(c: Context) = prefs(c).getBoolean("usarAMano", false)
+    /** Trae el código de la cuenta y lo guarda. En un hilo; devuelve null si salió bien o el motivo. */
+    fun traerDeLaCuenta(c: Context): String? = try {
+        val n = Nube(c)
+        if (!n.conSesion || !n.esTiempos) "Sin cuenta de Tiempos: queda el código a mano."
+        else { prefs(c).edit().putString("codigoCuenta", n.llaveFamilia()).apply(); null }
+    } catch (e: Throwable) { e.message ?: "No se pudo traer la llave del enlace." }
     /** Usar el código de la otra Pizarra. `false` si no es un código. */
     fun usarCodigo(c: Context, t: String): Boolean {
         val n = normalizarCodigo(t) ?: return false
-        prefs(c).edit().putString("codigo", n).apply(); return true
+        // pizarra-75: escribir el código de otra es elegir el código a mano en éste.
+        prefs(c).edit().putString("codigo", n).putBoolean("usarAMano", true).apply(); return true
     }
     fun llave(c: Context) = llaveDe(codigo(c))
     /** pizarra-71: escuchar el handy cerca de la otra Pizarra (sí, salvo que se apague). */
@@ -92,6 +123,10 @@ class EnlaceServicio : Service() {
 
         fun arrancar(c: Context) {
             if (!EnlaceAjustes.prendido(c)) return
+            // pizarra-75: la llave de la cuenta, si todavía no está (una vez; después vive en el teléfono).
+            if (EnlaceAjustes.porCuenta(c) == null && !EnlaceAjustes.usaAMano(c)) thread(name = "enlace-llave") {
+                try { EnlaceAjustes.traerDeLaCuenta(c)?.let { Bitacora.anotar(c, "enlace: llave de la cuenta: ${it.take(80)}") } } catch (e: Throwable) { }
+            }
             try { c.startForegroundService(Intent(c, EnlaceServicio::class.java)) }
             catch (e: Throwable) { Bitacora.anotar(c, "enlace: no arrancó (${e.javaClass.simpleName})") }
         }
@@ -104,6 +139,9 @@ class EnlaceServicio : Service() {
 
         /** pizarra-73: el teléfono que está conectado cerca ahora (lo que dice su `de`), o null. */
         fun cercano(): String? = activo?.let { s -> if (s.conexiones.isEmpty()) null else s.ultimoDeCerca }
+
+        /** pizarra-75: los teléfonos conectados cerca ahora mismo, por su nombre (el `de` de lo que mandan). */
+        fun cercanos(): Set<String> = activo?.conexiones?.mapNotNull { it.de }?.toSet() ?: emptySet()
 
         /**
          * pizarra-73: manda [o] cerca y ESPERA a que salga, en el mismo orden que todo lo demás.
@@ -123,11 +161,18 @@ class EnlaceServicio : Service() {
             arrancar(c)
         }
 
+        /** pizarra-75: la voz y el latido, SÓLO a los conectados: no esperan, no van por internet. */
+        fun enviarSoloCerca(o: JSONObject) { activo?.mandarSoloCerca(o) }
+
         /** Buscar a la otra Pizarra ya (al abrir la radio o «En vivo»), sin esperar a tener algo para mandar. */
         fun buscarYa(c: Context) { activo?.buscar(forzar = true) ?: arrancar(c) }
     }
 
-    private class Conexion(val socket: java.io.Closeable, val entrada: InputStream, val salida: OutputStream, val por: String, val quien: String)
+    private class Conexion(val socket: java.io.Closeable, val entrada: InputStream, val salida: OutputStream, val por: String, val quien: String) {
+        /** pizarra-75: cuándo llegó lo último (un latido alcanza) y quién es, por lo que firma. */
+        @Volatile var ultimo = System.currentTimeMillis()
+        @Volatile var de: String? = null
+    }
 
     private val conexiones = CopyOnWriteArrayList<Conexion>()
     private val pendientes = CopyOnWriteArrayList<JSONObject>()
@@ -141,6 +186,7 @@ class EnlaceServicio : Service() {
     @Volatile private var nombrePropio: String? = null
     @Volatile private var ultimaBusqueda = 0L
     private var candado: WifiManager.MulticastLock? = null
+    private var despierto: WifiManager.WifiLock? = null
 
     override fun onBind(i: Intent?): IBinder? = null
 
@@ -165,6 +211,7 @@ class EnlaceServicio : Service() {
         pendientes.addAll(antes); antes.clear()
         thread(name = "enlace-tcp") { escucharRed() }
         thread(name = "enlace-bt") { escucharBluetooth() }
+        thread(name = "enlace-vigia") { vigia() }
         Bitacora.anotar(this, "enlace: prendido")
     }
 
@@ -180,6 +227,7 @@ class EnlaceServicio : Service() {
         for (c in conexiones) cerrar(c)
         try { salida.shutdown() } catch (e: Throwable) { }
         try { candado?.release() } catch (e: Throwable) { }
+        try { if (despierto?.isHeld == true) despierto?.release() } catch (e: Throwable) { }
         Bitacora.anotar(this, "enlace: apagado")
         super.onDestroy()
     }
@@ -214,10 +262,52 @@ class EnlaceServicio : Service() {
             val s = a.listenUsingRfcommWithServiceRecord("Pizarra", UUID.fromString(UUID_BT)); servidorBt = s
             while (vivo) {
                 val c = s.accept()
+                c.remoteDevice?.address?.let { getSharedPreferences("enlace", Context.MODE_PRIVATE).edit().putString("btConocido", it).apply() }
                 agregar(Conexion(c, c.inputStream, c.outputStream, "Bluetooth", c.remoteDevice?.name ?: "?"))
             }
         }
     } catch (e: Throwable) { if (vivo) Bitacora.anotar(this, "enlace: el Bluetooth se cortó (${e.javaClass.simpleName})"); Unit }
+
+    /**
+     * pizarra-75: el vigía. Cada LATIDO_MS dice «sigo acá» por cada conexión; cierra la que calló más de
+     * MUDA_MS (así no se habla a un enchufe muerto); y sin nadie conectado busca solo cada BUSCAR_SOLO_MS.
+     */
+    private fun vigia() {
+        var ultimoLatido = 0L
+        while (vivo) {
+            try {
+                Thread.sleep(2_000)
+                val ahora = System.currentTimeMillis()
+                for (c in conexiones) if (estaMuda(c.ultimo, ahora)) {
+                    Bitacora.anotar(this, "enlace: se cortó con ${c.de ?: c.quien} (${c.por}, sin latido)")
+                    cerrar(c)
+                }
+                if (conexiones.isNotEmpty() && ahora - ultimoLatido >= LATIDO_MS) {
+                    ultimoLatido = ahora
+                    mandarSoloCerca(JSONObject().put("tipo", "latido"))
+                }
+                // Sola, por Bluetooth sólo prueba el teléfono con el que ya se habló: tocar todos los emparejados
+                // cada minuto molestaría al auto y a los auriculares.
+                if (conexiones.isEmpty() && ahora - ultimaBusqueda >= BUSCAR_SOLO_MS) buscar(forzar = true, btSoloConocido = true)
+                wifiDespierto(conexiones.any { it.por == "wi-fi" })
+            } catch (e: InterruptedException) { return } catch (e: Throwable) { }   // un hilo nunca tira
+        }
+    }
+
+    /** Mientras hay una conexión por wi-fi, el wi-fi no se duerme: dormido, la corta sin avisar. */
+    private fun wifiDespierto(si: Boolean) {
+        try {
+            if (si) {
+                if (despierto == null) {
+                    val w = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+                    @Suppress("DEPRECATION")
+                    despierto = w?.createWifiLock(if (Build.VERSION.SDK_INT >= 29) WifiManager.WIFI_MODE_FULL_LOW_LATENCY else WifiManager.WIFI_MODE_FULL_HIGH_PERF, "pizarra-enlace")
+                        ?.apply { setReferenceCounted(false) }
+                }
+                if (despierto?.isHeld == false) despierto?.acquire()
+            } else if (despierto?.isHeld == true) despierto?.release()
+        } catch (e: Throwable) { }
+    }
 
     private fun agregar(c: Conexion) {
         conexiones.add(c)
@@ -234,6 +324,7 @@ class EnlaceServicio : Service() {
             val r = BufferedReader(InputStreamReader(c.entrada, Charsets.UTF_8))
             while (vivo) {
                 val renglon = r.readLine() ?: break
+                c.ultimo = System.currentTimeMillis()
                 val llave = EnlaceAjustes.llave(this)
                 val o = leerRenglon(llave, renglon, System.currentTimeMillis(), ultimoDe)
                 if (o == null) {
@@ -244,10 +335,13 @@ class EnlaceServicio : Service() {
                     }
                     continue
                 }
-                if (estado.contains("OTRO código")) estado = "conectado por ${c.por} con ${c.quien}"
                 ultimoDeCerca = o.optString("de").ifBlank { null }
+                if (c.de == null || estado.contains("OTRO código")) { c.de = ultimoDeCerca; estado = "conectado por ${c.por} con ${c.de ?: c.quien}" }
                 when (o.optString("tipo")) {
+                    "latido" -> { }   // pizarra-75: sólo dice que sigue: ya quedó en c.ultimo
                     "voz" -> {
+                        // pizarra-75: la voz de una conversación es sólo para ese teléfono (o esa persona).
+                        if (!vozParaMi(o.optString("para"), Nube(this).uid, nombreDelTelefono(this))) continue
                         Altavoz.tocar(this, o)                // en este hilo: el sonido no espera
                         if (o.optBoolean("fin")) mandar(acuse(nombreDelTelefono(this), "voz", Altavoz.comoFue.ifBlank { "llegó" }))
                     }
@@ -304,6 +398,20 @@ class EnlaceServicio : Service() {
         } catch (e: Throwable) { }   // apagándose: lo que no salió, no sale
     }
 
+    /** pizarra-75: el latido y la voz van SÓLO a quien está conectado: no esperan, no van por internet. */
+    fun mandarSoloCerca(o: JSONObject) {
+        if (conexiones.isEmpty()) return
+        if (!o.has("de")) o.put("de", nombreDelTelefono(this))
+        if (!o.has("v")) o.put("v", VERSION_ENLACE)
+        synchronized(this) { ultimoT = maxOf(System.currentTimeMillis(), ultimoT + 1); o.put("t", ultimoT) }
+        val renglon = renglonFirmado(EnlaceAjustes.llave(this), o.toString()).toByteArray(Charsets.UTF_8)
+        try {
+            salida.execute {
+                for (c in conexiones) try { synchronized(c) { c.salida.write(renglon); c.salida.flush() } } catch (e: Throwable) { cerrar(c) }
+            }
+        } catch (e: Throwable) { }
+    }
+
     fun mandarYEsperar(o: JSONObject): Boolean {
         if (conexiones.isEmpty()) return false
         if (!o.has("de")) o.put("de", nombreDelTelefono(this))
@@ -320,7 +428,7 @@ class EnlaceServicio : Service() {
     }
 
     /** La otra Pizarra: primero en la red local; si en 8 s no apareció, entre los emparejados. */
-    fun buscar(forzar: Boolean = false) {
+    fun buscar(forzar: Boolean = false, btSoloConocido: Boolean = false) {
         val ahora = System.currentTimeMillis()
         if (conexiones.isNotEmpty() || (!forzar && ahora - ultimaBusqueda < BUSCAR_CADA_MS) || ahora - ultimaBusqueda < 8_000L) return
         ultimaBusqueda = ahora
@@ -329,7 +437,7 @@ class EnlaceServicio : Service() {
             try {
                 try { buscarEnLaRed() } catch (e: Throwable) { }
                 Thread.sleep(8_000)
-                if (conexiones.isEmpty()) try { buscarBluetooth() } catch (e: Throwable) { }
+                if (conexiones.isEmpty()) try { buscarBluetooth(btSoloConocido) } catch (e: Throwable) { }
                 if (conexiones.isEmpty() && activo != null) estado = "nadie cerca · escuchando"
             } catch (e: Throwable) { }   // un hilo nunca tira
         }
@@ -368,15 +476,18 @@ class EnlaceServicio : Service() {
     }
 
     @SuppressLint("MissingPermission")   // puedeBluetooth() lo comprueba antes
-    private fun buscarBluetooth() {
+    private fun buscarBluetooth(soloConocido: Boolean = false) {
         val a = (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter ?: return
         if (!puedeBluetooth() || !a.isEnabled) return
-        for (d in a.bondedDevices.orEmpty()) {
+        val conocido = getSharedPreferences("enlace", Context.MODE_PRIVATE).getString("btConocido", null)
+        val candidatos = a.bondedDevices.orEmpty().filter { !soloConocido || it.address == conocido }
+        for (d in candidatos) {
             if (conexiones.isNotEmpty() || !vivo) return
             var s: BluetoothSocket? = null
             try {
                 s = d.createRfcommSocketToServiceRecord(UUID.fromString(UUID_BT))
                 s.connect()
+                getSharedPreferences("enlace", Context.MODE_PRIVATE).edit().putString("btConocido", d.address).apply()
                 agregar(Conexion(s, s.inputStream, s.outputStream, "Bluetooth", d.name ?: "?"))
             } catch (e: Throwable) { try { s?.close() } catch (x: Throwable) { } }
         }

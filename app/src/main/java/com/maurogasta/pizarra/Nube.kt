@@ -143,12 +143,12 @@ class Nube(contexto: Context) {
     }
 
     /** pizarra-62: un mensaje de VOZ. Primero el audio (`audios/`), después el mensaje que lo nombra. */
-    fun mandarAudio(datos: ByteArray, dur: Int, tipo: String, dispositivo: String, para: String = ""): String {
+    fun mandarAudio(datos: ByteArray, dur: Int, tipo: String, dispositivo: String, para: String = "", handy: Boolean = false): String {
         if (Nube.sinRed) throw ErrorNube("Sin conexión (banco de pruebas).")
         val yo = deTiempos()
         val id = idNuevo()
         commit(cuerpoAudio(BASE_DOCS, id, yo, datos, dur, tipo))
-        commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, textoDeAudio(dur), para, id, dur))
+        commit(cuerpoMensaje(BASE_DOCS, idNuevo(), yo, miNombre(), dispositivo, if (handy) textoDeHandy(dur) else textoDeAudio(dur), para, id, dur, handy = handy))
         avisarCambio("mensajes")
         return id
     }
@@ -217,6 +217,16 @@ class Nube(contexto: Context) {
         deTiempos()
         return enlaceDeConsulta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS/$COLECCION_ENLACE/$par:runQuery",
             consultaEnlace(desde).toString(), "application/json", token())))
+    }
+
+    /** pizarra-75: el código del enlace de la familia; si no hay, lo crea (y si otro lo creó en el medio, lee ése). */
+    fun llaveFamilia(): String {
+        val yo = deTiempos()
+        val url = "https://firestore.googleapis.com/v1/$BASE_DOCS:batchGet"
+        val leer = { codigoDeLlave(JSONArray(pedir(url, JSONObject().put("documents", JSONArray().put("$BASE_DOCS/$COLECCION_LLAVE/familia")).toString(), "application/json", token()))) }
+        leer()?.let { return it }
+        try { commit(cuerpoLlaveFamilia(BASE_DOCS, yo, codigoNuevo())) } catch (e: ErrorNube) { }
+        return leer() ?: throw ErrorNube("No se pudo traer la llave del enlace: ¿están publicadas las reglas v22 de Tiempos?")
     }
 
     fun enlaceLeer(par: String, id: String): JSONObject? {

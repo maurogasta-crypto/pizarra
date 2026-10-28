@@ -88,7 +88,9 @@ const val URL_RESERVAS_CV = "https://casaverdecanas.com.br/interno/reservas.html
 
 data class Mensaje(val id: String, val de: String, val nombre: String, val dispositivo: String, val texto: String, val creado: String,
                    val para: String = "", val audio: String = "", val dur: Int = 0,
-                   val archivo: String = "", val nombreArchivo: String = "", val partes: Int = 0)
+                   val archivo: String = "", val nombreArchivo: String = "", val partes: Int = 0,
+                   /** pizarra-75 (reglas v22): un audio del HANDY, que el otro teléfono escucha solo al llegar. */
+                   val handy: Boolean = false)
 
 /** La conversación con TODOS los teléfonos de una persona (pizarra-62). */
 fun claveDePersona(uid: String) = "$uid|*"
@@ -123,7 +125,8 @@ fun mensajesDeConsulta(r: JSONArray): List<Mensaje> = (0 until r.length()).mapNo
     if (id.isEmpty() || s("texto").isBlank() || s("de").isEmpty()) null
     else Mensaje(id, s("de"), s("nombre").take(40), s("dispositivo").take(60), s("texto").take(2000), s("creadoEn"), s("para").take(140),
         s("audio").take(40), (f.optJSONObject("dur")?.optString("integerValue")?.toIntOrNull() ?: 0).coerceIn(0, 60),
-        s("archivo").take(40), s("nombreArchivo").take(120), (f.optJSONObject("partes")?.optString("integerValue")?.toIntOrNull() ?: 0).coerceIn(0, PARTES_MAX))
+        s("archivo").take(40), s("nombreArchivo").take(120), (f.optJSONObject("partes")?.optString("integerValue")?.toIntOrNull() ?: 0).coerceIn(0, PARTES_MAX),
+        f.optJSONObject("handy")?.optBoolean("booleanValue", false) == true && s("audio").isNotEmpty())
 }.sortedByDescending { it.creado }
 
 /** Lo guardado más lo nuevo, sin repetir, del más nuevo al más viejo. */
@@ -132,13 +135,16 @@ fun mezclarMensajes(guardados: List<Mensaje>, nuevos: List<Mensaje>, tope: Int =
 
 /** El mensaje nuevo, con la forma EXACTA que deja crear la regla de Tiempos: la v15 sin `para`, la v17 con él. */
 fun cuerpoMensaje(docs: String, id: String, uid: String, nombre: String, dispositivo: String, texto: String, para: String = "",
-                  audio: String = "", dur: Int = 0, archivo: String = "", nombreArchivo: String = "", partes: Int = 0): JSONObject {
+                  audio: String = "", dur: Int = 0, archivo: String = "", nombreArchivo: String = "", partes: Int = 0,
+                  handy: Boolean = false): JSONObject {
     fun s(v: String) = JSONObject().put("stringValue", v)
     val campos = JSONObject().put("de", s(uid)).put("nombre", s(nombre.take(40))).put("dispositivo", s(dispositivo.take(60)))
         .put("texto", s(texto.trim().take(2000)))
     if (para.isNotBlank()) campos.put("para", s(para.take(140)))
     // pizarra-62 (reglas v18): un mensaje de voz lleva el id del audio y cuántos segundos dura.
     if (audio.isNotBlank()) campos.put("audio", s(audio.take(40))).put("dur", JSONObject().put("integerValue", dur.coerceIn(1, 60).toString()))
+    // pizarra-75 (reglas v22): del handy, para que suene solo del otro lado. Sólo con audio: la regla lo pide.
+    if (handy && audio.isNotBlank()) campos.put("handy", JSONObject().put("booleanValue", true))
     // pizarra-64 (reglas v20): un archivo, por su id, su nombre y en cuántas partes está.
     if (archivo.isNotBlank()) campos.put("archivo", s(archivo.take(40))).put("nombreArchivo", s(nombreArchivo.take(120)))
         .put("partes", JSONObject().put("integerValue", partes.coerceIn(1, PARTES_MAX).toString()))
@@ -233,8 +239,39 @@ fun armarNovedades(mensajes: List<Mensaje>, avisos: List<Aviso>, pedidosCV: Int,
 
 /** El nombre del teléfono como lo ve la persona («Redmi 13C»); si no, marca y modelo. */
 fun nombreDelTelefono(c: Context): String {
+    // pizarra-75 (Mauro: «agregar un nombre más distintivo de cada dispositivo»): el que se le ponga en la
+    // Pizarra manda; si no, el del sistema.
+    aliasDelTelefono(c)?.let { return it }
     val n = try { android.provider.Settings.Global.getString(c.contentResolver, android.provider.Settings.Global.DEVICE_NAME) } catch (e: Throwable) { null }
     return (n?.trim()?.takeIf { it.isNotEmpty() } ?: "${Build.MANUFACTURER} ${Build.MODEL}").take(60)
+}
+
+/** pizarra-75: el nombre que se le puso a este teléfono en la Pizarra, o null. Fuera de las copias (prefs «telefono»). */
+fun aliasDelTelefono(c: Context): String? =
+    c.applicationContext.getSharedPreferences("telefono", Context.MODE_PRIVATE).getString("alias", null)?.trim()?.takeIf { it.isNotEmpty() }
+
+/** Un nombre de teléfono que se puede usar: sin «|» (separa uid y teléfono en `para`), sin saltos, de 2 a 40. */
+fun aliasValido(t: String): String? {
+    val n = t.replace(Regex("[|\\n\\r\\t]"), " ").replace(Regex(" +"), " ").trim()
+    return n.takeIf { it.length in 2..40 }
+}
+
+fun ponerAlias(c: Context, t: String?) {
+    val p = c.applicationContext.getSharedPreferences("telefono", Context.MODE_PRIVATE).edit()
+    if (t == null) p.remove("alias") else p.putString("alias", t)
+    p.apply()
+}
+
+/**
+ * pizarra-75 (Mauro: «un color diferente para cada uno»): el color de un teléfono. Se reparte en orden
+ * alfabético entre los teléfonos que esta Pizarra conoce, así dos no comparten color mientras haya colores,
+ * y todas las Pizarras que conocen los mismos teléfonos los pintan igual.
+ */
+val COLORES_TELEFONO = listOf("#4FC3F7", "#81C784", "#FFB74D", "#F06292", "#BA68C8", "#FFD54F", "#4DB6AC", "#E57373")
+fun colorDeTelefono(nombre: String, conocidos: Collection<String>): String {
+    val todos = (conocidos + nombre).map { it.trim().lowercase() }.filter { it.isNotEmpty() }.distinct().sorted()
+    val i = todos.indexOf(nombre.trim().lowercase()).coerceAtLeast(0)
+    return COLORES_TELEFONO[i % COLORES_TELEFONO.size]
 }
 
 private val HORA_CORTA = DateTimeFormatter.ofPattern("dd/MM HH:mm")
@@ -247,12 +284,12 @@ object Charla {
         get() = try { JSONArray(prefs(this).getString("lista", "[]")).let { a -> (0 until a.length()).map { i -> a.getJSONObject(i).let {
             Mensaje(it.optString("id"), it.optString("de"), it.optString("nombre"), it.optString("dispositivo"), it.optString("texto"), it.optString("creado"),
                 it.optString("para"), it.optString("audio"), it.optInt("dur"), it.optString("archivo"), it.optString("nombreArchivo"),
-                it.optInt("partes")) } } } }
+                it.optInt("partes"), it.optBoolean("handy")) } } } }
             catch (e: Exception) { emptyList() }
         set(v) = prefs(this).edit().putString("lista", JSONArray().apply { v.take(150).forEach { put(JSONObject().put("id", it.id).put("de", it.de)
             .put("nombre", it.nombre).put("dispositivo", it.dispositivo).put("texto", it.texto).put("creado", it.creado).put("para", it.para)
             .put("audio", it.audio).put("dur", it.dur).put("archivo", it.archivo).put("nombreArchivo", it.nombreArchivo)
-            .put("partes", it.partes)) } }.toString()).apply()
+            .put("partes", it.partes).put("handy", it.handy)) } }.toString()).apply()
 
     /** La pestaña elegida en cada widget («» = Todo). */
     fun pestana(c: Context, widget: Int): String = prefs(c).getString("pestana_$widget", "").orEmpty()
@@ -366,7 +403,9 @@ class CharlaActivity : Activity() {
     private lateinit var pestanas: LinearLayout
     private lateinit var dice: TextView
     private lateinit var campo: TextView
-    private var llamar: Button? = null
+    private var llamar: TextView? = null
+    private lateinit var handy: Button
+    private lateinit var estoyEn: TextView
     private var clave = ""
 
     override fun onCreate(estado: Bundle?) {
@@ -380,7 +419,7 @@ class CharlaActivity : Activity() {
         fun dp(x: Int) = (x * d).toInt()
         // pizarra-65 (Mauro, 24-oct: «cuando aparece el teclado no se reajusta la pantalla, se pierden los
         // botones, y Mandar quedó deformado»): como cualquier chat. La lista toma lo que sobra (peso 1) y se
-        // achica con el teclado; abajo UNA línea con 📎 🎙 📞, el texto y ➤; Cerrar es la ✕ de arriba.
+        // achica con el teclado; abajo los botones, de alto fijo y que nunca se deforman; Cerrar es la ✕ de arriba.
         val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(12), dp(14), dp(8)) }
         val arriba = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         arriba.addView(TextView(this).apply { text = "💬 Mensajes"; textSize = 18f; setTypeface(typeface, android.graphics.Typeface.BOLD) },
@@ -388,7 +427,13 @@ class CharlaActivity : Activity() {
         arriba.addView(TextView(this).apply { text = "✕"; textSize = 20f; gravity = Gravity.CENTER; contentDescription = "Cerrar"
             setOnClickListener { finish() } }, LinearLayout.LayoutParams(dp(44), dp(44)))
         caja.addView(arriba)
-        caja.addView(TextView(this).apply { textSize = 11f; setTextColor(Color.parseColor("#8A8F98")); text = "Desde este teléfono: ${nombreDelTelefono(this@CharlaActivity)}\n$AVISO_CLAUDE_LEE" })
+        // pizarra-75 (Mauro: «la identificación de cada dispositivo tiene que ser más clara… no se puede saber
+        // cuando estoy en uno o en otro aparato»): EN QUÉ TELÉFONO estás, grande y con su color. Tocar, renombrar.
+        estoyEn = TextView(this).apply { textSize = 16f; setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(dp(12), dp(8), dp(12), dp(8))
+            contentDescription = "Este teléfono: tocá para cambiarle el nombre"
+            setOnClickListener { renombrar() } }
+        caja.addView(estoyEn, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) })
+        caja.addView(TextView(this).apply { textSize = 11f; setTextColor(Color.parseColor("#8A8F98")); text = AVISO_CLAUDE_LEE })
         // pizarra-68: sin este permiso (Android 14 o más) la llamada entrante es un aviso y no la pantalla de llamada.
         permisoLlamadas = TextView(this).apply { textSize = 13f; setTextColor(Color.parseColor("#B26A00")); setPadding(0, dp(6), 0, dp(2))
             text = "⚠️ Para que una llamada te aparezca en pantalla completa, tocá acá y permití «Pantalla completa»."
@@ -400,43 +445,47 @@ class CharlaActivity : Activity() {
         lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         scroll = ScrollView(this).apply { addView(lista) }
         caja.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-        dice = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#8A8F98")) }
+        dice = TextView(this).apply { textSize = 13f; setTextColor(Color.parseColor("#E8D3A2")) }
         caja.addView(dice)
         // pizarra-62: escuchar los audios solos, como un handy.
         caja.addView(android.widget.CheckBox(this).apply {
-            text = "Escuchar los audios solos"; textSize = 12f; isChecked = Handy.soloActivado(this@CharlaActivity)
+            text = "Escuchar los audios solos (los del 📻 handy suenan siempre)"; textSize = 12f; isChecked = Handy.soloActivado(this@CharlaActivity)
             setOnCheckedChangeListener { _, v -> Handy.elegirSolo(this@CharlaActivity, v) }
         })
-        // La línea de abajo: botones chicos y del mismo ancho, que nunca se deforman.
-        fun icono(b: Button) = b.apply { textSize = 18f; minWidth = 0; minimumWidth = 0; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0)
-            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44)).apply { marginEnd = dp(2) } }
+        // pizarra-75 (Mauro: «el botón de handy debe ser diferente al de envío de un audio, del texto o de un
+        // archivo»): el HANDY va solo, grande y de otro color; abajo, cuatro botones iguales con su nombre.
+        handy = botonPulsador()
+        caja.addView(handy, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(64)).apply { topMargin = dp(4) })
+        fun tecla(icono: String, nombre: String, que: String) = TextView(this).apply {
+            text = "$icono\n$nombre"; textSize = 12f; gravity = Gravity.CENTER; setTextColor(Color.parseColor("#E8EAED"))
+            contentDescription = que; maxLines = 2
+            background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = 12 * d; setColor(Color.parseColor("#2A2E35")) }
+            layoutParams = LinearLayout.LayoutParams(0, dp(58), 1f).apply { marginEnd = dp(4); topMargin = dp(6) }
+        }
         val linea = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        linea.addView(botonAudio(tecla("🎙", "Audio", "Mantener apretado para grabar un mensaje de voz")))
         // pizarra-64: una foto o un documento, a la conversación elegida (o a todos).
-        linea.addView(icono(Button(this).apply { text = "📎"; contentDescription = "Mandar una foto o un documento"; setOnClickListener {
+        linea.addView(tecla("📎", "Foto o archivo", "Mandar una foto o un documento").apply { setOnClickListener {
             val elegir = Intent(Intent.ACTION_GET_CONTENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
                 .putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "application/pdf", "text/*", "application/msword",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/zip"))
             try { startActivityForResult(Intent.createChooser(elegir, "Mandar"), 64) } catch (e: Throwable) { dice.text = "No hay dónde elegir un archivo." }
-        } }))
-        linea.addView(icono(botonHandy()))
+        } })
         // pizarra-63: llamar a la conversación elegida (en «Todos» no hay a quién).
-        llamar = icono(Button(this).apply { text = "📞"; contentDescription = "Llamar"; setOnClickListener {
-            if (clave.isEmpty()) return@setOnClickListener
+        llamar = tecla("📞", "Llamar", "Llamar").apply { setOnClickListener {
+            if (clave.isEmpty()) { dice.text = "Elegí arriba a quién llamar."; return@setOnClickListener }
             val yo = Nube(this@CharlaActivity).uid.orEmpty()
             val cs = conversaciones(with(Charla) { mensajesGuardados }, yo, nombreDelTelefono(this@CharlaActivity))
             val nombre = cs.firstOrNull { it.clave == clave }?.let { etiquetaConversacion(it, cs, yo).removePrefix("📱 ") }.orEmpty()
             startActivity(Intent(this@CharlaActivity, LlamadaActivity::class.java).putExtra("para", clave).putExtra("nombre", nombre))
-        } })
+        } }
         linea.addView(llamar)
         // pizarra-67 (Mauro: «cuando se toca para escribir, una ventana flotante bien arriba… con un pequeño botón
         // que sea el enviar»): acá no se escribe. Tocar abre EscribirActivity en la mitad de ARRIBA de la
         // pantalla, lejos del teclado: ningún Android lo puede tapar ahí.
-        campo = TextView(this).apply { textSize = 15f; setTextColor(Color.parseColor("#AEB3BA")); setPadding(dp(10), dp(10), dp(10), dp(10))
-            background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = 18 * d; setColor(Color.parseColor("#2A2E35")) }
-            contentDescription = "Escribir un mensaje"
-            setOnClickListener { escribir() } }
-        linea.addView(campo, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        campo = tecla("✎", "Escribir", "Escribir un mensaje").apply { setOnClickListener { escribir() } }
+        linea.addView(campo)
         caja.addView(linea)
         // pizarra-66 (Mauro: «el teclado sigue tapando el texto que se escribe»): desde Android 15 (targetSdk 35)
         // adjustResize ya no achica la ventana: el teclado se dibuja ENCIMA y la app tiene que correrse sola. Se
@@ -458,7 +507,13 @@ class CharlaActivity : Activity() {
             dice.text = "▶ Escuchando…"; Handy.escuchar(this, id, intent.getIntExtra("dur", 30)) { t -> runOnUiThread { dice.text = t } }
         }
         thread { Charla.ponerAlDia(this); runOnUiThread { pintar() } }
+        // pizarra-75: al abrir la charla se busca a los de cerca, así el handy sabe enseguida si va directo.
+        if (EnlaceAjustes.prendido(this)) EnlaceServicio.buscarYa(this)
+        reloj.postDelayed(object : Runnable { override fun run() { if (!isFinishing) { if (Pulsador.modo.isEmpty()) pintarHandy(); reloj.postDelayed(this, 2_000) } } }, 2_000)
     }
+
+    private val reloj = android.os.Handler(android.os.Looper.getMainLooper())
+    override fun onDestroy() { reloj.removeCallbacksAndMessages(null); if (Pulsador.modo.isNotEmpty()) Pulsador.soltar(this, true) { }; super.onDestroy() }
 
     /** Abre la ventana de escribir, arriba, para la conversación elegida. */
     private fun escribir() {
@@ -491,11 +546,9 @@ class CharlaActivity : Activity() {
 
     /** 🎙 mantener apretado: graba mientras se aprieta y al soltar lo manda a la pestaña elegida (pizarra-62). */
     @android.annotation.SuppressLint("ClickableViewAccessibility")
-    private fun botonHandy(): Button {
+    private fun botonAudio(t: TextView): TextView {
         var g: Grabador? = null
-        return Button(this).apply {
-            text = "🎙"
-            contentDescription = "Mantener apretado para grabar"
+        return t.apply {
             setOnTouchListener { v, e ->
                 when (e.action) {
                     android.view.MotionEvent.ACTION_DOWN -> {
@@ -504,7 +557,7 @@ class CharlaActivity : Activity() {
                             dice.text = "Dale permiso al micrófono y volvé a mantener apretado."
                         } else try {
                             g = Grabador(this@CharlaActivity).also { it.empezar { } }
-                            dice.text = "🔴 Grabando… soltá para mandar"
+                            dice.text = "🔴 Grabando un mensaje de voz… soltá para mandar"
                         } catch (x: Throwable) { dice.text = "No se pudo grabar."; g = null }
                         true
                     }
@@ -528,27 +581,99 @@ class CharlaActivity : Activity() {
         }
     }
 
+    /**
+     * 📻 el HANDY (pizarra-75): mantener apretado y hablar. Si el otro teléfono está cerca, se oye en vivo;
+     * si no, va por internet y le suena solo al llegar (`Pulsador`). El botón dice cuál de los dos va a ser.
+     */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun botonPulsador(): Button = Button(this).apply {
+        textSize = 16f; setTypeface(typeface, android.graphics.Typeface.BOLD); setTextColor(Color.parseColor("#FFFFFF")); isAllCaps = false
+        contentDescription = "Handy: mantener apretado para hablar"
+        setOnTouchListener { v, e ->
+            when (e.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    val yo = Nube(this@CharlaActivity).uid.orEmpty()
+                    val cs = conversaciones(with(Charla) { mensajesGuardados }, yo, nombreDelTelefono(this@CharlaActivity))
+                    val nombre = cs.firstOrNull { it.clave == clave }?.let { etiquetaConversacion(it, cs, yo).removePrefix("📱 ") }.orEmpty()
+                    val ok = Pulsador.apretar(this@CharlaActivity, clave, nombre) { t -> runOnUiThread { dice.text = t } }
+                    if (!ok) { requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 75); dice.text = "Dale permiso al micrófono y volvé a apretar." }
+                    pintarHandy(apretado = ok)
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    Pulsador.soltar(this@CharlaActivity, e.actionMasked == android.view.MotionEvent.ACTION_CANCEL) { t -> runOnUiThread { dice.text = t; pintar() } }
+                    pintarHandy(apretado = false)
+                    v.performClick(); true
+                }
+                else -> true
+            }
+        }
+        setOnClickListener { }
+    }
+
+    /** El botón del handy dice a quién y por dónde va a ir, ANTES de apretar. */
+    private fun pintarHandy(apretado: Boolean = false) {
+        val yo = Nube(this).uid.orEmpty()
+        val ms = with(Charla) { mensajesGuardados }
+        val cs = conversaciones(ms, yo, nombreDelTelefono(this))
+        val a = cs.firstOrNull { it.clave == clave }?.let { etiquetaConversacion(it, cs, yo).removePrefix("📱 ") }
+        val cerca = EnlaceAjustes.prendido(this) && destinoCerca(clave, EnlaceServicio.cercanos()) { telefonosConocidos(ms, it) }
+        handy.text = when {
+            apretado -> "🔴 HABLANDO… soltá para terminar"
+            cerca -> "📻 HANDY con ${a ?: "todos"} · cerca, en vivo"
+            a == null -> "📻 HANDY · elegí arriba a quién"
+            else -> "📻 HANDY con $a · por internet"
+        }
+        handy.background = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 16 * resources.displayMetrics.density
+            setColor(Color.parseColor(if (apretado) "#C62828" else if (cerca) "#2E7D32" else "#1565C0"))
+        }
+    }
+
+    /** pizarra-75: el nombre de este teléfono, el que ven los demás. */
+    private fun renombrar() {
+        val campoNombre = android.widget.EditText(this).apply { setText(nombreDelTelefono(this@CharlaActivity)); setSelection(text.length) }
+        android.app.AlertDialog.Builder(this).setTitle("Nombre de este teléfono")
+            .setMessage("Es como lo ven las otras Pizarras (por ejemplo «Note 9 · Hilux» o «Celu de Mauro»). Ojo: con otro nombre, la conversación con este teléfono empieza de nuevo para los demás.")
+            .setView(campoNombre)
+            .setPositiveButton("Guardar") { _, _ ->
+                val n = aliasValido(campoNombre.text.toString())
+                if (n == null) dice.text = "Un nombre de 2 a 40 letras, sin «|»." else { ponerAlias(this, n); Bitacora.anotar(this, "teléfono: nombre nuevo"); pintar() }
+            }
+            .setNeutralButton("El del sistema") { _, _ -> ponerAlias(this, null); pintar() }
+            .setNegativeButton("Cancelar", null).show()
+    }
+
     private fun pintar() {
         val yo = Nube(this).uid.orEmpty(); val tel = nombreDelTelefono(this)
         val todos = with(Charla) { mensajesGuardados }
         val cs = conversaciones(todos, yo, tel)
         val c = cs.firstOrNull { it.clave == clave }
         if (c == null) clave = ""
-        // Las pestañas: Todos, y cada teléfono.
         val d = resources.displayMetrics.density
+        // pizarra-75: cada teléfono con SU color, el mismo en la franja, las pestañas y las burbujas.
+        val conocidos = todos.map { it.dispositivo }.filter { it.isNotEmpty() } + tel
+        fun colorDe(disp: String, nombre: String) = Color.parseColor(colorDeTelefono(if (disp == "*") "persona $nombre" else disp, conocidos))
+        val mio = colorDe(tel, "")
+        estoyEn.text = "📱 Estás en: $tel  ✎"
+        estoyEn.setTextColor(Color.parseColor("#14161A"))
+        estoyEn.background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = 12 * d; setColor(mio) }
+        // Las pestañas: Todos, y cada teléfono (o persona), con su color.
         pestanas.removeAllViews()
-        fun chip(texto: String, k: String) = TextView(this).apply {
-            text = texto; textSize = 13f; setPadding((12 * d).toInt(), (6 * d).toInt(), (12 * d).toInt(), (6 * d).toInt())
+        fun chip(texto: String, k: String, color: Int?) = TextView(this).apply {
+            text = (if (color != null) "● " else "") + texto; textSize = 14f; setPadding((12 * d).toInt(), (8 * d).toInt(), (12 * d).toInt(), (8 * d).toInt())
             val elegida = k == clave
-            setTextColor(Color.parseColor(if (elegida) "#1B1D21" else "#E8EAED"))
-            background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = 16 * d; setColor(Color.parseColor(if (elegida) "#E8B85C" else "#3A3F47")) }
+            setTextColor(if (elegida) Color.parseColor("#14161A") else (color ?: Color.parseColor("#E8EAED")))
+            setTypeface(typeface, if (elegida) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+            background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = 16 * d
+                setColor(if (elegida) (color ?: Color.parseColor("#E8B85C")) else Color.parseColor("#2A2E35"))
+                if (color != null) setStroke((2 * d).toInt(), color) }
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = (6 * d).toInt() }
             setOnClickListener { clave = k; pintar() }
         }
-        pestanas.addView(chip("Todos", ""))
-        for (x in cs) pestanas.addView(chip(etiquetaConversacion(x, cs, yo), x.clave))
-        llamar?.visibility = if (c == null) android.view.View.GONE else android.view.View.VISIBLE
-        campo.text = "✎ " + (if (c == null) "Escribile a todos" else "Escribile a " + etiquetaConversacion(c, cs, yo).removePrefix("📱 "))
+        pestanas.addView(chip("Todos", "", null))
+        for (x in cs) pestanas.addView(chip(etiquetaConversacion(x, cs, yo), x.clave, colorDe(x.dispositivo, x.nombre)))
+        pintarHandy()
         // Las burbujas: lo mío a la derecha, lo del otro a la izquierda.
         lista.removeAllViews()
         val ms = (if (c == null) todos else todos.filter { enConversacion(it, c, yo, tel) }).take(40).reversed()
@@ -557,22 +682,24 @@ class CharlaActivity : Activity() {
             text = if (c == null) "Todavía no hay mensajes. Un teléfono nuevo aparece como pestaña en cuanto escribe su primer mensaje." else "Todavía no se escribieron."
         })
         for (m in ms) {
-            val mio = m.de == yo && m.dispositivo == tel
-            val fila = LinearLayout(this).apply { gravity = if (mio) Gravity.END else Gravity.START; setPadding(0, (3 * d).toInt(), 0, (3 * d).toInt()) }
+            val esMio = m.de == yo && m.dispositivo == tel
+            val fila = LinearLayout(this).apply { gravity = if (esMio) Gravity.END else Gravity.START; setPadding(0, (3 * d).toInt(), 0, (3 * d).toInt()) }
             fila.addView(TextView(this).apply {
-                val cuerpo = if (m.audio.isNotEmpty()) "▶ 🎙 " + duracionTexto(m.dur)
+                val cuerpo = if (m.audio.isNotEmpty()) (if (m.handy) "▶ 📻 handy " else "▶ 🎙 ") + duracionTexto(m.dur)
                     else if (m.archivo.isNotEmpty()) m.texto + "\n(tocá para abrir)" else m.texto
-                text = (if (mio && c != null) "" else firmaMensaje(m, yo, tel) + "\n") + cuerpo + "\n" + horaCorta(m.creado)
+                text = (if (esMio && c != null) "" else firmaMensaje(m, yo, tel) + "\n") + cuerpo + "\n" + horaCorta(m.creado)
                 if (m.archivo.isNotEmpty()) setOnClickListener {
                     dice.text = "Abriendo…"; Archivos.abrir(this@CharlaActivity, m.archivo, m.partes, m.nombreArchivo) { t -> runOnUiThread { dice.text = t } }
                 }
                 if (m.audio.isNotEmpty()) setOnClickListener {
                     dice.text = "▶ Escuchando…"; Handy.escuchar(this@CharlaActivity, m.audio, m.dur) { t -> runOnUiThread { dice.text = t } }
                 }
-                textSize = 14f; setTextColor(Color.parseColor(if (mio) "#1B1D21" else "#F2F2F2"))
+                textSize = 14f; setTextColor(Color.parseColor(if (esMio) "#14161A" else "#F2F2F2"))
                 maxWidth = (resources.displayMetrics.widthPixels * 0.7).toInt()
                 setPadding((10 * d).toInt(), (6 * d).toInt(), (10 * d).toInt(), (6 * d).toInt())
-                background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = 12 * d; setColor(Color.parseColor(if (mio) "#E8B85C" else "#3A3F47")) }
+                // pizarra-75: lo mío, del color de este teléfono; lo del otro, con un borde del color del suyo.
+                background = android.graphics.drawable.GradientDrawable().apply { cornerRadius = 12 * d
+                    if (esMio) setColor(mio) else { setColor(Color.parseColor("#2F333A")); setStroke((3 * d).toInt(), colorDe(m.dispositivo, m.nombre)) } }
             })
             lista.addView(fila)
         }

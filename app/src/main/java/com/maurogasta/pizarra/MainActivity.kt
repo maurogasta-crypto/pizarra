@@ -518,9 +518,22 @@ class MainActivity : Activity() {
        Bluetooth en el auto, sin internet. El resultado se dice AL LADO. */
     private fun pintarEnlace() {
         raiz.addView(subtitulo("📡 Enlace cerca (sin datos)"))
-        raiz.addView(texto("Para que dos Pizarras se avisen y se hablen: en la casa por el mismo wi-fi y en el auto por Bluetooth, sin datos; lejos, por internet (con la cuenta de Tiempos). Prendelo en las dos y escribí en una el código de la otra. Para el auto, emparejá los dos teléfonos UNA vez en los ajustes de Bluetooth de Android. Si el teléfono es el de la Hilux, la app de la camioneta le pasa a esta Pizarra el viaje en vivo y lo que pase, y ella lo manda a la otra. Conviene dejarle a Pizarra la batería «sin restricciones».", 13f, "#9AA0A6"))
+        raiz.addView(texto("Para que tus Pizarras se avisen y se hablen: en la casa por el mismo wi-fi y en el auto por Bluetooth, sin datos; lejos, por internet. Las que entraron con una cuenta de Tiempos (la tuya o la de Florencia) se reconocen solas: no hace falta ningún código. Para el auto, emparejá los dos teléfonos UNA vez en los ajustes de Bluetooth de Android. Conviene dejarle a Pizarra la batería «sin restricciones».", 13f, "#9AA0A6"))
         val dice = texto("", 14f, "#E8D3A2")
         fun estado() { dice.text = if (EnlaceAjustes.prendido(this)) "Estado: ${EnlaceServicio.estado}" else "Apagado." }
+        // pizarra-75 (Mauro: «un nombre más distintivo de cada dispositivo y un color diferente»).
+        val nombre = texto("📱 Este teléfono se llama «${nombreDelTelefono(this)}» para las otras Pizarras.", 15f, "#F2F2F2")
+        raiz.addView(nombre)
+        val nuevoNombre = campo("Nombre nuevo (ej.: Note 9 · Hilux)", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS)
+        raiz.addView(nuevoNombre)
+        raiz.addView(boton("Ponerle este nombre") {
+            val n = aliasValido(nuevoNombre.text.toString())
+            if (n == null) { dice.text = "Un nombre de 2 a 40 letras, sin «|»."; return@boton }
+            ponerAlias(this, n); Bitacora.anotar(this, "teléfono: nombre nuevo")
+            nombre.text = "📱 Este teléfono se llama «$n» para las otras Pizarras."
+            dice.text = "Listo. Ojo: para los demás, la conversación con este teléfono empieza de nuevo."
+            if (EnlaceAjustes.prendido(this)) { EnlaceServicio.detener(this); EnlaceServicio.arrancar(this) }
+        })
         val prender = CheckBox(this).apply {
             text = "Prender el enlace en este teléfono"
             textSize = 15f
@@ -534,18 +547,33 @@ class MainActivity : Activity() {
             }
         }
         raiz.addView(prender)
-        raiz.addView(texto("El código del enlace en este teléfono: ${codigoParaLeer(EnlaceAjustes.codigo(this))}", 15f, "#F2F2F2"))
-        // pizarra-72: el 27-oct se escribió el código en las DOS, cruzado, y quedaron con códigos distintos.
-        raiz.addView(texto("Las dos Pizarras tienen que mostrar el MISMO código. Escribí éste en la otra (en una sola: la otra pasa a mostrar éste).", 13f, "#E8D3A2"))
+        // pizarra-75 (Mauro: «el código no creo que sea necesario dentro de aplicaciones que ya traen un usuario
+        // y un logueo»): la llave sale de la cuenta. El código a mano queda para un teléfono sin cuenta de Tiempos.
+        val llave = texto(if (EnlaceAjustes.porCuenta(this) != null) "🔐 Se reconoce con tu cuenta de Tiempos: sin código." else "🔐 Todavía no trajo la llave de la cuenta.", 14f, "#A8D5A2")
+        raiz.addView(llave)
+        if (EnlaceAjustes.porCuenta(this) == null && !EnlaceAjustes.usaAMano(this)) thread {
+            val r = EnlaceAjustes.traerDeLaCuenta(this)
+            runOnUiThread { llave.text = if (r == null) "🔐 Se reconoce con tu cuenta de Tiempos: sin código." else "🔐 $r" }
+        }
+        val avanzado = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
+        raiz.addView(boton("Avanzado: un teléfono sin cuenta de Tiempos") { avanzado.visibility = if (avanzado.visibility == View.GONE) View.VISIBLE else View.GONE })
+        avanzado.addView(texto("Sólo si una de las Pizarras no tiene cuenta de Tiempos: las dos tienen que usar el MISMO código a mano.", 13f, "#E8D3A2"))
+        avanzado.addView(CheckBox(this).apply {
+            text = "Usar el código a mano en este teléfono"; textSize = 14f; setTextColor(Color.parseColor("#F2F2F2"))
+            isChecked = EnlaceAjustes.usaAMano(this@MainActivity)
+            setOnCheckedChangeListener { _, si -> EnlaceAjustes.usarAMano(this@MainActivity, si); if (EnlaceAjustes.prendido(this@MainActivity)) { EnlaceServicio.detener(this@MainActivity); EnlaceServicio.arrancar(this@MainActivity) } }
+        })
+        avanzado.addView(texto("El código del enlace en este teléfono: ${codigoParaLeer(EnlaceAjustes.aMano(this))}", 15f, "#F2F2F2"))
         val otro = campo("Código de la otra Pizarra", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
-        raiz.addView(otro)
-        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        fila.addView(boton("Usar ese código") {
+        avanzado.addView(otro)
+        avanzado.addView(boton("Usar ese código") {
             if (!EnlaceAjustes.usarCodigo(this, otro.text.toString())) { dice.text = "Eso no es un código: son 10 letras y números, como el que muestra la otra Pizarra."; return@boton }
             Bitacora.anotar(this, "enlace: usa el código de otra Pizarra")
             if (EnlaceAjustes.prendido(this)) { EnlaceServicio.detener(this); EnlaceServicio.arrancar(this) }
             pintar()
         })
+        raiz.addView(avanzado)
+        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         fila.addView(boton("Probar") {
             if (!EnlaceAjustes.prendido(this)) { dice.text = "Primero prendé el enlace."; return@boton }
             EnlaceServicio.enviar(this, org.json.JSONObject().put("v", VERSION_ENLACE).put("app", "pizarra").put("tipo", "prueba")
@@ -555,7 +583,7 @@ class MainActivity : Activity() {
             val desde = System.currentTimeMillis()
             dice.postDelayed({
                 dice.text = if (EnlaceServicio.ultimoAcuseEn >= desde) EnlaceServicio.ultimoAcuse
-                else "La otra Pizarra no contestó. Estado: ${EnlaceServicio.estado}. Mirá que las dos muestren el mismo código y tengan el enlace prendido."
+                else "La otra Pizarra no contestó. Estado: ${EnlaceServicio.estado}. Mirá que las dos tengan el enlace prendido y estén en el mismo wi-fi (o emparejadas por Bluetooth)."
             }, 6_000)
         })
         raiz.addView(fila)

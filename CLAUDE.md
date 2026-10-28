@@ -514,6 +514,38 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   Android 10+, sin permisos). Otra app no puede mandar archivos por la puerta
   local. **Sin regla nueva**, cupo cero cerca. «Agendar en Tiempos» sigue
   igual, al lado. La bitácora no lleva nombres de archivo.
+- **pizarra-75: el handy que elige solo, sin código y con nombre y color**
+  (28-oct-2026, Mauro: «funciona aleatoriamente: de rato se conecta y después
+  se desconecta»; «el código no creo que sea necesario… ya traen un usuario
+  con un logueo»; «un nombre más distintivo de cada dispositivo y un color
+  diferente»; «el botón tipo handy… cerca, directo; cuando no, que lo mande por
+  internet y despierte el teléfono»). Cuatro cosas:
+  · **La conexión cerca ya no muere callada.** Cada conexión manda un
+    **latido** (`LATIDO_MS`), el **vigía** cierra la que calla más de
+    `MUDA_MS` y sin nadie conectado se vuelve a buscar sola cada
+    `BUSCAR_SOLO_MS`; por Bluetooth, sola, sólo al teléfono con el que ya se
+    habló (`btConocido`: tocar todos los emparejados molestaría al auto). Con
+    una conexión por wi-fi el wi-fi no se duerme (`WifiLock`). Antes, el wi-fi
+    dormido mataba la conexión y la Pizarra seguía hablándole al vacío.
+  · **Sin código**: la llave sale de la cuenta. `enlace_llave/familia` de
+    Tiempos (reglas **v22**) guarda UN código, lo crea la primera Pizarra que
+    lo pide (`llaveFamilia`, sin pisar) y lo leen sólo los miembros —**el
+    agente no**: firma lo que se mandan los teléfonos—. El código a mano queda
+    en «Avanzado», para un teléfono sin cuenta de Tiempos.
+  · **Cada teléfono, con su nombre y su color.** El nombre se pone en la
+    Pizarra (`aliasDelTelefono`; cambiarlo empieza de nuevo la conversación
+    para los demás) y el color se reparte en orden alfabético entre los
+    teléfonos conocidos (`colorDeTelefono`): la franja «📱 Estás en…», las
+    pestañas y las burbujas.
+  · **El 📻 HANDY va aparte, grande, y elige el camino al apretar**
+    (`Pulsador`): si el teléfono de la conversación está conectado cerca
+    (`destinoCerca`), la voz sale en vivo sólo para él (`para`, `vozParaMi`);
+    si no, se graba y va por Tiempos con `handy: true` (v22), que lo despierta
+    y **suena solo al llegar** aunque no haya elegido «Escuchar los audios
+    solos» (silencio y llamadas siguen mandando). Abajo, cuatro botones
+    iguales: 🎙 Audio, 📎 Foto o archivo, 📞 Llamar y ✎ Escribir.
+  **Hay que publicar las reglas v22 de Tiempos.** Cupo: el latido es local
+  (cero); la llave, una lectura por teléfono, una vez.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

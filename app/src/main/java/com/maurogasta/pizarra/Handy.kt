@@ -55,6 +55,8 @@ private const val VIDA_AUDIO_MS = 30L * 24 * 3600_000L
 
 /** El texto que acompaña a un mensaje de voz: lo que se ve donde no hay ▶ (la web, una notificación). */
 fun textoDeAudio(dur: Int) = "🎙 Mensaje de voz (${duracionTexto(dur)})"
+/** pizarra-75: lo que habló el handy cuando el otro no estaba cerca: viajó por internet y suena solo al llegar. */
+fun textoDeHandy(dur: Int) = "📻 Handy (${duracionTexto(dur)})"
 
 fun duracionTexto(seg: Int) = "${seg / 60}:${(seg % 60).toString().padStart(2, '0')}"
 
@@ -78,7 +80,9 @@ fun bytesDeAudio(r: JSONArray): ByteArray? {
 
 /** ¿Este audio recién llegado se escucha solo? */
 fun debeSonarSolo(m: Mensaje, yo: String, miTelefono: String, ahora: Long, activado: Boolean): Boolean =
-    activado && m.audio.isNotEmpty() && !(m.de == yo && m.dispositivo == miTelefono) && esParaMi(m, yo, miTelefono) &&
+    // pizarra-75: el del HANDY suena siempre (Mauro: «tiene que activar directamente el audio en el otro
+    // dispositivo»); el silencio, una llamada y los 10 minutos siguen mandando.
+    (activado || m.handy) && m.audio.isNotEmpty() && !(m.de == yo && m.dispositivo == miTelefono) && esParaMi(m, yo, miTelefono) &&
         (instante(m.creado)?.let { ahora - it in 0..10 * 60_000L } ?: false)
 
 /** Los audios míos que ya cumplieron 30 días (id → cuándo los mandé). */
@@ -133,11 +137,11 @@ object Handy {
     fun tienePermiso(c: Context) = c.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
     /** Manda lo grabado. En su hilo; avisa el resultado por `listo` (null = salió). */
-    fun mandar(c: Context, datos: ByteArray, dur: Int, tipo: String, para: String, listo: (String?) -> Unit) {
+    fun mandar(c: Context, datos: ByteArray, dur: Int, tipo: String, para: String, handy: Boolean = false, listo: (String?) -> Unit) {
         val app = c.applicationContext
         thread {
             val error = try {
-                val id = Nube(app).mandarAudio(datos, dur, tipo, nombreDelTelefono(app), para)
+                val id = Nube(app).mandarAudio(datos, dur, tipo, nombreDelTelefono(app), para, handy)
                 val p = prefs(app)
                 val mios = JSONObject(p.getString("mios", "{}") ?: "{}").put(id, System.currentTimeMillis())
                 p.edit().putString("mios", mios.toString()).apply()
@@ -145,7 +149,7 @@ object Handy {
             } catch (e: Throwable) {
                 Bitacora.anotar(app, "handy: no salió: " + (e.message ?: e.javaClass.simpleName))
                 val m = e.message ?: "no se pudo"
-                if (m.startsWith("La base no deja")) "Para mandar audios hay que publicar las reglas v18 de Tiempos." else m
+                if (m.startsWith("La base no deja")) (if (handy) "Para el handy por internet hay que publicar las reglas v22 de Tiempos." else "Para mandar audios hay que publicar las reglas v18 de Tiempos.") else m
             }
             listo(error)
         }

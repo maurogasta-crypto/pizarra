@@ -141,8 +141,9 @@ fun textoDeAcuse(o: JSONObject): String {
 /**
  * Los tipos que hay. Lo demás no se manda ni se lee. «voz» es el handy cerca (pizarra-71, Radio.kt);
  * «recibido» es el acuse que contesta la otra Pizarra a una prueba o a una voz (pizarra-72).
+ * «latido» (pizarra-75) dice «sigo acá» cada LATIDO_MS: sin él, una conexión muerta parecía viva.
  */
-val TIPOS_ENLACE = setOf("vivo", "evento", "prueba", "voz", "recibido", "archivo")
+val TIPOS_ENLACE = setOf("vivo", "evento", "prueba", "voz", "recibido", "archivo", "latido")
 /** Lo que puede mandar otra app por la puerta local: la voz, no (es de la Pizarra). */
 val TIPOS_DE_APP = setOf("vivo", "evento", "prueba")
 

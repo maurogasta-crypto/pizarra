@@ -96,7 +96,8 @@ class ConversacionesTest {
         assertTrue(src.contains("SOFT_INPUT_ADJUST_RESIZE"))
         // pizarra-66: desde Android 15 adjustResize no alcanza; el teclado se mide y se corre el contenido.
         assertTrue(src.contains("setOnApplyWindowInsetsListener") && java.io.File("src/main/java/com/maurogasta/pizarra/Mensajes.kt").readText().contains("WindowInsets.Type.ime()"))
-        assertTrue("botones de ancho fijo", src.contains("LinearLayout.LayoutParams(dp(44), dp(44))"))
+        // pizarra-75: los botones de abajo, de alto fijo y del mismo ancho (peso 1): no se deforman.
+        assertTrue("botones de alto fijo y mismo ancho", src.contains("LinearLayout.LayoutParams(0, dp(58), 1f)"))
         assertTrue(!src.contains("text = \"Mandar\"") && !src.contains("text = \"Cerrar\""))
         // pizarra-67: en la charla no se escribe: se toca y se abre la ventana de ARRIBA, lejos del teclado.
         assertTrue(src.contains("setOnClickListener { escribir() }"))
