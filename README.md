@@ -14,7 +14,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-75` (en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-76` (en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
@@ -478,6 +478,12 @@ pueda despertar al teléfono».
   escuchó o no sonó (silencio, vibrador, llamada, handy apagado); y si las dos
   están conectadas con códigos distintos, el estado lo dice. **Las dos tienen
   que MOSTRAR el mismo código**: se escribe el de una en la otra, en una sola.
+
+## 📱 De aparato a aparato (pizarra-76)
+
+Cada teléfono —tuyo o de otra persona— es su propia pestaña en los mensajes,
+con su nombre y su color, y la conversación es entre ESTE aparato y ÉSE. Lo que
+se manda (handy, audio, foto, texto, llamada) va a ese aparato.
 
 ## 📻 El handy que elige solo (pizarra-75)
 

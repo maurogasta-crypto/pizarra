@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-// pizarra-61/62: las conversaciones (por persona; mis teléfonos, uno por uno) y las pestañas del widget.
+// pizarra-61/62/76: las conversaciones (desde pizarra-76, de aparato a aparato) y las pestañas del widget.
 class ConversacionesTest {
     private val docs = "projects/tiempos-71d42/databases/(default)/documents"
     private fun m(id: String, de: String, nombre: String, tel: String, para: String, t: String) =
@@ -21,29 +21,38 @@ class ConversacionesTest {
         m("6", "yo", "Mauro", "Redmi 15", "yo|Redmi 13C", "05"),          // del 15 a mi 13C
     ).sortedByDescending { it.creado }
 
-    @Test fun conFlorencia_esLaMismaDesdeCualquieraDeMisTelefonos() {
+    // pizarra-76 (Mauro: «priorizar el dispositivo… relacionar un dispositivo con otro»): una conversación es
+    // entre DOS APARATOS. El Note de Flor, visto desde mi 15, es sólo lo que se mandaron esos dos.
+    @Test fun conElNoteDeFlorencia_esSoloEntreEseAparatoYEste() {
         val desde15 = conversaciones(ms, "yo", "Redmi 15")
-        val flor = desde15.first { it.clave == "flor|*" }
-        assertEquals(listOf("2", "3", "4"), ms.filter { enConversacion(it, flor, "yo", "Redmi 15") }.map { it.id }.sorted())
-        val flor13 = conversaciones(ms, "yo", "Redmi 13C").first { it.clave == "flor|*" }
-        assertEquals(listOf("2", "3", "4"), ms.filter { enConversacion(it, flor13, "yo", "Redmi 13C") }.map { it.id }.sorted())
+        val note = desde15.first { it.clave == "flor|Note" }
+        assertEquals(listOf("2", "4"), ms.filter { enConversacion(it, note, "yo", "Redmi 15") }.map { it.id }.sorted())
+        val note13 = conversaciones(ms, "yo", "Redmi 13C").first { it.clave == "flor|Note" }
+        assertEquals("lo de mi 15 con el Note no es del 13C", listOf("3"), ms.filter { enConversacion(it, note13, "yo", "Redmi 13C") }.map { it.id })
     }
 
-    @Test fun conMiOtroTelefono_esSoloEntreEsosDos_yEsteNoEsPestana() {
+    @Test fun cadaAparatoEsUnaPestana_yEsteNo() {
         val cs = conversaciones(ms, "yo", "Redmi 15")
-        assertEquals(setOf("flor|*", "yo|Redmi 13C"), cs.map { it.clave }.toSet())
+        assertEquals(setOf("flor|Note", "yo|Redmi 13C"), cs.map { it.clave }.toSet())
         val trece = cs.first { it.clave == "yo|Redmi 13C" }
         assertEquals(listOf("5", "6"), ms.filter { enConversacion(it, trece, "yo", "Redmi 15") }.map { it.id }.sorted())
         assertEquals("📱 Redmi 13C", etiquetaConversacion(trece, cs, "yo"))
-        assertEquals("Flor", etiquetaConversacion(cs.first { it.clave == "flor|*" }, cs, "yo"))
+        assertEquals("el aparato primero, la persona al lado", "📱 Note · Flor", etiquetaConversacion(cs.first { it.clave == "flor|Note" }, cs, "yo"))
     }
 
-    @Test fun desdeElLadoDeFlorencia_MauroEsUnaSolaPestana_conTodosSusTelefonos() {
+    @Test fun desdeElNoteDeFlorencia_cadaTelefonoDeMauroEsSuPestana() {
         val cs = conversaciones(ms, "flor", "Note")
-        assertEquals(setOf("yo|*"), cs.map { it.clave }.toSet())
-        assertEquals("Mauro", etiquetaConversacion(cs.single(), cs, "flor"))
-        // Lo que Mauro le escribió desde los dos teléfonos y lo que ella le mandó; lo de Mauro con su 13C no es de ella.
-        assertEquals(listOf("2", "3", "4"), ms.filter { enConversacion(it, cs.single(), "flor", "Note") }.map { it.id }.sorted())
+        assertEquals(setOf("yo|Redmi 15", "yo|Redmi 13C"), cs.map { it.clave }.toSet())
+        assertEquals(listOf("2", "4"), ms.filter { enConversacion(it, cs.first { it.clave == "yo|Redmi 15" }, "flor", "Note") }.map { it.id }.sorted())
+        assertEquals(listOf("3"), ms.filter { enConversacion(it, cs.first { it.clave == "yo|Redmi 13C" }, "flor", "Note") }.map { it.id })
+    }
+
+    @Test fun loViejoALaPersona_quedaConElAparatoQueLoMando() {
+        val viejo = Mensaje("v", "yo", "Mauro", "Redmi 15", "hola", "2026-10-24T12:30:00Z", "flor|*")
+        val cs = conversaciones(ms + viejo, "flor", "Note")
+        assertFalse("«a la persona» no es una pestaña", cs.any { it.clave.endsWith("|*") })
+        assertTrue(enConversacion(viejo, cs.first { it.clave == "yo|Redmi 15" }, "flor", "Note"))
+        assertFalse(enConversacion(viejo, cs.first { it.clave == "yo|Redmi 13C" }, "flor", "Note"))
     }
 
     @Test fun loQueLeEscriboALaPersona_leLlegaATodosSusTelefonos() {

@@ -171,39 +171,44 @@ fun firmaMensaje(m: Mensaje, yo: String, miTelefono: String, nombres: Map<String
 fun esParaMi(m: Mensaje, yo: String, miTelefono: String): Boolean =
     m.para.isEmpty() || m.para == claveDe(yo, miTelefono) || (m.para.startsWith("$yo|") && m.de != yo)
 
-/** ¿Este mensaje es de la conversación con ese teléfono, vista desde este? */
-fun enConversacion(m: Mensaje, c: Conversacion, yo: String, miTelefono: String): Boolean =
-    if (c.uid != yo) (m.de == c.uid && m.para.startsWith("$yo|")) || (m.de == yo && m.para.startsWith("${c.uid}|"))
-    else (m.de == yo && m.dispositivo == c.dispositivo && m.para == claveDe(yo, miTelefono)) ||
-        (m.de == yo && m.dispositivo == miTelefono && m.para == c.clave)
+/**
+ * ¿Este mensaje es de la conversación con ese teléfono, vista desde ESTE? Desde pizarra-76 (Mauro, 28-oct:
+ * «más que el usuario, priorizar el dispositivo: cada usuario puede usar distintos dispositivos; lo importante
+ * es identificar y relacionar un dispositivo con otro») una conversación es entre DOS APARATOS: lo que este
+ * le mandó a ése, y lo que ése le mandó a éste. Lo viejo que iba «a la persona» («uid|*», pizarra-62) cuenta
+ * en la conversación con el aparato que lo mandó o desde el que se mandó.
+ */
+fun enConversacion(m: Mensaje, c: Conversacion, yo: String, miTelefono: String): Boolean {
+    val deEste = m.de == yo && m.dispositivo == miTelefono
+    val deEse = m.de == c.uid && m.dispositivo == c.dispositivo
+    val aEse = m.para == c.clave || (c.uid != yo && m.para == claveDePersona(c.uid))
+    val aEste = m.para == claveDe(yo, miTelefono) || (c.uid != yo && m.para == claveDePersona(yo))
+    return (deEste && aEse) || (deEse && aEste)
+}
 
-/** Los teléfonos con los que se puede hablar, la conversación más reciente primero. Este teléfono no. */
+/** Los APARATOS con los que se puede hablar (los míos y los de los demás), la conversación más reciente primero. Este no. */
 fun conversaciones(ms: List<Mensaje>, yo: String, miTelefono: String): List<Conversacion> {
     val nombres = mutableMapOf<String, String>()
     val claves = LinkedHashSet<String>()
+    val este = claveDe(yo, miTelefono)
     for (m in ms) {
         if (m.dispositivo.isBlank()) continue
         if (m.nombre.isNotBlank()) nombres.putIfAbsent(m.de, m.nombre)
-        // La otra persona, una sola vez con todos sus teléfonos; mis otros teléfonos, uno por uno.
-        val k = if (m.de == yo) claveDe(yo, m.dispositivo) else claveDePersona(m.de)
-        if (k != claveDe(yo, miTelefono)) claves.add(k)
-        if (m.para.contains('|')) {
-            val u = m.para.substringBefore('|')
-            val kp = if (u == yo) m.para else claveDePersona(u)
-            if (kp != claveDe(yo, miTelefono) && kp != claveDePersona(yo)) claves.add(kp)
-        }
+        claveDe(m.de, m.dispositivo).let { if (it != este) claves.add(it) }
+        // A quién iba, si era a un aparato (lo que iba «a la persona» no dice cuál).
+        if (m.para.contains('|') && !m.para.endsWith("|*") && m.para != este) claves.add(m.para)
     }
     return claves.map { k ->
         val u = k.substringBefore('|'); val d = k.substringAfter('|')
         val c0 = Conversacion(k, u, d, if (u == yo) "Yo" else nombres[u] ?: "Alguien", "")
         c0.copy(ultima = ms.filter { enConversacion(it, c0, yo, miTelefono) }.maxOfOrNull { it.creado }
-            ?: ms.filter { (if (it.de == yo) claveDe(yo, it.dispositivo) else claveDePersona(it.de)) == k }.maxOfOrNull { it.creado }.orEmpty())
+            ?: ms.filter { claveDe(it.de, it.dispositivo) == k }.maxOfOrNull { it.creado }.orEmpty())
     }.sortedByDescending { it.ultima }
 }
 
-/** El nombre de la pestaña: la persona; con el teléfono si tiene más de uno; mis otros teléfonos, por su nombre. */
+/** El nombre de la pestaña: el APARATO primero; si es de otra persona, ella al lado, chiquito. */
 fun etiquetaConversacion(c: Conversacion, todas: List<Conversacion>, yo: String): String =
-    if (c.uid == yo) "📱 " + c.dispositivo.take(16) else c.nombre.take(16)
+    "📱 " + c.dispositivo.take(18) + (if (c.uid == yo) "" else " · " + c.nombre.take(10))
 
 /** Las pestañas del widget: hasta tres conversaciones, y la elegida siempre está. */
 fun pestanasDelWidget(cs: List<Conversacion>, elegida: String, cuantas: Int = 3): List<Conversacion> {

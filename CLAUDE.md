@@ -546,6 +546,16 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
     iguales: 🎙 Audio, 📎 Foto o archivo, 📞 Llamar y ✎ Escribir.
   **Hay que publicar las reglas v22 de Tiempos.** Cupo: el latido es local
   (cero); la llave, una lectura por teléfono, una vez.
+- **pizarra-76: la conversación es de APARATO A APARATO** (28-oct-2026, Mauro:
+  «más que el usuario, priorizar el dispositivo, ya que cada usuario puede
+  utilizar distintos dispositivos; lo importante es identificar y relacionar un
+  dispositivo con otro»). Da vuelta lo de pizarra-62: la otra persona ya no es
+  UNA pestaña con todos sus teléfonos; cada aparato —mío o de otro— es su
+  pestaña («📱 Note · Flor»: el aparato primero), y la conversación es lo que
+  ESTE aparato le mandó a ÉSE y lo que ése le mandó a éste (`enConversacion`).
+  Lo viejo que iba «a la persona» («uid|*») queda con el aparato que lo mandó o
+  recibió. El handy, la llamada, el audio, el archivo y el texto van al aparato
+  de la pestaña. Sin regla nueva.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 
