@@ -556,6 +556,15 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   Lo viejo que iba «a la persona» («uid|*») queda con el aparato que lo mandó o
   recibió. El handy, la llamada, el audio, el archivo y el texto van al aparato
   de la pestaña. Sin regla nueva.
+- **pizarra-77: lo que limpia el gestor de Claude se va de TODOS los teléfonos**
+  (28-oct-2026, Mauro: «limpiar todas las pruebas de comunicación que quedaron
+  en registros de todos los teléfonos… un gestor de comunicaciones que pase por
+  el chat»). El gestor es `herramientas/charla.mjs limpiar` de `datos` (reglas
+  v23 de Tiempos: el agente BORRA mensajes, audios, archivos y llamadas, y sólo
+  con la autorización de Mauro). Al limpiar deja `familia/charla.limpiadoEn`;
+  cada Pizarra lo mira al ponerse al día (`limpiezaCharla`, una lectura) y, si
+  es nuevo, trae la charla entera (`hayQueTraerTodo`): lo borrado desaparece de
+  su lista en menos de 10 minutos (de 8 a 23) o al abrir la charla.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

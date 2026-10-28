@@ -129,6 +129,18 @@ fun mensajesDeConsulta(r: JSONArray): List<Mensaje> = (0 until r.length()).mapNo
         f.optJSONObject("handy")?.optBoolean("booleanValue", false) == true && s("audio").isNotEmpty())
 }.sortedByDescending { it.creado }
 
+/** pizarra-77: el `limpiadoEn` de `familia/charla` en la respuesta de un batchGet, o «». */
+fun limpiezaDeRespuesta(r: JSONArray): String =
+    r.optJSONObject(0)?.optJSONObject("found")?.optJSONObject("fields")?.optJSONObject("limpiadoEn")
+        ?.let { it.optString("stringValue", "").ifEmpty { it.optString("timestampValue", "") } }.orEmpty().take(40)
+
+/**
+ * pizarra-77: ¿hay que traer la charla ENTERA? La primera vez, cada 6 horas (por si alguien borró un mensaje
+ * suyo), y cuando el gestor de Claude la limpió después de la última vez que se trajo entera.
+ */
+fun hayQueTraerTodo(guardados: Int, ahora: Long, ultimoCompleto: Long, limpiadoEn: String, limpiezaVista: String): Boolean =
+    guardados == 0 || ahora - ultimoCompleto > 6 * 3600_000L || (limpiadoEn.isNotEmpty() && limpiadoEn > limpiezaVista)
+
 /** Lo guardado más lo nuevo, sin repetir, del más nuevo al más viejo. */
 fun mezclarMensajes(guardados: List<Mensaje>, nuevos: List<Mensaje>, tope: Int = 150): List<Mensaje> =
     (nuevos + guardados).distinctBy { it.id }.sortedByDescending { it.creado }.take(tope)
@@ -320,9 +332,11 @@ object Charla {
             val p = prefs(c)
             // pizarra-62: completo cada 6 horas (por si alguien borró uno); en el medio, sólo lo nuevo.
             val guardados = c.mensajesGuardados
-            val completo = guardados.isEmpty() || System.currentTimeMillis() - p.getLong("completo", 0) > 6 * 3600_000L
+            // pizarra-77: si el gestor de Claude limpió la charla, se trae entera: lo borrado se va de este teléfono.
+            val limpiado = try { nube.limpiezaCharla() } catch (e: Throwable) { "" }
+            val completo = hayQueTraerTodo(guardados.size, System.currentTimeMillis(), p.getLong("completo", 0), limpiado, p.getString("limpiezaVista", "").orEmpty())
             val ms = if (completo) nube.mensajes() else mezclarMensajes(guardados, nube.mensajes(guardados.maxOf { it.creado }))
-            if (completo) p.edit().putLong("completo", System.currentTimeMillis()).apply()
+            if (completo) p.edit().putLong("completo", System.currentTimeMillis()).putString("limpiezaVista", limpiado).apply()
             c.mensajesGuardados = ms
             val vistos = p.getStringSet("mostrados", emptySet()) ?: emptySet()
             val nuevos = mensajesParaAvisar(ms, yo, tel, vistos, System.currentTimeMillis())
