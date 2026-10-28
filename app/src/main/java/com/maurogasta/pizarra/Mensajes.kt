@@ -350,8 +350,9 @@ class CharlaReceptor : BroadcastReceiver() {
     override fun onReceive(c: Context, i: Intent) {
         val pendiente = goAsync()
         thread {
-            // pizarra-59: cada 10 minutos se pone al día TODO, no sólo los mensajes (Despertar.kt).
-            try { if (enHorario(LocalDateTime.now())) Despertar.todo(c) } catch (e: Throwable) { }
+            // pizarra-59: cada 10 minutos se pone al día por Despertar; desde pizarra-74, lo barato
+            // cada vez y todo cada 6 h (el cupo: Despertar.kt).
+            try { if (enHorario(LocalDateTime.now())) Despertar.periodico(c) } catch (e: Throwable) { }
             finally { try { Charla.agendar(c) } catch (e: Throwable) { }; pendiente.finish() }
         }
     }

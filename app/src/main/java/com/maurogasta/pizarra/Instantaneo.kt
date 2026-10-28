@@ -24,7 +24,7 @@ import kotlin.concurrent.thread
 // sesión y la ficha y manda por Firebase Cloud Messaging un aviso SIN
 // contenido al tema de esa base (`pizarra-<base>`). Cada Pizarra suscripta lo
 // recibe por la conexión que Google ya tiene abierta en el teléfono —por eso
-// no gasta batería de más— y llama a `Despertar.todo`, que trae todo con SU
+// no gasta batería de más— y llama a `Despertar.por(que)`, que trae lo que cambió con SU
 // sesión. El contenido nunca viaja por el aviso.
 //
 // ── EL PROYECTO ──────────────────────────────────────────────────────────────
@@ -102,7 +102,8 @@ class AvisoInstantaneo : FirebaseMessagingService() {
     override fun onMessageReceived(m: RemoteMessage) {
         // pizarra-63: una llamada no espera a que se ponga al día todo lo demás.
         if (m.data["que"] == "llamadas") { Llamadas.revisar(applicationContext); return }
-        try { Despertar.todo(applicationContext) } catch (e: Throwable) { }
+        // pizarra-74: lo demás, sólo la parte que cambió (Despertar.partesDe).
+        try { Despertar.por(applicationContext, m.data["que"]) } catch (e: Throwable) { }
     }
     // Con temas no hace falta guardar el token del teléfono en ningún lado.
     override fun onNewToken(token: String) { Instantaneo.iniciar(applicationContext) }

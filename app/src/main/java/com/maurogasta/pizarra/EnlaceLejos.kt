@@ -181,7 +181,7 @@ object EnlaceLejos {
         return true
     }
 
-    /** Lo que dejó la otra Pizarra en la base: los eventos suenan, una `mira` despierta el vivo. Lo llama Despertar.todo. */
+    /** Lo que dejó la otra Pizarra en la base: los eventos suenan, una `mira` despierta el vivo. Lo llama Despertar (la parte «enlace»). */
     fun ponerAlDia(c: Context) {
         if (!puede(c)) return
         val app = c.applicationContext

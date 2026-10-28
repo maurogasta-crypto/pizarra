@@ -88,7 +88,7 @@ class AgendaWidget : AppWidgetProvider() {
             else Intent(contexto, MainActivity::class.java)
 
         /** Trae la semana, la guarda y redibuja. Nunca tira. Sin widget puesto, no gasta red. */
-        fun actualizar(contexto: Context, pendiente: PendingResult?) {
+        fun actualizar(contexto: Context, pendiente: PendingResult?, tareas: List<Tarea>? = null) {
             val ids = AppWidgetManager.getInstance(contexto).getAppWidgetIds(ComponentName(contexto, AgendaWidget::class.java))
             if (ids.isEmpty()) { pendiente?.finish(); return }
             thread {
@@ -98,7 +98,7 @@ class AgendaWidget : AppWidgetProvider() {
                     if (!nube.conSesion) { cache.filas = emptyList(); cache.estado = "sin sesión" }
                     else if (!nube.esTiempos) { cache.filas = emptyList(); cache.estado = "la agenda es de Tiempos" }
                     else {
-                        cache.filas = nube.agendaSemana(LocalDate.now().toString())
+                        cache.filas = nube.agendaSemana(LocalDate.now().toString(), tareas)
                         cache.estado = "al día · " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                     }
                 } catch (e: Throwable) {

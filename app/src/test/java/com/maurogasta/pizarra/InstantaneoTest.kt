@@ -35,7 +35,7 @@ class InstantaneoTest {
         assertTrue(Regex("fun tachar[^\n]*avisarCambio\\(\"tareas\"\\)").containsMatchIn(nube))
         assertTrue(Regex("fun fijar[^\n]*avisarCambio\\(\"tareas\"\\)").containsMatchIn(nube))
         val i = src("Instantaneo.kt")
-        assertTrue(i.substringAfter("class AvisoInstantaneo").contains("Despertar.todo("))
+        assertTrue(i.substringAfter("class AvisoInstantaneo").contains("Despertar.por(applicationContext, m.data[\"que\"])"))
         val m = java.io.File("src/main/AndroidManifest.xml").readText()
         assertTrue(m.contains(".AvisoInstantaneo") && m.contains("com.google.firebase.MESSAGING_EVENT"))
     }

@@ -295,6 +295,15 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   día, y el que va a llamar el aviso instantáneo (`general:C1`, fase 2): si
   cambia el canal (Firebase Cloud Messaging, ntfy), no cambia esto.
   **Desde pizarra-60 lo llama también el aviso instantáneo** (`AvisoInstantaneo`).
+  **Y desde pizarra-74 trae POR PARTES** (28-oct-2026, `tiempos:A42`: el 27-oct
+  la base de Tiempos se quedó sin cupo de lecturas). Un aviso trae sólo lo que
+  cambió (`partesDe(que)`: un mensaje, la charla; una tarea, la pizarra y la
+  agenda, que comparten las tareas), una misma parte no se trae dos veces en
+  20 s (la ráfaga se junta en una vuelta más), y cada 10 minutos sólo lo
+  barato —la charla desde lo último, el enlace y las llamadas— y todo cada 6 h
+  como red de seguridad. La cuenta del cupo para 10 teléfonos está arriba de
+  `Despertar.kt`. **Si `QUE` de `despertar.mjs` suma un «qué», suma su parte
+  en `partesDe`** (el banco lo exige).
   **Desde pizarra-61 son CONVERSACIONES por teléfono** (Mauro, 24-oct: «una
   interfaz como de chat… en pestañas dentro del mismo widget las
   conversaciones con cada uno… con el teléfono de Florencia, con el Redmi 15,

@@ -99,7 +99,7 @@ class MensajesTest {
             assertTrue("falta $x", d.contains(x))
         assertFalse(d.contains("Luces("))
         val m = java.io.File("src/main/java/com/maurogasta/pizarra/Mensajes.kt").readText()
-        assertTrue(m.contains("if (enHorario(LocalDateTime.now())) Despertar.todo(c)"))
+        assertTrue(m.contains("if (enHorario(LocalDateTime.now())) Despertar.periodico(c)"))
         val w = java.io.File("src/main/java/com/maurogasta/pizarra/PizarraWidget.kt").readText()
         assertTrue(w.contains("if (conLuces) try { Luces(contexto)"))
     }

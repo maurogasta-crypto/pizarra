@@ -305,13 +305,13 @@ class Nube(contexto: Context) {
     }
 
     /** pizarra-20: mi agenda de la semana, para su widget (AgendaLogica.kt). */
-    fun agendaSemana(hoy: String): List<FilaAgenda> {
+    fun agendaSemana(hoy: String, tareas: List<Tarea>? = null): List<FilaAgenda> {
         val yo = deTiempos()
         val docs = "https://firestore.googleapis.com/v1/$BASE_DOCS"
         val agenda = agendaDeRespuesta(JSONArray(pedir("$docs:batchGet", pedidoAgenda(yo).toString(), "application/json", token())))
         val eventos = eventosDeConsulta(JSONArray(pedir("$docs:runQuery", consultaEventos().toString(), "application/json", token())))
         // pizarra-21: y mis alarmas y recordatorios de esos días.
-        return agendaDeLaSemana(hoy, agenda, eventos, tareas(), alertas = alertas())
+        return agendaDeLaSemana(hoy, agenda, eventos, tareas ?: tareas(), alertas = alertas())
     }
 
     /** Mis recordatorios y alarmas (pizarra-2). */
