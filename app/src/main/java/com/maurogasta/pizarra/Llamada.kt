@@ -260,6 +260,19 @@ class Motor(private val c: Context) {
 
 // ─── Quién suena ─────────────────────────────────────────────────────────────
 
+/**
+ * pizarra-79 (29-oct, la auditoría de salud: una llamada del Note 9 quedó «llamando» para siempre): las MÍAS
+ * que siguen llamando cuando ya no pueden sonar en ningún lado (SUENA_MS y un minuto más) se cancelan al
+ * ponerse al día. Las cancela quien llamó, que es el único que sabe que nadie va a atender.
+ */
+fun colgadasMias(ls: List<Llamada>, yo: String, miTelefono: String, ahora: Long): List<Llamada> = ls.filter { l ->
+    l.estado == "llamando" && l.de == yo && l.dispositivo == miTelefono &&
+        (instante(l.creado)?.let { ahora - it > SUENA_MS + 60_000L } ?: false)
+}
+
+/** pizarra-79: el motivo de un error de las llamadas, corto y sin datos («ErrorNube» solo no decía nada). */
+fun motivoDeError(e: Throwable): String = (e.javaClass.simpleName + (e.message?.let { ": " + it.take(80) } ?: "")).replace('\n', ' ')
+
 /** Las que sonaron acá y ya no están llamando (cortó quien llamaba, atendió otro teléfono): se callan. */
 fun paraCallar(sonadas: Set<String>, sonandoAca: Set<String>): Set<String> = sonadas - sonandoAca
 
@@ -274,12 +287,21 @@ object Llamadas {
             val yo = n.uid.orEmpty(); val tel = nombreDelTelefono(c)
             val p = prefs(c)
             val sonadas = p.getStringSet("sonadas", emptySet()) ?: emptySet()
-            val aca = n.llamadasSonando().filter { suenaAca(it, yo, tel, System.currentTimeMillis()) }
+            val sonando = n.llamadasSonando()
+            for (l in colgadasMias(sonando, yo, tel, System.currentTimeMillis())) {
+                try { n.cortarLlamada(l.id, "cancelada"); Bitacora.anotar(c, "llamadas: cancelé una mía que nadie atendió") } catch (e: Throwable) { }
+            }
+            val aca = sonando.filter { suenaAca(it, yo, tel, System.currentTimeMillis()) }
             for (id in paraCallar(sonadas, aca.map { it.id }.toSet())) callarAviso(c, id)
             val nuevas = aca.filter { it.id !in sonadas }
             for (l in nuevas) sonar(c, l)
             if (nuevas.isNotEmpty()) p.edit().putStringSet("sonadas", (sonadas + nuevas.map { it.id }).toList().takeLast(50).toSet()).apply()
-        } catch (e: Throwable) { Bitacora.anotar(c, "llamadas: ${e.javaClass.simpleName}") }
+            prefs(c).edit().remove("error").apply()
+        } catch (e: Throwable) {
+            // pizarra-79: con el motivo, y una vez: el mismo error cada 10 minutos llenaba la bitácora.
+            val m = motivoDeError(e); val p = prefs(c)
+            if (p.getString("error", "") != m) { p.edit().putString("error", m).apply(); Bitacora.anotar(c, "llamadas: no pude revisar ($m)") }
+        }
     }
 
     private fun canal(c: Context): NotificationManager? {

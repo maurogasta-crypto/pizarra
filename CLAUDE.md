@@ -578,6 +578,16 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   comunicación de la bitácora. **Nunca texto ni sonido.** `charla.mjs salud`
   de `datos` lo cruza con lo mandado y dice qué se perdió. Cupo: una escritura
   por hora por teléfono.
+- **pizarra-79: lo que encontró la primera auditoría de salud** (29-oct-2026,
+  `general:C6`). (a) **El vigía del enlace cerca mide con `relojDelVigia`**
+  (`SystemClock.uptimeMillis`), que no avanza con el teléfono dormido: con el
+  reloj de pared, al despertar el vigía veía «35 s sin nada» y cortaba una
+  conexión viva, con los latidos del otro esperando sin leer (Note 9: 23 de 36
+  conexiones terminaban «sin latido»). (b) **Las llamadas anotan el motivo**
+  de un error (`motivoDeError`), y el mismo error una sola vez: «ErrorNube» a
+  secas no decía si era la red, el cupo o la sesión. (c) **Quien llamó cancela
+  su llamada colgada** (`colgadasMias`: «llamando» con más de `SUENA_MS` y un
+  minuto) al ponerse al día. Sin regla nueva: cancelar ya lo deja la v19.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 

@@ -21,6 +21,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStream
@@ -60,6 +61,15 @@ import kotlin.concurrent.thread
 // conexión manda un LATIDO cada LATIDO_MS, la que calla más de MUDA_MS se
 // cierra (`vigia`), sin nadie se vuelve a buscar sola, y mientras hay una
 // conexión por wi-fi el wi-fi no se duerme (`despierto`).
+//
+// pizarra-79 (29-oct, la primera auditoría de salud: 23 de 36 conexiones del
+// Note 9 terminaban «sin latido»): el silencio se medía con el reloj de pared.
+// Con la pantalla apagada el teléfono se duerme y sus hilos se congelan; al
+// despertar, el vigía corría antes que el lector, veía «35 s sin nada» y
+// cortaba una conexión VIVA, con los latidos del otro esperando en el enchufe
+// sin leer. Ahora se mide con `relojDelVigia` (SystemClock.uptimeMillis), que
+// no avanza mientras el teléfono duerme: lo que cuenta es lo que el otro calló
+// mientras éste estaba despierto para oírlo.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val CANAL_ENLACE = "enlace"
@@ -73,7 +83,10 @@ const val LATIDO_MS = 10_000L
 const val MUDA_MS = 35_000L
 const val BUSCAR_SOLO_MS = 60_000L
 
-/** Una conexión que calla más de MUDA_MS está muerta, aunque el enchufe diga que no. */
+/** El reloj del vigía: no avanza mientras el teléfono duerme (pizarra-79). */
+fun relojDelVigia(): Long = SystemClock.uptimeMillis()
+
+/** Una conexión que calla más de MUDA_MS está muerta, aunque el enchufe diga que no. Con `relojDelVigia`. */
 fun estaMuda(ultimo: Long, ahora: Long): Boolean = ahora - ultimo > MUDA_MS
 /** Lo que espera a que aparezca alguien: un vivo viejo o una voz de hace un rato no sirven. */
 private val TIPOS_QUE_ESPERAN = setOf("evento", "prueba")
@@ -170,7 +183,7 @@ class EnlaceServicio : Service() {
 
     private class Conexion(val socket: java.io.Closeable, val entrada: InputStream, val salida: OutputStream, val por: String, val quien: String) {
         /** pizarra-75: cuándo llegó lo último (un latido alcanza) y quién es, por lo que firma. */
-        @Volatile var ultimo = System.currentTimeMillis()
+        @Volatile var ultimo = relojDelVigia()
         @Volatile var de: String? = null
     }
 
@@ -279,7 +292,7 @@ class EnlaceServicio : Service() {
         while (vivo) {
             try {
                 Thread.sleep(2_000)
-                val ahora = System.currentTimeMillis()
+                val ahora = relojDelVigia()
                 for (c in conexiones) if (estaMuda(c.ultimo, ahora)) {
                     Bitacora.anotar(this, "enlace: se cortó con ${c.de ?: c.quien} (${c.por}, sin latido)")
                     Salud.contar(this, "enlace.cortesSinLatido")
@@ -291,7 +304,7 @@ class EnlaceServicio : Service() {
                 }
                 // Sola, por Bluetooth sólo prueba el teléfono con el que ya se habló: tocar todos los emparejados
                 // cada minuto molestaría al auto y a los auriculares.
-                if (conexiones.isEmpty() && ahora - ultimaBusqueda >= BUSCAR_SOLO_MS) buscar(forzar = true, btSoloConocido = true)
+                if (conexiones.isEmpty() && System.currentTimeMillis() - ultimaBusqueda >= BUSCAR_SOLO_MS) buscar(forzar = true, btSoloConocido = true)
                 wifiDespierto(conexiones.any { it.por == "wi-fi" })
             } catch (e: InterruptedException) { return } catch (e: Throwable) { }   // un hilo nunca tira
         }
@@ -328,7 +341,7 @@ class EnlaceServicio : Service() {
             val r = BufferedReader(InputStreamReader(c.entrada, Charsets.UTF_8))
             while (vivo) {
                 val renglon = r.readLine() ?: break
-                c.ultimo = System.currentTimeMillis()
+                c.ultimo = relojDelVigia()
                 val llave = EnlaceAjustes.llave(this)
                 val o = leerRenglon(llave, renglon, System.currentTimeMillis(), ultimoDe)
                 if (o == null) {
