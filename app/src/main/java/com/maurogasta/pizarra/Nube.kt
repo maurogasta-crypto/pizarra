@@ -153,6 +153,16 @@ class Nube(contexto: Context) {
         return limpiezaDeRespuesta(r)
     }
 
+    /** pizarra-80: los cambios de nombre de los teléfonos (`familia/telefonos.nombres`). Una lectura. */
+    fun renombres(): Map<String, String> {
+        deTiempos()
+        return renombresDeRespuesta(JSONArray(pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:batchGet",
+            JSONObject().put("documents", JSONArray().put("$BASE_DOCS/familia/telefonos")).toString(), "application/json", token())))
+    }
+
+    /** pizarra-80: publica que los nombres [viejos] de este teléfono ahora son [nuevo]. Una escritura. */
+    fun publicarRenombre(viejos: Collection<String>, nuevo: String) { val yo = deTiempos(); commit(cuerpoRenombre(BASE_DOCS, yo, viejos, nuevo)) }
+
     /** pizarra-78: el parte de salud de este aparato (reglas v24 de Tiempos). */
     fun subirSalud(cuerpo: JSONObject) { deTiempos(); commit(cuerpo) }
 

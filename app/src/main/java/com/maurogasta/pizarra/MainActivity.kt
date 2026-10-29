@@ -531,7 +531,9 @@ class MainActivity : Activity() {
             if (n == null) { dice.text = "Un nombre de 2 a 40 letras, sin «|»."; return@boton }
             ponerAlias(this, n); Bitacora.anotar(this, "teléfono: nombre nuevo")
             nombre.text = "📱 Este teléfono se llama «$n» para las otras Pizarras."
-            dice.text = "Listo. Ojo: para los demás, la conversación con este teléfono empieza de nuevo."
+            // pizarra-80: el nombre nuevo se publica y los demás lo ven en su próxima puesta al día.
+            dice.text = "Listo. Las otras Pizarras lo van a ver con este nombre, y lo que le manden al nombre viejo le llega igual."
+            thread { try { Charla.ponerAlDia(applicationContext) } catch (e: Throwable) { Bitacora.anotar(applicationContext, "nombre: ${e.javaClass.simpleName}") } }
             if (EnlaceAjustes.prendido(this)) { EnlaceServicio.detener(this); EnlaceServicio.arrancar(this) }
         })
         val prender = CheckBox(this).apply {

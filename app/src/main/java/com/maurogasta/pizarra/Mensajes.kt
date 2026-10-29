@@ -259,6 +259,11 @@ fun nombreDelTelefono(c: Context): String {
     // pizarra-75 (Mauro: «agregar un nombre más distintivo de cada dispositivo»): el que se le ponga en la
     // Pizarra manda; si no, el del sistema.
     aliasDelTelefono(c)?.let { return it }
+    return nombreDelSistema(c)
+}
+
+/** pizarra-80: el nombre que el teléfono tiene sin que se le ponga ninguno (el de Ajustes, o la marca y el modelo). */
+fun nombreDelSistema(c: Context): String {
     val n = try { android.provider.Settings.Global.getString(c.contentResolver, android.provider.Settings.Global.DEVICE_NAME) } catch (e: Throwable) { null }
     return (n?.trim()?.takeIf { it.isNotEmpty() } ?: "${Build.MANUFACTURER} ${Build.MODEL}").take(60)
 }
@@ -274,6 +279,9 @@ fun aliasValido(t: String): String? {
 }
 
 fun ponerAlias(c: Context, t: String?) {
+    // pizarra-80: el nombre que deja de usar se recuerda, para publicar que ahora es éste (Telefonos.kt).
+    val antes = nombreDelTelefono(c)
+    if (t != null && antes != t) Telefonos.recordar(c, antes)
     val p = c.applicationContext.getSharedPreferences("telefono", Context.MODE_PRIVATE).edit()
     if (t == null) p.remove("alias") else p.putString("alias", t)
     p.apply()
@@ -298,6 +306,11 @@ object Charla {
     private fun prefs(c: Context) = c.getSharedPreferences("charla", Context.MODE_PRIVATE)
 
     var Context.mensajesGuardados: List<Mensaje>
+        // pizarra-80: con los nombres de hoy (Telefonos.kt): lo guardado dice el nombre que tenía cada teléfono al mandar.
+        get() = aplicarRenombres(mensajesCrudos, Telefonos.renombres(this))
+        set(v) { mensajesCrudos = v }
+
+    private var Context.mensajesCrudos: List<Mensaje>
         get() = try { JSONArray(prefs(this).getString("lista", "[]")).let { a -> (0 until a.length()).map { i -> a.getJSONObject(i).let {
             Mensaje(it.optString("id"), it.optString("de"), it.optString("nombre"), it.optString("dispositivo"), it.optString("texto"), it.optString("creado"),
                 it.optString("para"), it.optString("audio"), it.optInt("dur"), it.optString("archivo"), it.optString("nombreArchivo"),
@@ -307,6 +320,26 @@ object Charla {
             .put("nombre", it.nombre).put("dispositivo", it.dispositivo).put("texto", it.texto).put("creado", it.creado).put("para", it.para)
             .put("audio", it.audio).put("dur", it.dur).put("archivo", it.archivo).put("nombreArchivo", it.nombreArchivo)
             .put("partes", it.partes).put("handy", it.handy)) } }.toString()).apply()
+
+    /**
+     * pizarra-80: una vez por hora trae los cambios de nombre de los demás, y si este teléfono tiene un
+     * nombre que todavía no publicó (también uno puesto antes de esta versión), lo publica: sus nombres
+     * viejos —el del sistema y los que tuvo— apuntan al de hoy. Una lectura por hora; una escritura por cambio.
+     */
+    private fun ponerAlDiaLosNombres(c: Context, nube: Nube, yo: String, tel: String) {
+        val p = prefs(c)
+        val alias = aliasDelTelefono(c)
+        val publicar = alias != null && Telefonos.faltaPublicar(c, alias)
+        if (!publicar && System.currentTimeMillis() - p.getLong("nombresEn", 0) < 3600_000L) return
+        if (publicar) {
+            val viejos = Telefonos.anteriores(c) + nombreDelSistema(c)
+            nube.publicarRenombre(viejos, alias!!)
+            Telefonos.publicado(c, alias)
+            Bitacora.anotar(c, "teléfono: nombre publicado")
+        }
+        Telefonos.guardar(c, Telefonos.renombres(c) + nube.renombres())
+        p.edit().putLong("nombresEn", System.currentTimeMillis()).apply()
+    }
 
     /** La pestaña elegida en cada widget («» = Todo). */
     fun pestana(c: Context, widget: Int): String = prefs(c).getString("pestana_$widget", "").orEmpty()
@@ -337,6 +370,7 @@ object Charla {
             val completo = hayQueTraerTodo(guardados.size, System.currentTimeMillis(), p.getLong("completo", 0), limpiado, p.getString("limpiezaVista", "").orEmpty())
             val ms = if (completo) nube.mensajes() else mezclarMensajes(guardados, nube.mensajes(guardados.maxOf { it.creado }))
             if (completo) p.edit().putLong("completo", System.currentTimeMillis()).putString("limpiezaVista", limpiado).apply()
+            try { ponerAlDiaLosNombres(c, nube, yo, tel) } catch (e: Throwable) { Bitacora.anotar(c, "nombres: ${e.javaClass.simpleName}") }
             c.mensajesGuardados = ms
             val vistos = p.getStringSet("mostrados", emptySet()) ?: emptySet()
             val nuevos = mensajesParaAvisar(ms, yo, tel, vistos, System.currentTimeMillis())

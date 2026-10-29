@@ -533,8 +533,8 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
     agente no**: firma lo que se mandan los teléfonos—. El código a mano queda
     en «Avanzado», para un teléfono sin cuenta de Tiempos.
   · **Cada teléfono, con su nombre y su color.** El nombre se pone en la
-    Pizarra (`aliasDelTelefono`; cambiarlo empieza de nuevo la conversación
-    para los demás) y el color se reparte en orden alfabético entre los
+    Pizarra (`aliasDelTelefono`; desde pizarra-80 cambiarlo se publica y
+    los demás lo ven con el nombre nuevo, ver abajo) y el color se reparte en orden alfabético entre los
     teléfonos conocidos (`colorDeTelefono`): la franja «📱 Estás en…», las
     pestañas y las burbujas.
   · **El 📻 HANDY va aparte, grande, y elige el camino al apretar**
@@ -588,6 +588,19 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   secas no decía si era la red, el cupo o la sesión. (c) **Quien llamó cancela
   su llamada colgada** (`colgadasMias`: «llamando» con más de `SUENA_MS` y un
   minuto) al ponerse al día. Sin regla nueva: cancelar ya lo deja la v19.
+- **pizarra-80: un teléfono que cambia de nombre lo PUBLICA** (29-oct-2026,
+  Mauro: «yo le llamé 15 y 13C, A15 es el de Florencia… los nombres no se
+  actualizan»). Cada mensaje lleva el nombre que tenía su teléfono al mandarlo
+  (`dispositivo`) y a quién iba (`para` = «uid|teléfono»), así que renombrar
+  dejaba las pestañas con el viejo y lo que otro le mandaba al nombre viejo
+  ya no era «para mí». Ahora el cambio va a `familia/telefonos.nombres` de
+  Tiempos («uid|viejo» → «nuevo», `cuerpoRenombre`, con máscara: no pisa a los
+  otros; sin regla nueva, `familia/` ya lo escriben los miembros), y cada
+  Pizarra lo aplica al LEER los mensajes (`mensajesGuardados` →
+  `aplicarRenombres`, `nombreAlDia`): nada se reescribe en la base. Un nombre
+  puesto antes de esta versión se publica solo (el del sistema → el de hoy).
+  `charla.mjs salud` de `datos` hace lo mismo antes de auditar (charla-7). Cupo:
+  una lectura por hora por teléfono y una escritura por cambio de nombre.
 - **La contraseña no se guarda.** Si alguna vez hace falta guardarla, la
   respuesta es no.
 
