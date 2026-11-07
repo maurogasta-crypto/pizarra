@@ -108,7 +108,9 @@ class CompartirTest {
             is android.view.ViewGroup -> (0 until v.childCount).flatMap { textos(v.getChildAt(it)) }
             else -> emptyList()
         }
-        assertTrue(textos(a.window.decorView).any { it.contains("Mandar a otro teléfono") })
+        assertTrue(textos(a.window.decorView).any { it.contains("Mandar a…") })
+        // pizarra-81: un PDF no va a Tiempos.
+        assertFalse(textos(a.window.decorView).any { it.contains("Llevar a Tiempos") })
         assertFalse(a.isFinishing)
     }
 
@@ -118,5 +120,42 @@ class CompartirTest {
         assertTrue(b.contains("android.intent.action.SEND\""))
         assertTrue(b.contains("android.intent.action.SEND_MULTIPLE"))
         assertTrue(b.contains("android:mimeType=\"*/*\""))
+        // pizarra-81: es la ÚNICA entrada de «Compartir»: ninguna otra pantalla escucha SEND.
+        assertEquals(1, Regex("android.intent.action.SEND\"").findAll(m).count())
+        assertFalse(m.contains("Agendar en Tiempos"))
+    }
+
+    @Test fun aTiempos_soloUnaFotoOUnTexto() {
+        assertTrue(puedeIrATiempos(1, "image/jpeg", ""))
+        assertTrue(puedeIrATiempos(0, "text/plain", "¿qué día tengo odontólogo?"))
+        assertFalse(puedeIrATiempos(2, "image/*", ""))
+        assertFalse(puedeIrATiempos(1, "application/pdf", ""))
+        assertFalse(puedeIrATiempos(0, "text/plain", "  "))
+    }
+
+    @Test fun variasFotos_seMandanYNoOfreceTiempos() {
+        val i = Intent(Intent.ACTION_SEND_MULTIPLE).setType("image/*")
+            .putParcelableArrayListExtra(Intent.EXTRA_STREAM, arrayListOf(Uri.parse("content://x/a.jpg"), Uri.parse("content://x/b.jpg")))
+        val a = Robolectric.buildActivity(EnviarActivity::class.java, i).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        fun textos(v: android.view.View): List<String> = when (v) {
+            is android.widget.TextView -> listOf(v.text.toString())
+            is android.view.ViewGroup -> (0 until v.childCount).flatMap { textos(v.getChildAt(it)) }
+            else -> emptyList()
+        }
+        assertTrue(textos(a.window.decorView).any { it.contains("2 archivos") })
+        assertFalse(textos(a.window.decorView).any { it.contains("Llevar a Tiempos") })
+    }
+
+    @Test fun unaFoto_ofreceLlevarlaATiempos() {
+        val i = Intent(Intent.ACTION_SEND).setType("image/jpeg").putExtra(Intent.EXTRA_STREAM, Uri.parse("content://x/f.jpg"))
+        val a = Robolectric.buildActivity(EnviarActivity::class.java, i).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        fun textos(v: android.view.View): List<String> = when (v) {
+            is android.widget.TextView -> listOf(v.text.toString())
+            is android.view.ViewGroup -> (0 until v.childCount).flatMap { textos(v.getChildAt(it)) }
+            else -> emptyList()
+        }
+        assertTrue(textos(a.window.decorView).any { it.contains("Llevar a Tiempos") })
     }
 }

@@ -420,7 +420,12 @@ object Charla {
             .setContentTitle("💬 " + firmaMensaje(m, yo, tel))
             .setContentText(m.texto)
             .setStyle(Notification.BigTextStyle().bigText(m.texto))
-            .setContentIntent(abrir).setAutoCancel(true).build()
+            .setContentIntent(abrir).setAutoCancel(true)
+            .apply { if (m.audio.isEmpty() && m.texto.isNotBlank()) addAction(Notification.Action.Builder(null, "📋 Copiar",
+                PendingIntent.getBroadcast(c, ("copiar:" + m.id).hashCode(), Intent(c, CopiarReceptor::class.java)
+                    .putExtra("texto", m.texto).putExtra("aviso", ("msj:" + m.id).hashCode()),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)).build()) }
+            .build()
         try { nm.notify(("msj:" + m.id).hashCode(), n) } catch (e: SecurityException) { }
     }
 
@@ -433,6 +438,21 @@ object Charla {
         if (!n.conSesion || !n.esTiempos) { am.cancel(pi); return }
         val cuando = proximoTibio(LocalDateTime.now()).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         am.setWindow(AlarmManager.RTC_WAKEUP, cuando, 2 * 60_000L, pi)
+    }
+}
+
+/** pizarra-81: copiar un mensaje al portapapeles, desde la charla o desde su aviso. */
+fun copiarTexto(c: Context, texto: String) {
+    try { c.getSystemService(android.content.ClipboardManager::class.java)
+        ?.setPrimaryClip(android.content.ClipData.newPlainText("Pizarra", texto)) } catch (e: Throwable) { }
+}
+
+class CopiarReceptor : BroadcastReceiver() {
+    override fun onReceive(c: Context, i: Intent) {
+        copiarTexto(c, i.getStringExtra("texto").orEmpty())
+        val id = i.getIntExtra("aviso", 0)
+        if (id != 0) try { c.getSystemService(NotificationManager::class.java)?.cancel(id) } catch (e: Throwable) { }
+        Bitacora.anotar(c, "charla: copiado desde el aviso")
     }
 }
 
@@ -746,6 +766,10 @@ class CharlaActivity : Activity() {
                 }
                 if (m.audio.isNotEmpty()) setOnClickListener {
                     dice.text = "▶ Escuchando…"; Handy.escuchar(this@CharlaActivity, m.audio, m.dur) { t -> runOnUiThread { dice.text = t } }
+                }
+                // pizarra-81 (Mauro: «cuando quiero compartir un texto no tengo la forma de copiar»): mantener apretado copia.
+                if (m.audio.isEmpty() && m.texto.isNotBlank()) setOnLongClickListener {
+                    copiarTexto(this@CharlaActivity, m.texto); dice.text = "📋 Copiado"; true
                 }
                 textSize = 14f; setTextColor(Color.parseColor(if (esMio) "#14161A" else "#F2F2F2"))
                 maxWidth = (resources.displayMetrics.widthPixels * 0.7).toInt()

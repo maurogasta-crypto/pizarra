@@ -180,6 +180,10 @@ class GuardarReceptor : BroadcastReceiver() {
 }
 
 /** La ventanita que aparece en «Compartir»: qué se manda y a qué teléfono. */
+/** pizarra-81: «Llevar a Tiempos» sólo para lo que Tiempos sabe recibir: UNA foto (la factura) o un texto (la pregunta). */
+fun puedeIrATiempos(archivos: Int, tipo: String, texto: String): Boolean =
+    if (archivos == 0) texto.isNotBlank() else archivos == 1 && tipo.startsWith("image/")
+
 class EnviarActivity : Activity() {
     private val uris = mutableListOf<Uri>()
     private val info = mutableListOf<Pair<String, Long>>()
@@ -193,12 +197,17 @@ class EnviarActivity : Activity() {
         leerIntent(intent)
         val d = resources.displayMetrics.density
         val caja = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding((20 * d).toInt(), (18 * d).toInt(), (20 * d).toInt(), (12 * d).toInt()) }
-        caja.addView(TextView(this).apply { text = "📤 Mandar a otro teléfono"; textSize = 18f; setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        caja.addView(TextView(this).apply { text = "📤 Mandar a…"; textSize = 18f; setTypeface(typeface, android.graphics.Typeface.BOLD) })
         caja.addView(TextView(this).apply { textSize = 14f; setPadding(0, (6 * d).toInt(), 0, (6 * d).toInt()); text = resumenCompartido(info, texto) })
         dice = TextView(this).apply { textSize = 13f; setTextColor(Color.parseColor("#E8D3A2")) }
         lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         caja.addView(ScrollView(this).apply { addView(lista) }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         caja.addView(dice)
+        // pizarra-81: la única entrada de «Compartir». Una foto o un texto también puede ir a Tiempos.
+        if (puedeIrATiempos(uris.size, intent?.type.orEmpty(), texto)) caja.addView(Button(this).apply {
+            text = "📅 Llevar a Tiempos (factura o pregunta)"; isAllCaps = false
+            setOnClickListener { llevarATiempos() }
+        })
         caja.addView(Button(this).apply { text = "Cancelar"; setOnClickListener { finish() } })
         setContentView(caja)
         window.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), (resources.displayMetrics.heightPixels * 0.7).toInt())
@@ -219,6 +228,16 @@ class EnviarActivity : Activity() {
         }
         texto = textoCompartido(i.getStringExtra(Intent.EXTRA_SUBJECT), i.getStringExtra(Intent.EXTRA_TEXT))
         for (u in uris) info.add(datosDe(u))
+    }
+
+    /** Lo mismo que hacía «Agendar en Tiempos»: MainActivity lo recibe como siempre, ahora por un intent explícito. */
+    private fun llevarATiempos() {
+        val i = Intent(this, MainActivity::class.java).setAction(Intent.ACTION_SEND).setType(intent?.type ?: "text/plain")
+        if (texto.isNotBlank()) i.putExtra(Intent.EXTRA_TEXT, texto)
+        uris.firstOrNull()?.let { i.putExtra(Intent.EXTRA_STREAM, it); i.clipData = android.content.ClipData.newRawUri("", it)
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+        try { startActivity(i) } catch (e: Throwable) { Bitacora.anotar(this, "compartir: no abrió Tiempos (${e.javaClass.simpleName})") }
+        finish()
     }
 
     private fun datosDe(u: Uri): Pair<String, Long> = try {

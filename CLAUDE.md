@@ -512,8 +512,16 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   (`RecepcionCerca`: un trozo perdido descarta el archivo entero), avisa,
   se abre por `Entrega` y trae «Guardar en Descargas» (`GuardarReceptor`,
   Android 10+, sin permisos). Otra app no puede mandar archivos por la puerta
-  local. **Sin regla nueva**, cupo cero cerca. «Agendar en Tiempos» sigue
-  igual, al lado. La bitácora no lleva nombres de archivo.
+  local. **Sin regla nueva**, cupo cero cerca. La bitácora no lleva nombres de archivo.
+  **Desde pizarra-81 (7-nov-2026) es la ÚNICA entrada de «Compartir»**
+  («Pizarra»; Mauro: «cuando quiero compartir fotos no me deja múltiples
+  archivos»: elegía una de las dos «Agendar en Tiempos», que tomaban una sola
+  foto). MainActivity ya no tiene filtros de SEND: «📅 Llevar a Tiempos» es un
+  botón de `EnviarActivity`, sólo con UNA foto o un texto (`puedeIrATiempos`),
+  que le pasa el intent explícito con el permiso de la imagen. El banco falla
+  si otra pantalla vuelve a escuchar SEND. **Y un mensaje se copia**
+  (`copiarTexto`): mantenerlo apretado en la charla, o «📋 Copiar» en su aviso
+  (`CopiarReceptor`).
 - **pizarra-75: el handy que elige solo, sin código y con nombre y color**
   (28-oct-2026, Mauro: «funciona aleatoriamente: de rato se conecta y después
   se desconecta»; «el código no creo que sea necesario… ya traen un usuario

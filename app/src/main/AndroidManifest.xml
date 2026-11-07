@@ -67,18 +67,10 @@
             android:label="Ajustes de Tiempos"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
-            <!-- pizarra-7: «Compartir → Tiempos» desde Instagram, Facebook, TikTok,
-                 WhatsApp o el navegador: un link, un texto o una captura. -->
-            <intent-filter android:label="Agendar en Tiempos">
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-            <intent-filter android:label="Agendar en Tiempos">
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/*" />
-            </intent-filter>
+            <!-- pizarra-81: «Compartir» tiene UNA sola entrada, la de EnviarActivity
+                 («Pizarra»); «Llevar a Tiempos» es un botón adentro y llega acá
+                 con un intent explícito, sin filtro. Dos entradas de «Agendar en
+                 Tiempos» que aceptaban una sola foto confundían al elegir varias. -->
         </activity>
 
         <receiver
@@ -318,16 +310,16 @@
         <activity
             android:name=".EnviarActivity"
             android:exported="true"
-            android:label="Mandar a otro teléfono"
+            android:label="Pizarra"
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">
-            <intent-filter android:label="Mandar a otro teléfono">
+            <intent-filter android:label="Pizarra">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
             </intent-filter>
-            <intent-filter android:label="Mandar a otro teléfono">
+            <intent-filter android:label="Pizarra">
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
@@ -336,6 +328,11 @@
 
         <receiver
             android:name=".GuardarReceptor"
+            android:exported="false" />
+
+        <!-- pizarra-81: «Copiar» en el aviso de un mensaje. -->
+        <receiver
+            android:name=".CopiarReceptor"
             android:exported="false" />
 
         <!-- pizarra-71: el handy cerca (Radio.kt) y lo que manda el detector, cerca o lejos. -->

@@ -508,7 +508,7 @@ todo, cada 6 horas. La cuenta está arriba de `Despertar.kt`.
 
 ## 📤 Mandar cualquier cosa a otro teléfono (pizarra-73, `general:C5`)
 
-Desde cualquier app: **Compartir → «Mandar a otro teléfono»** (la Pizarra).
+Desde cualquier app: **Compartir → «Pizarra»** (desde pizarra-81 es la única entrada).
 Una foto, un video, un PDF, varios a la vez, o un texto o un link.
 
 - **📡 Cerca** (si el enlace está conectado con el otro teléfono): el archivo
@@ -521,7 +521,10 @@ Una foto, un video, un PDF, varios a la vez, o un texto o un link.
   días.
 - Un texto o un link va siempre por la charla.
 
-«Agendar en Tiempos» sigue en el mismo menú, para la IA y los gastos.
+Con UNA foto o un texto aparece además **«📅 Llevar a Tiempos»**, para la IA y
+la factura (pizarra-81; antes eran dos entradas aparte en el menú, que aceptaban
+una sola foto). **Para copiar un mensaje**: en la charla, mantenerlo apretado;
+en su aviso, «📋 Copiar».
 
 ## Si falla en el teléfono (pizarra-3)
 
@@ -607,7 +610,7 @@ crear una tarea que alguien borró.
 | `EnlaceServicio.kt` | el enlace escuchando y mandando por wi-fi (NSD) y Bluetooth, y las notificaciones de lo que llega |
 | `EnlaceProveedor.kt` | la puerta local: sólo la app de la Hilux, por paquete y firma |
 | `EnlaceLejos.kt` | el enlace por internet, por la base de Tiempos: los eventos, y el vivo mientras alguien mira |
-| `Compartir.kt` | «Compartir → Mandar a otro teléfono»: cerca por el enlace, lejos por la charla, y lo que llega cerca |
+| `Compartir.kt` | «Compartir → Pizarra»: cerca por el enlace, lejos por la charla, y lo que llega cerca |
 | `Radio.kt` | el handy cerca en vivo, y las pantallas «📻 Handy cerca» y «🚙 En vivo» |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |
