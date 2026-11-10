@@ -68,7 +68,8 @@ class LlamadaTest {
         assertTrue(m.contains(".LlamadaActivity") && m.contains("android:foregroundServiceType=\"microphone\"") && m.contains("FOREGROUND_SERVICE_MICROPHONE"))
         // Una llamada no espera a que se ponga al día todo lo demás.
         assertTrue(java.io.File("src/main/java/com/maurogasta/pizarra/Instantaneo.kt").readText().contains("\"llamadas\") { Llamadas.revisar"))
-        val f = java.io.File("../../casaverdecanas/netlify/functions/despertar.mjs")
+        // pizarra-82: la función vive en datos/servidor (timon-servidor); la de Casa Verde es la copia que se va.
+        val f = listOf("../../datos/servidor/netlify/functions/despertar.mjs", "../../casaverdecanas/netlify/functions/despertar.mjs").map { java.io.File(it) }.let { fs -> fs.firstOrNull { it.exists() } ?: fs[0] }
         if (f.exists()) assertTrue(f.readText().contains("\"llamadas\""))
     }
 

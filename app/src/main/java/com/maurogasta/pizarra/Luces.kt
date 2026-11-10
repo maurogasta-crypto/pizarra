@@ -52,7 +52,7 @@ import java.net.URLEncoder
 // la persona, como desde el panel. Si anotar falla, la luz igual se movió.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const val PUENTE_LUCES = "https://serene-scone-76bd4e.netlify.app/.netlify/functions/luces-remate"
+const val PUENTE_LUCES = "$SERVIDOR/luces-remate"   // pizarra-82: timon-servidor (Servidor.kt)
 const val ORIGEN_REMATE = "https://rematetaller.github.io"
 /** Las dos del widget, en su orden. Los alias son los de `TUYA_LUCES`. */
 val LUCES_WIDGET = listOf("entrada" to "Entrada", "deposito" to "Depósito")

@@ -56,6 +56,14 @@ sin errores, y que este archivo y el `README.md` digan la verdad.
   gratis), y cada tanda que agrega uso dice cuánto, para 10 personas, contra
   el cupo; lo que exige facturación no se hace. `PROTOCOLO-DESARROLLO.md` § 13
   de `datos`.
+- **El servidor del ecosistema está escrito UNA vez, en `Servidor.kt`**
+  (pizarra-82, 10-nov-2026, plan «Timón»): `SERVIDOR` es `timon-servidor`, y de
+  ahí salen `despertar`, `hielo` y las luces de remate. Hasta pizarra-81 eran
+  tres direcciones del Netlify de Casa Verde. Es la misma que `SERVIDOR` de
+  `servidor-1.js` de `datos`: si cambia allá, cambia acá (el banco las compara
+  si `datos` está al lado, y falla si otro archivo escribe una dirección de
+  Netlify). Donde este archivo o el README dicen «el Netlify de Casa Verde»
+  para esas tres funciones, hoy es `timon-servidor`.
 - **Tachar escribe EXACTAMENTE lo que el botón de Tiempos.** Si cambia «✔
   Hecha» en `app.js` de Tiempos, cambia `cuerpoTachar` acá en la misma tanda.
 - **El campo `pizarra` de `tareas` es de esta app.** Mapa uid → true, uno por

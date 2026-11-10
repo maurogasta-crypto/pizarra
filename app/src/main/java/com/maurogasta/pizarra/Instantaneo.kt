@@ -38,7 +38,7 @@ import kotlin.concurrent.thread
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val PROYECTO_AVISOS = "avisos-23b6a"
-const val URL_DESPERTAR = "https://serene-scone-76bd4e.netlify.app/.netlify/functions/despertar"
+const val URL_DESPERTAR = "$SERVIDOR/despertar"   // pizarra-82: timon-servidor (Servidor.kt)
 val QUE_CAMBIO = setOf("mensajes", "tareas", "agenda", "alertas", "avisos", "reservas", "pedidos", "plata", "llamadas", "todo")
 
 fun temaDe(base: String) = "pizarra-$base"
