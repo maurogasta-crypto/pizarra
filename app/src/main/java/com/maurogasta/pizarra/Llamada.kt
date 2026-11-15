@@ -69,7 +69,7 @@ import kotlin.concurrent.thread
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val COLECCION_LLAMADAS = "llamadas"
-const val URL_HIELO = "https://serene-scone-76bd4e.netlify.app/.netlify/functions/hielo"
+const val URL_HIELO = "$SERVIDOR/hielo"   // pizarra-82: timon-servidor (Servidor.kt)
 const val CANAL_LLAMADAS = "llamadas"
 /** pizarra-68: el canal que SUENA como un teléfono. Es otro id porque el sonido de un canal ya creado no se puede cambiar. */
 const val CANAL_TIMBRE = "llamadas_timbre"

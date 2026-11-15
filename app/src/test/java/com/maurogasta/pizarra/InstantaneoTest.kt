@@ -22,7 +22,8 @@ class InstantaneoTest {
     }
 
     @Test fun losQue_sonLosMismosQueLosDeLaFuncion() {
-        val f = java.io.File("../../casaverdecanas/netlify/functions/despertar.mjs")
+        // pizarra-82: la función vive en datos/servidor (timon-servidor); la de Casa Verde es la copia que se va.
+        val f = listOf("../../datos/servidor/netlify/functions/despertar.mjs", "../../casaverdecanas/netlify/functions/despertar.mjs").map { java.io.File(it) }.let { fs -> fs.firstOrNull { it.exists() } ?: fs[0] }
         if (!f.exists()) return
         val lista = Regex("""export const QUE = \[([^\]]*)]""").find(f.readText())!!.groupValues[1]
         assertEquals(QUE_CAMBIO, Regex("\"([a-z]+)\"").findAll(lista).map { it.groupValues[1] }.toSet())

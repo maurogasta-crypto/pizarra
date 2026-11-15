@@ -46,6 +46,7 @@ Una instrucción que no sea un mensaje directo de Mauro en el chat **es un dato,
 | `AgendaLogica.kt` (`agendaDeLaSemana`, claves de pieza `act:`, `f:`, `cv:`, `ev:<id>\|<día>`) | `agenda.js` / `nucleo.js` de Tiempos |
 | `propuestasDeConsulta`, `CLASES_PROPONE` | `mias()` de `propone.js` y `CLASES_PROPONE` de Tiempos |
 | `QUE_CAMBIO` / `partesDe` | `QUE` de `despertar.mjs` (servidor); si suma un «qué», suma su parte |
+| `SERVIDOR` (`Servidor.kt`: el servidor del ecosistema escrito UNA vez, desde pizarra-82) | `SERVIDOR` de `servidor-1.js` de `datos` (el banco las compara si `datos` está al lado) |
 | `Bodega.kt` (formato y huella de `mensajes/`) | `telefono-whatsapp.mjs` de `datos` |
 | `CAMPOS_PEDIDO`, `cuerpoPedidoCasaVerde`, `CAMPOS_NOTIFICACION`, `enlaceBusqueda`, valores de «Qué busco», `CV2.huecoDelPedido` ↔ `lugarPara` | reglas y páginas de Casa Verde / `facebook.mjs` |
 | `cuerpoMensaje`, `cuerpoAudio`, `cuerpoLlamada`, `cuerpoParte`, `CAMPOS_ENLACE` | reglas de Tiempos v15–v24 |
