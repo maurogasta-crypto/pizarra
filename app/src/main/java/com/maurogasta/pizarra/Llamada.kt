@@ -294,7 +294,11 @@ object Llamadas {
             val aca = sonando.filter { suenaAca(it, yo, tel, System.currentTimeMillis()) }
             for (id in paraCallar(sonadas, aca.map { it.id }.toSet())) callarAviso(c, id)
             val nuevas = aca.filter { it.id !in sonadas }
-            for (l in nuevas) sonar(c, l)
+            // pizarra-83: lo congelado del plan «Timón» (§ 5). Con las llamadas apagadas (el
+            // defecto), una entrante NO suena: queda en la base y quien llamó la cancela solo.
+            if (!Congelado.llamadas(c)) {
+                if (nuevas.isNotEmpty()) Bitacora.anotar(c, "llamadas: ${nuevas.size} entrante(s) sin sonar (apagadas: plan Timón)")
+            } else for (l in nuevas) sonar(c, l)
             if (nuevas.isNotEmpty()) p.edit().putStringSet("sonadas", (sonadas + nuevas.map { it.id }).toList().takeLast(50).toSet()).apply()
             prefs(c).edit().remove("error").apply()
         } catch (e: Throwable) {
@@ -436,6 +440,13 @@ class LlamadaActivity : Activity() {
         val n = Nube(this)
         if (!n.conSesion || !n.esTiempos) {
             Bitacora.anotar(this, "llamada: se cerró sin sesión de Tiempos (sesión ${n.conSesion}, sitio ${n.sitio.id})")
+            finish(); return
+        }
+        // pizarra-83: lo congelado del plan «Timón» (§ 5). Una SALIENTE no arranca con las
+        // llamadas apagadas (una entrante que ya suena no se corta: no sonó si estaban apagadas).
+        if (intent?.getStringExtra("entrante") == null && !Congelado.llamadas(this)) {
+            Bitacora.anotar(this, "llamada: no arrancó (apagadas: plan Timón)")
+            try { android.widget.Toast.makeText(this, "📞 Las llamadas están apagadas (plan Timón). Se prenden en la pantalla del enlace.", android.widget.Toast.LENGTH_LONG).show() } catch (e: Throwable) { }
             finish(); return
         }
         val d = resources.displayMetrics.density

@@ -286,6 +286,9 @@ class LectorPantalla : AccessibilityService() {
     override fun onAccessibilityEvent(e: AccessibilityEvent?) {
         val paquete = e?.packageName?.toString() ?: return
         if (paquete !in PAQUETES_FACEBOOK) return
+        // pizarra-83: lo congelado del plan «Timón» (§ 5). Sin prenderlo en la pantalla del
+        // enlace, el lector no lee ni registra nada, aunque la accesibilidad esté dada de alta.
+        if (!Congelado.lector(this)) return
         // pizarra-49: al empezar una sesión de Facebook, UNA vez, la ocupación de Casa Verde.
         if (Ocupado.empiezaSesion(this)) { val app = applicationContext; thread(name = "ocupacion") { Ocupado.traer(app); Buscador.traer(app) } }
         if (e.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED || e.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {

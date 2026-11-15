@@ -44,7 +44,9 @@ class App : Application() {
     }
 }
 
-const val SELLO = "pizarra-80"
+// El MISMO que versionName de app/build.gradle.kts (el banco los compara: SelloTest).
+// Hasta pizarra-82 eran dos números sueltos y divergieron: la app instalada decía 80 siendo 82.
+const val SELLO = "pizarra-83"
 
 object Bitacora {
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences("bitacora", Context.MODE_PRIVATE)

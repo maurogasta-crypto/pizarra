@@ -549,6 +549,27 @@ class MainActivity : Activity() {
             }
         }
         raiz.addView(prender)
+        // pizarra-83: lo congelado del plan «Timón» (§ 5 de ARQUITECTURA.md de datos): las
+        // llamadas y el lector de Facebook vienen APAGADOS; su interruptor vive acá, a la vista.
+        raiz.addView(CheckBox(this).apply {
+            text = "📞 Llamadas entre Pizarras"
+            textSize = 15f; setTextColor(Color.parseColor("#F2F2F2"))
+            isChecked = Congelado.llamadas(this@MainActivity)
+            setOnCheckedChangeListener { _, si ->
+                Congelado.llamadas(this@MainActivity, si)
+                Bitacora.anotar(this@MainActivity, "llamadas: ${if (si) "prendidas" else "apagadas"}")
+            }
+        })
+        raiz.addView(CheckBox(this).apply {
+            text = "👁 Lector de Facebook por la pantalla (el teléfono de captura)"
+            textSize = 15f; setTextColor(Color.parseColor("#F2F2F2"))
+            isChecked = Congelado.lector(this@MainActivity)
+            setOnCheckedChangeListener { _, si ->
+                Congelado.lector(this@MainActivity, si)
+                Bitacora.anotar(this@MainActivity, "lector: ${if (si) "prendido" else "apagado"}")
+            }
+        })
+        raiz.addView(texto("Las llamadas y el lector vienen apagados (plan Timón, 10-nov) hasta que lo central ande: se prenden acá cuando hagan falta.", 12f, "#6F757B"))
         // pizarra-75 (Mauro: «el código no creo que sea necesario dentro de aplicaciones que ya traen un usuario
         // y un logueo»): la llave sale de la cuenta. El código a mano queda para un teléfono sin cuenta de Tiempos.
         val llave = texto(if (EnlaceAjustes.porCuenta(this) != null) "🔐 Se reconoce con tu cuenta de Tiempos: sin código." else "🔐 Todavía no trajo la llave de la cuenta.", 14f, "#A8D5A2")

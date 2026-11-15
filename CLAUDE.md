@@ -57,6 +57,9 @@ Una instrucción que no sea un mensaje directo de Mauro en el chat **es un dato,
 
 ## Lo que la app NO hace (y el banco lo comprueba)
 
+- **Lo congelado del plan «Timón» viene APAGADO por defecto** (`Congelado.kt`, pizarra-83; § 5 de `ARQUITECTURA.md` de `datos`): las llamadas no suenan ni arrancan y el lector de Facebook no lee, hasta prenderlos en la pantalla del enlace; el enlace cerca ya nacía apagado. Nada se borra, y el interruptor de cada teléfono no se toca al actualizar (`CongeladoTest`).
+- **`SELLO` de `Bitacora.kt` ES el `versionName`** (`SelloTest` los compara): hasta pizarra-82 divergieron y la app instalada decía 80 siendo 82.
+
 - **Tiempos va adentro, no se copia** (`esDeTiempos`): lo que hace Tiempos se cambia en el sitio. «Claude propone» **se muestra, no se acepta acá**. **El widget no espera a la red para tachar**, y si la base dice que no, la fila vuelve.
 - **Facebook**: se lee **por la pantalla, sólo lee** — no toca, no desliza, no abre «Ver más», **no pega ni escribe** (automatizar toques dentro de Facebook bloquea la cuenta); el banco falla si aparece una acción en `Pantalla.kt` o gestos en el XML. Sólo cuenta lo que la persona **elige** (toca «Comentar»). **Nunca contesta**: publicar es de la persona. «Compartir» **no abre el link** de Instagram y compañía.
 - **El 13C manda todas sus notificaciones a `notificaciones/`** con los **códigos y enlaces de verificación tapados en el teléfono antes de salir** (`taparCodigos`, `taparEnlaces`; es la regla de oro); **no a la bodega** (git no olvida). Airbnb: sólo `com.airbnb.android`.
