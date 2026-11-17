@@ -110,7 +110,7 @@ class CompartirTest {
         }
         assertTrue(textos(a.window.decorView).any { it.contains("Mandar a…") })
         // pizarra-81: un PDF no va a Tiempos.
-        assertFalse(textos(a.window.decorView).any { it.contains("Llevar a Tiempos") })
+        assertFalse(textos(a.window.decorView).any { it.contains("Llevar a Timón") })
         assertFalse(a.isFinishing)
     }
 
@@ -122,7 +122,7 @@ class CompartirTest {
         assertTrue(b.contains("android:mimeType=\"*/*\""))
         // pizarra-81: es la ÚNICA entrada de «Compartir»: ninguna otra pantalla escucha SEND.
         assertEquals(1, Regex("android.intent.action.SEND\"").findAll(m).count())
-        assertFalse(m.contains("Agendar en Tiempos"))
+        assertFalse(m.contains("Agendar en Tiempos") || m.contains("Agendar en Timón"))
     }
 
     @Test fun aTiempos_soloUnaFotoOUnTexto() {
@@ -144,7 +144,7 @@ class CompartirTest {
             else -> emptyList()
         }
         assertTrue(textos(a.window.decorView).any { it.contains("2 archivos") })
-        assertFalse(textos(a.window.decorView).any { it.contains("Llevar a Tiempos") })
+        assertFalse(textos(a.window.decorView).any { it.contains("Llevar a Timón") })
     }
 
     @Test fun unaFoto_ofreceLlevarlaATiempos() {
@@ -156,6 +156,6 @@ class CompartirTest {
             is android.view.ViewGroup -> (0 until v.childCount).flatMap { textos(v.getChildAt(it)) }
             else -> emptyList()
         }
-        assertTrue(textos(a.window.decorView).any { it.contains("Llevar a Tiempos") })
+        assertTrue(textos(a.window.decorView).any { it.contains("Llevar a Timón") })
     }
 }

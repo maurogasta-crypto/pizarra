@@ -5,7 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ToqueActivity.kt — Qué hace un toque en la pizarra. Sello: pizarra-23
+// ToqueActivity.kt — Qué hace un toque en un widget. Sello: pizarra-84 (y el de «Hoy»)
 //
 // Mauro, 12-oct-2026: «que el widget de pizarra también abra la tarea tocada».
 // Un widget de lista tiene UNA sola plantilla para todos sus renglones, así que
@@ -22,7 +22,14 @@ class ToqueActivity : Activity() {
         super.onCreate(estado)
         try {
             val id = intent.getStringExtra("id")
-            if (id != null && intent.getStringExtra("que") == "abrir") {
+            val clave = intent.getStringExtra("clave")
+            // pizarra-84: el widget «Hoy» (Hoy.kt): el ○ tilda, el texto abre Timón en ese ítem.
+            if (clave != null && intent.getStringExtra("que") == "hoy") {
+                sendBroadcast(Intent(this, HoyWidget::class.java).setAction(ACCION_HOY_TILDAR)
+                    .putExtra("clave", clave).putExtra("tildar", intent.getBooleanExtra("tildar", true)))
+            } else if (clave != null && intent.getStringExtra("que") == "abrir_item") {
+                startActivity(HoyWidget.intentAbrir(this, Nube(this).conSesion, urlItem(clave)))
+            } else if (id != null && intent.getStringExtra("que") == "abrir") {
                 startActivity(
                     (if (Nube(this).conSesion) Intent(this, TiemposActivity::class.java).putExtra(EXTRA_URL, urlTarea(id))
                      else Intent(this, MainActivity::class.java))

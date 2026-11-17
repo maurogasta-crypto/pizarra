@@ -11,7 +11,7 @@ class DespertarTest {
         assertEquals(setOf("mensajes"), partesDe("mensajes"))
         assertEquals(setOf("llamadas"), partesDe("llamadas"))
         assertFalse("un mensaje no relee las tareas", "tareas" in partesDe("mensajes"))
-        assertEquals(setOf("tareas", "agenda"), partesDe("tareas"))
+        assertEquals(setOf("tareas", "agenda", "hoy"), partesDe("tareas"))
         assertEquals(setOf("alarmas", "agenda"), partesDe("alertas"))
         assertEquals("el enlace lejos no trae las tareas", setOf("enlace", "mensajes"), partesDe("todo"))
     }

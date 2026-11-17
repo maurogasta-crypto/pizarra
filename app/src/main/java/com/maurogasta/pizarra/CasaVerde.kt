@@ -135,7 +135,7 @@ class CuentaCasaVerde(contexto: Context) {
                 JSONObject().put("email", mail).put("password", clave).put("returnSecureToken", true).toString(), "application/json", null)
         } catch (e: ErrorNube) {
             if (e.message?.startsWith("Mail o contraseña") == true)
-                throw ErrorNube("Mail o contraseña de Casa Verde equivocados. Puede no ser la misma que la de Tiempos: probá «Olvidé la contraseña de Casa Verde».")
+                throw ErrorNube("Mail o contraseña de Casa Verde equivocados. Puede no ser la misma que la de Timón: probá «Olvidé la contraseña de Casa Verde».")
             throw e
         })
         prefs.edit().putString("refresh", j.getString("refreshToken")).putString("uid", j.getString("localId")).putString("mail", mail).apply()
@@ -157,7 +157,7 @@ class CuentaCasaVerde(contexto: Context) {
 
     private fun token(): String {
         idToken?.let { if (System.currentTimeMillis() < vence) return it }
-        val refresh = prefs.getString("refresh", null) ?: throw ErrorNube("Entrá con tu cuenta de Casa Verde en los ajustes de la Pizarra.", true)
+        val refresh = prefs.getString("refresh", null) ?: throw ErrorNube("Entrá con tu cuenta de Casa Verde en los ajustes de Timón.", true)
         val r = try {
             pedir("https://securetoken.googleapis.com/v1/token?key=${cv.clave}",
                 "grant_type=refresh_token&refresh_token=" + URLEncoder.encode(refresh, "UTF-8"), "application/x-www-form-urlencoded", null)
@@ -229,7 +229,7 @@ class CuentaCasaVerde(contexto: Context) {
     /** «Respondido» o «descartado», a nombre de quien entró en este teléfono. */
     fun marcar(id: String, estado: String) {
         pedir("https://firestore.googleapis.com/v1/${cv.docs}:commit",
-            cuerpoMarcar(cv.docs, id, estado, "$mail (Pizarra)").toString(), "application/json", token())
+            cuerpoMarcar(cv.docs, id, estado, "$mail (Timón)").toString(), "application/json", token())
     }
 
     private fun pedir(url: String, cuerpo: String, tipo: String, bearer: String?): String {

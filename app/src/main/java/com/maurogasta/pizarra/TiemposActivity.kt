@@ -158,6 +158,7 @@ class TiemposActivity : Activity() {
         super.onPause()
         PizarraWidget.actualizarDesdeLaRed(this, null)
         AgendaWidget.actualizar(this, null)
+        HoyWidget.actualizar(this, null)   // pizarra-84: lo que se tocó en Timón, ya en el widget «Hoy»
     }
 
     override fun onSaveInstanceState(s: Bundle) { super.onSaveInstanceState(s); if (::web.isInitialized) web.saveState(s) }

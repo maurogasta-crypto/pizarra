@@ -131,7 +131,7 @@ object Archivos {
             } catch (e: Throwable) {
                 Bitacora.anotar(app, "archivos: no salió: " + (e.message ?: e.javaClass.simpleName))
                 val m = e.message ?: "no se pudo"
-                if (m.startsWith("La base no deja")) "Para mandar archivos hay que publicar las reglas v20 de Tiempos." else m
+                if (m.startsWith("La base no deja")) "Para mandar archivos hay que publicar las reglas v20 de Timón." else m
             }
             listo(error)
         }

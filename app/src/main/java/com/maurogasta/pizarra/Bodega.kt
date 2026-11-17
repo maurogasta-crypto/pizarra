@@ -264,7 +264,7 @@ class Bodega(contexto: Context) {
         val iso = isoUtc(ahora)
         var subidos = 0
         val cuales = nv.map { it.app }.distinct().joinToString(" y ") { if (it == "facebook") "Facebook" else "Airbnb" }
-        escribir("mensajes/${iso.take(10)}.json", "$cuales: ${nv.size} mensajes (Pizarra)") { actual ->
+        escribir("mensajes/${iso.take(10)}.json", "$cuales: ${nv.size} mensajes (Timón)") { actual ->
             val previos = try { JSONArray(actual ?: "[]") } catch (e: Exception) { JSONArray() }
             val (todo, n) = unirMensajes(previos, nv, iso)
             subidos = n
@@ -279,7 +279,7 @@ class Bodega(contexto: Context) {
     /** El latido, cada 12 h (o ya, con `forzar`), con la falla si no puede leer. */
     @Synchronized fun latir(falla: String, forzar: Boolean = false, ahora: Long = System.currentTimeMillis()): Boolean {
         if (!forzar && ahora - ultimoLatido < CADA_LATIDO) return false
-        escribir("latido.json", if (falla.isBlank()) "Latido del teléfono (Pizarra)" else "Latido del teléfono: NO puede leer (Pizarra)") {
+        escribir("latido.json", if (falla.isBlank()) "Latido del teléfono (Timón)" else "Latido del teléfono: NO puede leer (Timón)") {
             latidoJson(isoUtc(ahora), falla, "${Build.MANUFACTURER} ${Build.MODEL}", escucha(c))
         }
         ultimoLatido = ahora
@@ -309,7 +309,7 @@ class Bodega(contexto: Context) {
         }
 
         fun fallaActual(c: Context): String =
-            if (tieneAcceso(c)) "" else "Android no deja a la Pizarra leer las notificaciones: Pizarra → «Dar acceso a notificaciones»."
+            if (tieneAcceso(c)) "" else "Android no deja a Timón leer las notificaciones: Timón → «Dar acceso a notificaciones»."
 
         /** Desde el trabajo de cada hora: el latido, si toca. Nunca tira. */
         fun alDia(c: Context) {

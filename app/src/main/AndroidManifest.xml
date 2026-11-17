@@ -64,7 +64,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="Ajustes de Tiempos"
+            android:label="Ajustes de Timón"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <!-- pizarra-81: «Compartir» tiene UNA sola entrada, la de EnviarActivity
@@ -76,13 +76,27 @@
         <receiver
             android:name=".PizarraWidget"
             android:exported="false"
-            android:label="Pizarra">
+            android:label="Pizarra (tareas fijadas)">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
+        </receiver>
+
+        <!-- pizarra-84 (plan «Timón», etapa 5): «Hoy», lo que Timón ya armó en hoy/{uid} (Hoy.kt).
+             En paralelo con el de las tareas fijadas hasta que se use una semana (regla 8). -->
+        <receiver
+            android:name=".HoyWidget"
+            android:exported="false"
+            android:label="Hoy">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_hoy_info" />
         </receiver>
 
         <!-- pizarra-20: el segundo widget, la agenda de la semana (AgendaWidget.kt). -->
@@ -246,11 +260,11 @@
              acceso; la app la lleva a ese renglón. -->
         <!-- pizarra-44: el lector de Facebook por accesibilidad (Pantalla.kt).
              Sólo dentro de las apps de Facebook (res/xml/lector_pantalla.xml) y
-             sólo lee. Se enciende en Ajustes → Accesibilidad → Pizarra. -->
+             sólo lee. Se enciende en Ajustes → Accesibilidad → Timón. -->
         <service
             android:name=".LectorPantalla"
             android:exported="true"
-            android:label="Pizarra · lector de Facebook"
+            android:label="Timón · lector de Facebook"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -263,7 +277,7 @@
         <service
             android:name=".LectorAirbnb"
             android:exported="true"
-            android:label="Pizarra · Airbnb y pedidos de Facebook"
+            android:label="Timón · Airbnb y pedidos de Facebook"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
@@ -291,6 +305,11 @@
             android:exported="false"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
 
+        <service
+            android:name=".HoyServicio"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
         <!-- pizarra-60: el aviso instantáneo (Instantaneo.kt). Sin contenido: despierta y Despertar.todo trae. -->
         <service
             android:name=".AvisoInstantaneo"
@@ -310,16 +329,16 @@
         <activity
             android:name=".EnviarActivity"
             android:exported="true"
-            android:label="Pizarra"
+            android:label="Timón · a otro teléfono"
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar">
-            <intent-filter android:label="Pizarra">
+            <intent-filter android:label="Timón · a otro teléfono">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
             </intent-filter>
-            <intent-filter android:label="Pizarra">
+            <intent-filter android:label="Timón · a otro teléfono">
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />

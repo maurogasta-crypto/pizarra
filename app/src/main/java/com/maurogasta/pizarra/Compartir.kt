@@ -143,7 +143,7 @@ object RecepcionCerca {
             val id = f.name.hashCode()
             val abrir = PendingIntent.getActivity(c, id, ver, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             val b = Notification.Builder(c, CANAL_ENLACE_EVENTOS).setSmallIcon(android.R.drawable.stat_sys_download_done)
-                .setContentTitle("📎 ${t.nombre}").setContentText("${tamTexto(t.tam)} · de ${de.ifBlank { "la otra Pizarra" }} · tocá para abrir")
+                .setContentTitle("📎 ${t.nombre}").setContentText("${tamTexto(t.tam)} · de ${de.ifBlank { "el otro teléfono" }} · tocá para abrir")
                 .setAutoCancel(true).setContentIntent(abrir)
             if (Build.VERSION.SDK_INT >= 29) b.addAction(Notification.Action.Builder(null, "Guardar en Descargas",
                 PendingIntent.getBroadcast(c, id, Intent(c, GuardarReceptor::class.java).putExtra("archivo", f.name).putExtra("tipo", t.tipo).putExtra("aviso", id),
@@ -205,7 +205,7 @@ class EnviarActivity : Activity() {
         caja.addView(dice)
         // pizarra-81: la única entrada de «Compartir». Una foto o un texto también puede ir a Tiempos.
         if (puedeIrATiempos(uris.size, intent?.type.orEmpty(), texto)) caja.addView(Button(this).apply {
-            text = "📅 Llevar a Tiempos (factura o pregunta)"; isAllCaps = false
+            text = "📅 Llevar a Timón (factura o pregunta)"; isAllCaps = false
             setOnClickListener { llevarATiempos() }
         })
         caja.addView(Button(this).apply { text = "Cancelar"; setOnClickListener { finish() } })
@@ -254,8 +254,8 @@ class EnviarActivity : Activity() {
         val cs = if (conSesion) conversaciones(with(Charla) { mensajesGuardados }, yo, nombreDelTelefono(this)) else emptyList()
         val destinos = destinosDeCompartir(cs, yo, EnlaceServicio.cercano(), uris.isNotEmpty(), conSesion)
         if (destinos.isEmpty()) {
-            dice.text = if (!EnlaceAjustes.prendido(this)) "Para mandar sin internet prendé el enlace cerca; para mandar lejos, entrá con tu cuenta de Tiempos."
-                else "No hay ninguna Pizarra cerca todavía (buscando…), y para mandar lejos hace falta entrar con la cuenta de Tiempos."
+            dice.text = if (!EnlaceAjustes.prendido(this)) "Para mandar sin internet prendé el enlace cerca; para mandar lejos, entrá con tu cuenta de Timón."
+                else "No hay ningún teléfono con Timón cerca todavía (buscando…), y para mandar lejos hace falta entrar con la cuenta de Timón."
             lista.postDelayed({ if (!mandando && !isFinishing) pintarDestinos() }, 3_000)
             return
         }

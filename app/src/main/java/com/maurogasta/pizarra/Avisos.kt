@@ -46,7 +46,7 @@ data class Sitio(val id: String, val nombre: String, val proyecto: String = "", 
 // Las claves web son públicas por diseño (están en el código de cada sitio):
 // identifican el proyecto, no dan permisos. Lo que abre o cierra son las reglas.
 val SITIOS = listOf(
-    Sitio("tiempos", "Tiempos (Mauro y Florencia)", "tiempos-71d42", CLAVE_WEB,
+    Sitio("tiempos", "Timón (Mauro y Florencia)", "tiempos-71d42", CLAVE_WEB,
         "https://maurogasta-crypto.github.io/tiempos/", "https://maurogasta-crypto.github.io/tiempos/"),
     Sitio("casaverde", "Casa Verde", "casaverde-20", "AIzaSyDG12FsMYyGVzkodq07N1SSWQfMcTJ-3yM",
         "https://casaverdecanas.com.br/interno/", "https://casaverdecanas.com.br/interno/"),

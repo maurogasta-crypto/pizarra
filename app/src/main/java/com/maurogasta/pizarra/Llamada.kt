@@ -311,7 +311,7 @@ object Llamadas {
     private fun canal(c: Context): NotificationManager? {
         val nm = c.getSystemService(NotificationManager::class.java) ?: return null
         nm.createNotificationChannel(NotificationChannel(CANAL_LLAMADAS, "Llamadas perdidas", NotificationManager.IMPORTANCE_HIGH)
-            .apply { description = "Cuando te llamaron desde otra Pizarra y no atendiste." })
+            .apply { description = "Cuando te llamaron desde otro teléfono con Timón y no atendiste." })
         return nm
     }
 
@@ -321,7 +321,7 @@ object Llamadas {
         val audio = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
         nm.createNotificationChannel(NotificationChannel(CANAL_TIMBRE, "Llamadas entrantes", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "Suena como el teléfono cuando te llaman desde otra Pizarra."
+            description = "Suena como el teléfono cuando te llaman desde otro teléfono con Timón."
             setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE), audio)
             enableVibration(true); vibrationPattern = VIBRA_TIMBRE
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -357,7 +357,7 @@ object Llamadas {
         val quien = if (l.nombre.isBlank()) l.dispositivo else "${l.nombre} · ${l.dispositivo}"
         val n = Notification.Builder(c, CANAL_TIMBRE)
             .setSmallIcon(android.R.drawable.sym_call_incoming)
-            .setContentTitle("📞 Te llama $quien").setContentText("Llamada de la Pizarra")
+            .setContentTitle("📞 Te llama $quien").setContentText("Llamada de Timón")
             .setCategory(Notification.CATEGORY_CALL).setFullScreenIntent(pi, true).setContentIntent(pi)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .addAction(Notification.Action.Builder(null, "Rechazar", rechazar).build())
@@ -474,7 +474,7 @@ class LlamadaActivity : Activity() {
         if (saliente) {
             val para = intent.getStringExtra("para").orEmpty()
             if (para.isEmpty()) { finish(); return }
-            quien = intent.getStringExtra("nombre").orEmpty().ifBlank { "Pizarra" }
+            quien = intent.getStringExtra("nombre").orEmpty().ifBlank { "otro teléfono" }
             nombre.text = quien
             if (!Handy.tienePermiso(this)) { pedirMicrofono(); return }
             llamar(para)

@@ -115,7 +115,7 @@ class Luces(contexto: Context) {
         } catch (e: ErrorNube) {
             // La de remate puede no ser la misma contraseña que la de Tiempos.
             if (e.message?.startsWith("Mail o contraseña") == true)
-                throw ErrorNube("Mail o contraseña de remate equivocados. Puede no ser la misma que la de Tiempos: probá «Olvidé la contraseña de remate».")
+                throw ErrorNube("Mail o contraseña de remate equivocados. Puede no ser la misma que la de Timón: probá «Olvidé la contraseña de remate».")
             throw e
         })
         prefs.edit().putString("refresh", j.getString("refreshToken")).putString("uid", j.getString("localId")).putString("mail", mail).apply()

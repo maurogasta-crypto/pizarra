@@ -93,7 +93,7 @@ class AppTest {
         shadowOf(Looper.getMainLooper()).idle()
         val bs = botones(a.window.decorView)
         println("botones: " + bs.map { it.text })
-        assertTrue(bs.any { it.text.contains("Seguir en Tiempos") })
+        assertTrue(bs.any { it.text.contains("Seguir en Timón") })
         assertTrue("pizarra-12: sin botón de dictado", bs.none { it.text.contains("Dictar") })
         for (b in bs.filter { it.text != "Salir" && it.text != "Poner el widget" }) {
             b.performClick()
@@ -275,7 +275,7 @@ class AppTest {
         val bs = botones(a.window.decorView).map { it.text.toString() }
         println("botones: $bs")
         assertTrue(bs.any { it.contains("Traer") } && bs.any { it.contains("Configurar") })
-        assertTrue("sin nada de Tiempos", bs.none { it.contains("Seguir en Tiempos") || it.contains("widget") })
+        assertTrue("sin nada de Tiempos", bs.none { it.contains("Seguir en Timón") || it.contains("widget") })
         for (b in botones(a.window.decorView).filter { it.text != "Salir" }) { b.performClick(); shadowOf(Looper.getMainLooper()).idle() }
     }
 }

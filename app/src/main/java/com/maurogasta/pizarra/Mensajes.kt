@@ -360,7 +360,7 @@ object Charla {
     fun ponerAlDia(c: Context) {
         val nube = Nube(c)
         try {
-            if (!nube.conSesion || !nube.esTiempos) { c.estadoCharla = "los mensajes son de Tiempos: entrá con tu cuenta"; return }
+            if (!nube.conSesion || !nube.esTiempos) { c.estadoCharla = "los mensajes son de Timón: entrá con tu cuenta"; return }
             val yo = nube.uid.orEmpty(); val tel = nombreDelTelefono(c)
             val p = prefs(c)
             // pizarra-62: completo cada 6 horas (por si alguien borró uno); en el medio, sólo lo nuevo.
@@ -401,7 +401,7 @@ object Charla {
         catch (e: ErrorNube) {
             // Sin las reglas v17 la base no acepta `para`: se dice qué falta, no «no se pudo».
             if (para.isNotEmpty() && (e.message ?: "").startsWith("La base no deja"))
-                throw ErrorNube("Para escribirle a un teléfono hay que publicar las reglas v17 de Tiempos. Mientras, escribí en «Todos».")
+                throw ErrorNube("Para escribirle a un teléfono hay que publicar las reglas v17 de Timón. Mientras, escribí en «Todos».")
             throw e
         }
         ponerAlDia(c)
@@ -410,7 +410,7 @@ object Charla {
     private fun avisar(c: Context, m: Mensaje, yo: String, tel: String) {
         val nm = c.getSystemService(NotificationManager::class.java) ?: return
         nm.createNotificationChannel(NotificationChannel(CANAL_MENSAJES, "Mensajes", NotificationManager.IMPORTANCE_HIGH)
-            .apply { description = "Lo que te escriben desde otra Pizarra." })
+            .apply { description = "Lo que te escriben desde otro teléfono con Timón." })
         // Abre la charla en SU conversación (la de quien escribió), o en «Todos».
         val clave = if (m.para.isEmpty()) "" else claveDe(m.de, m.dispositivo)
         val abrir = PendingIntent.getActivity(c, ("abrir:" + clave).hashCode(), Intent(c, CharlaActivity::class.java).putExtra("clave", clave),
@@ -707,7 +707,7 @@ class CharlaActivity : Activity() {
     private fun renombrar() {
         val campoNombre = android.widget.EditText(this).apply { setText(nombreDelTelefono(this@CharlaActivity)); setSelection(text.length) }
         android.app.AlertDialog.Builder(this).setTitle("Nombre de este teléfono")
-            .setMessage("Es como lo ven las otras Pizarras (por ejemplo «Note 9 · Hilux» o «Celu de Mauro»). Ojo: con otro nombre, la conversación con este teléfono empieza de nuevo para los demás.")
+            .setMessage("Es como lo ven los otros teléfonos (por ejemplo «Note 9 · Hilux» o «Celu de Mauro»). Ojo: con otro nombre, la conversación con este teléfono empieza de nuevo para los demás.")
             .setView(campoNombre)
             .setPositiveButton("Guardar") { _, _ ->
                 val n = aliasValido(campoNombre.text.toString())
@@ -895,7 +895,7 @@ class MensajesWidget : AppWidgetProvider() {
                     v.setPendingIntentTemplate(R.id.lista_charla, PendingIntent.getActivity(c, 4500 + id,
                         Intent(c, CharlaActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE))
                 }
-                v.setTextViewText(R.id.vacia_mensajes, if (Nube(c).conSesion) "Nada todavía. Tocá ✎ para escribir." else "Tocá y entrá con tu cuenta de Tiempos.")
+                v.setTextViewText(R.id.vacia_mensajes, if (Nube(c).conSesion) "Nada todavía. Tocá ✎ para escribir." else "Tocá y entrá con tu cuenta de Timón.")
                 v.setTextViewText(R.id.estado_mensajes, with(Charla) { c.estadoCharla })
                 v.setOnClickPendingIntent(R.id.escribir_mensaje, escribir)
                 // pizarra-63: 📞 sólo con una conversación elegida.

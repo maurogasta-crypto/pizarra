@@ -187,7 +187,7 @@ object Pulsador {
             return true
         }
         val n = Nube(c)
-        if (!n.conSesion || !n.esTiempos) { dice("Nadie cerca, y sin cuenta de Tiempos no puede ir por internet."); return true }
+        if (!n.conSesion || !n.esTiempos) { dice("Nadie cerca, y sin cuenta de Timón no puede ir por internet."); return true }
         if (clave.isEmpty()) { dice("Nadie cerca. Por internet el handy va a UNA conversación: elegí a quién."); return true }
         try {
             grabador = Grabador(c).also { it.empezar { } }
@@ -272,7 +272,7 @@ object Altavoz {
             val abrir = PendingIntent.getActivity(c, 71, Intent(c, RadioActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE)
             (c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(7072,
                 Notification.Builder(c, CANAL_ENLACE).setSmallIcon(android.R.drawable.stat_sys_speakerphone)
-                    .setContentTitle("📻 Te habla ${de.ifBlank { "la otra Pizarra" }}").setContentText(texto)
+                    .setContentTitle("📻 Te habla ${de.ifBlank { "el otro teléfono" }}").setContentText(texto)
                     .setAutoCancel(true).setTimeoutAfter(60_000).setContentIntent(abrir).build())
         } catch (e: Throwable) { }
     }
@@ -290,7 +290,7 @@ class RadioActivity : Activity() {
         caja.addView(TextView(this).apply { text = "📻 Handy cerca"; textSize = 18f; setTypeface(typeface, android.graphics.Typeface.BOLD) })
         caja.addView(TextView(this).apply {
             textSize = 13f; setTextColor(Color.parseColor("#8A8F98"))
-            text = "Mantené apretado y hablá: se escucha en vivo en la otra Pizarra, por el wi-fi de la casa o el Bluetooth del auto, sin datos. Uno por vez. No se graba."
+            text = "Mantené apretado y hablá: se escucha en vivo en el otro teléfono, por el wi-fi de la casa o el Bluetooth del auto, sin datos. Uno por vez. No se graba."
         })
         dice = TextView(this).apply { textSize = 15f; gravity = Gravity.CENTER; setPadding(0, (12 * d).toInt(), 0, (12 * d).toInt()) }
         caja.addView(dice)
@@ -308,13 +308,13 @@ class RadioActivity : Activity() {
         }
         caja.addView(boton)
         caja.addView(CheckBox(this).apply {
-            text = "Escuchar el handy de la otra Pizarra"; isChecked = EnlaceAjustes.radio(this@RadioActivity)
+            text = "Escuchar el handy del otro teléfono"; isChecked = EnlaceAjustes.radio(this@RadioActivity)
             setOnCheckedChangeListener { _, si -> EnlaceAjustes.radioSiNo(this@RadioActivity, si) }
         })
         caja.addView(Button(this).apply { text = "Cerrar"; setOnClickListener { finish() } })
         setContentView(caja)
         window.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), WindowManager.LayoutParams.WRAP_CONTENT)
-        if (!EnlaceAjustes.prendido(this)) dice.text = "El enlace cerca está apagado: prendelo en los ajustes de la Pizarra."
+        if (!EnlaceAjustes.prendido(this)) dice.text = "El enlace cerca está apagado: prendelo en los ajustes de Timón."
         else { EnlaceServicio.buscarYa(this); tic() }
     }
 
@@ -358,7 +358,7 @@ class EnVivoActivity : Activity() {
         caja.addView(Button(this).apply { text = "Cerrar"; setOnClickListener { finish() } })
         setContentView(caja)
         window.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), WindowManager.LayoutParams.WRAP_CONTENT)
-        if (!EnlaceAjustes.prendido(this)) { dice.text = "—"; como.text = "El enlace está apagado: prendelo en los ajustes de la Pizarra."; return }
+        if (!EnlaceAjustes.prendido(this)) { dice.text = "—"; como.text = "El enlace está apagado: prendelo en los ajustes de Timón."; return }
         EnlaceServicio.buscarYa(this)
         tic()
     }
@@ -383,7 +383,7 @@ class EnVivoActivity : Activity() {
         val o = listOfNotNull(cerca, lejos?.takeIf { it.has("tipo") }).maxByOrNull { it.optLong("t") }
         if (o == null || ahora - o.optLong("t") > 5 * 60_000L) {
             dice.text = "Todavía nada"
-            como.text = "Aparece cuando la camioneta está midiendo un viaje y su Pizarra tiene el enlace prendido: cerca por wi-fi o Bluetooth, lejos con internet (cada 10 s)."
+            como.text = "Aparece cuando la camioneta está midiendo un viaje y su teléfono tiene el enlace prendido: cerca por wi-fi o Bluetooth, lejos con internet (cada 10 s)."
         } else {
             dice.text = textoVivo(o)
             val hace = ((ahora - o.optLong("t")) / 1000).coerceAtLeast(0)

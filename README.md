@@ -1,4 +1,41 @@
-# Pizarra — la app de Tiempos en el teléfono
+# Timón en Android (repo `pizarra`)
+
+**Desde `pizarra-84` (17-nov-2026) todo lo que se ve dice Timón** (Mauro: «quiero
+eliminar los nombres diferentes: Timón, Pizarra y Tiempos deberían ser parte de
+una misma cosa»): el ícono, los ajustes, los widgets (en el selector, «Timón»:
+**Hoy**, **Mi agenda**, **Mensajes y novedades** y **Pizarra (tareas fijadas)**),
+los canales de avisos, «Compartir → Timón · a otro teléfono» y los mensajes de
+la app. Los nombres de adentro quedan como están (el repo, el paquete
+`com.maurogasta.pizarra`, `pizarra.apk`, el sello `pizarra-N`, los temas
+`pizarra-<base>`): cambiarlos rompe la app instalada. La tabla con el porqué de
+cada uno está en § 1 de `protocolos/ARQUITECTURA.md` de `datos`.
+
+## El widget «Hoy» (pizarra-84, plan «Timón», etapa 5)
+
+`Hoy.kt`. Pinta **sólo** `hoy/{uid}` de la base de Timón, el documento que arma
+la app web de la persona (`materializarHoy` de `nucleo.js` de `tiempos`): una
+lectura por puesta al día, en el orden de Timón, sin calcular ni ordenar nada
+(regla 3 de `ARQUITECTURA.md`). Elige el día comparando fechas: lo de hoy y lo de
+antes (un documento de ayer que Timón no rearmó sigue sirviendo).
+
+- **○** escribe `accion.campos` del renglón tal cual sobre su documento (sólo si
+  existe) y saca el renglón de `hoy/` en el mismo commit (`removeAllFromArray`
+  con el valor exacto que vino), así los otros teléfonos de la persona no lo
+  siguen mostrando. Queda tachado acá; tocarlo otra vez escribe
+  `accion.deshacer` y devuelve el renglón. Tachar no espera a la red: si la
+  base dice que no, vuelve.
+- **El texto** abre Timón en ese ítem (`?solapa=inicio&abrir=it:<id>`).
+- Se pone al día con ⟳, al abrir la app, al salir de Timón, cada media hora,
+  cada 10 minutos con lo barato (es una lectura) y con el aviso de «tareas»,
+  que Timón manda al escribir `hoy/`. Sin el widget puesto no gasta nada.
+- Lo que tilda otra persona (un ítem de la familia) no rearma MI `hoy/` hasta
+  que yo abra Timón: el encabezado dice cuándo se armó.
+- Va **en paralelo** con «Pizarra (tareas fijadas)» (regla 8): ése se apaga
+  cuando «Hoy» se haya usado una semana.
+- Banco: `HoyTest` (10 casos), que falla si `Hoy.kt` nombra un campo de un ítem
+  u ordena.
+
+## Antes (de pizarra-2 a pizarra-83)
 
 **Desde `pizarra-2` (5-oct-2026) es la app de Tiempos en Android** —se llama
 «Tiempos» en el teléfono; el widget sigue siendo «Pizarra»—. Lo decidió
@@ -14,12 +51,12 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-83` (el `versionName`; en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-84` (el `versionName`; en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 56 casos (11 de la pizarra, 13 de Tiempos, 9 de la bodega, 10 que ABREN la app con Robolectric y tocan todos sus botones), sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 
-1. Instalar `pizarra.apk` y abrir **Pizarra**.
+1. Instalar `pizarra.apk` y abrir **Timón** (hasta pizarra-83 el ícono decía «Tiempos»).
 2. Entrar con la misma cuenta de Tiempos. La contraseña se usa una vez y no se
    guarda: queda el `refreshToken` de esa entrada. Si no te acordás de la
    contraseña: escribí el mail y tocá **«Olvidé la contraseña»** (pizarra-17):
@@ -30,7 +67,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
    tildar las tareas que van a la pizarra (comunes y tus personales). Están
    agrupadas por categoría —Producción, Mantenimiento, Chicos, Casa y comida,
    Personal—, la misma de Tiempos: la de la tarea de más arriba.
-4. **Poner el widget** (o mantener apretado el inicio → Widgets → Pizarra).
+4. **Poner el widget** (o mantener apretado el inicio → Widgets → Timón → «Pizarra (tareas fijadas)», o «Hoy»).
 5. En el widget: tocar el **☐** tacha la tarea; tocarlo tachada la vuelve a
    pendiente. Tocar el **texto** abre la tarea en Tiempos, con su ficha
    (pizarra-23; `?solapa=tareas&abrir=`, app-34). ⟳ actualiza, ✎ abre la app.

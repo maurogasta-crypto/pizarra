@@ -66,7 +66,7 @@ class AgendaWidget : AppWidgetProvider() {
                 lista.data = Uri.parse(lista.toUri(Intent.URI_INTENT_SCHEME))
                 v.setRemoteAdapter(R.id.lista_agenda, lista)
                 v.setEmptyView(R.id.lista_agenda, R.id.vacia_agenda)
-                v.setTextViewText(R.id.vacia_agenda, if (conSesion) "Tocá ⟳ para traer tu semana." else "Tocá y entrá con tu cuenta de Tiempos.")
+                v.setTextViewText(R.id.vacia_agenda, if (conSesion) "Tocá ⟳ para traer tu semana." else "Tocá y entrá con tu cuenta de Timón.")
                 v.setTextViewText(R.id.estado_agenda, cache.estado)
                 v.setOnClickPendingIntent(R.id.actualizar_agenda, PendingIntent.getBroadcast(contexto, 10,
                     Intent(contexto, AgendaWidget::class.java).setAction(ACCION_AGENDA),
@@ -96,7 +96,7 @@ class AgendaWidget : AppWidgetProvider() {
                 try {
                     val nube = Nube(contexto)
                     if (!nube.conSesion) { cache.filas = emptyList(); cache.estado = "sin sesión" }
-                    else if (!nube.esTiempos) { cache.filas = emptyList(); cache.estado = "la agenda es de Tiempos" }
+                    else if (!nube.esTiempos) { cache.filas = emptyList(); cache.estado = "la agenda es de Timón" }
                     else {
                         cache.filas = nube.agendaSemana(LocalDate.now().toString(), tareas)
                         cache.estado = "al día · " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())

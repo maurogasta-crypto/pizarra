@@ -146,7 +146,7 @@ class MainActivity : Activity() {
 
     private fun pintar() {
         raiz.removeAllViews()
-        raiz.addView(titulo(if (!nube.conSesion) "Pizarra" else if (nube.esTiempos) "Tiempos" else "Pizarra · ${nube.sitio.nombre}"))
+        raiz.addView(titulo(if (!nube.conSesion || nube.esTiempos) "Timón" else "Timón · ${nube.sitio.nombre}"))
         aviso = texto("", 13f, "#9AA0A6")
         when {
             !nube.conSesion -> pintarEntrada()
@@ -254,7 +254,7 @@ class MainActivity : Activity() {
     private fun configurarAvisos() {
         Buzon.crearCanales(this)
         try { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }
-        catch (e: ActivityNotFoundException) { decir("Buscá en Ajustes → Aplicaciones → Pizarra → Notificaciones.") }
+        catch (e: ActivityNotFoundException) { decir("Buscá en Ajustes → Aplicaciones → Timón → Notificaciones.") }
     }
 
     /** Lo que queda abajo con una cuenta que no es de Tiempos. */
@@ -278,7 +278,7 @@ class MainActivity : Activity() {
         // odontólogo… no fue bueno editando». Lo escrito es una pregunta; la
         // foto de una factura abre el gasto de Tiempos (plata-16).
         raiz.addView(subtitulo("❓ Preguntale a la IA"))
-        raiz.addView(texto("Escribí o dictá una pregunta: qué día tenés algo, qué tienen los chicos, cuánto se gastó. Con la foto de una factura, Tiempos abre el gasto y la IA lo llena.", 13f, "#9AA0A6"))
+        raiz.addView(texto("Escribí o dictá una pregunta: qué día tenés algo, qué tienen los chicos, cuánto se gastó. Con la foto de una factura, Timón abre el gasto y la IA lo llena.", 13f, "#9AA0A6"))
         val caja = EditText(this).apply {
             hint = "Ej.: ¿qué día tengo el odontólogo? · ¿qué tienen los chicos el jueves?"
             minLines = 2
@@ -294,7 +294,7 @@ class MainActivity : Activity() {
         capturaVista = texto("", 12f, "#9AA0A6")
         raiz.addView(capturaVista)
         pintarCaptura()
-        raiz.addView(boton("✨ Seguir en Tiempos") { seguir() })
+        raiz.addView(boton("✨ Seguir en Timón") { seguir() })
         // Los avisos de la pantalla van acá arriba, al lado del dictado.
         raiz.addView(aviso)
 
@@ -336,9 +336,9 @@ class MainActivity : Activity() {
         if (!nube.conSesion) { decir("Entrá con tu cuenta y lo compartido queda en la caja del dictado."); return }
         val links = linksDe(t)
         decir(when {
-            captura != null -> "Factura lista: tocá ✨ Seguir en Tiempos y se abre el gasto."
-            links.isNotEmpty() -> "La IA de Tiempos sólo contesta preguntas. Para guardar esto como deseo: Tiempos → Tareas → Deseos, ＋ Agregar."
-            else -> "Escribí tu pregunta y tocá ✨ Seguir en Tiempos."
+            captura != null -> "Factura lista: tocá ✨ Seguir en Timón y se abre el gasto."
+            links.isNotEmpty() -> "La IA de Timón sólo contesta preguntas. Para guardar esto como deseo: Timón → Tareas → Deseos, ＋ Agregar."
+            else -> "Escribí tu pregunta y tocá ✨ Seguir en Timón."
         })
     }
 
@@ -418,14 +418,14 @@ class MainActivity : Activity() {
             val que = (when (p.clase) { "consulta" -> "❓ "; "analisis" -> "📊 "; else -> "📅 " }) + p.titulo.ifEmpty { p.resumen }
             v.addView(texto(que + (if (cuando.isNotEmpty()) "  · $cuando" else ""), 14f, "#F2F2F2"))
         }
-        v.addView(boton("Ver y aceptar en Tiempos") { abrir(TIEMPOS_URL) })
+        v.addView(boton("Ver y aceptar en Timón") { abrir(TIEMPOS_URL) })
     }
 
     private fun pintarHoy(r: Result<List<Deseo>>) {
         val v = hoyVista ?: return
         v.removeAllViews()
         val lista = r.getOrElse { v.addView(texto(it.message ?: "No se pudo traer.", 13f, "#9AA0A6")); return }
-        if (lista.isEmpty()) { v.addView(texto("Nada para hoy en los deseos. Se cargan desde Tiempos (un flyer, «me gustaría…»).", 13f, "#6F757B")); return }
+        if (lista.isEmpty()) { v.addView(texto("Nada para hoy en los deseos. Se cargan desde Timón (un flyer, «me gustaría…»).", 13f, "#6F757B")); return }
         for (d in lista) {
             val hora = if (d.hi.isNotEmpty()) d.hi + (if (d.hf.isNotEmpty()) "–" + d.hf else "") + "  " else ""
             v.addView(texto(hora + d.titulo + (if (d.lugar.isNotEmpty()) " · " + d.lugar else "") +
@@ -473,7 +473,7 @@ class MainActivity : Activity() {
         if (esDeTiempos(url)) { startActivity(Intent(this, TiemposActivity::class.java).putExtra(EXTRA_URL, url)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)); return }
         try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
-        catch (e: ActivityNotFoundException) { decir("No hay navegador para abrir Tiempos.") }
+        catch (e: ActivityNotFoundException) { decir("No hay navegador para abrir Timón.") }
     }
 
     private fun subtitulo(t: String) = texto(t, 18f, "#E8D3A2").apply { setPadding(0, dp(18), 0, dp(4)) }
@@ -483,7 +483,7 @@ class MainActivity : Activity() {
         // pizarra-15: plegada. Se abre con un toque, y recién ahí la lista.
         val titulo = subtitulo("").apply { isClickable = true }
         val cuerpo = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        cuerpo.addView(texto("Tildá lo que querés en la pizarra. Desde el widget, tocar una tarea la tacha en Tiempos para todos; tocarla de nuevo la vuelve a pendiente.", 14f, "#C8CCD0"))
+        cuerpo.addView(texto("Tildá lo que querés en la pizarra. Desde el widget, tocar una tarea la tacha en Timón para todos; tocarla de nuevo la vuelve a pendiente.", 14f, "#C8CCD0"))
         val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         fila.addView(boton("⟳ Actualizar") { cargar() })
         fila.addView(boton("Poner el widget") { ponerWidget() })
@@ -506,7 +506,7 @@ class MainActivity : Activity() {
         raiz.addView(boton("Salir") {
             nube.salir()
             Cache(this).filas = emptyList()
-            PizarraWidget.dibujar(this); AgendaWidget.dibujar(this)
+            PizarraWidget.dibujar(this); AgendaWidget.dibujar(this); HoyWidget.dibujar(this)
             pintar()
         })
         listaVista = lista
@@ -518,11 +518,11 @@ class MainActivity : Activity() {
        Bluetooth en el auto, sin internet. El resultado se dice AL LADO. */
     private fun pintarEnlace() {
         raiz.addView(subtitulo("📡 Enlace cerca (sin datos)"))
-        raiz.addView(texto("Para que tus Pizarras se avisen y se hablen: en la casa por el mismo wi-fi y en el auto por Bluetooth, sin datos; lejos, por internet. Las que entraron con una cuenta de Tiempos (la tuya o la de Florencia) se reconocen solas: no hace falta ningún código. Para el auto, emparejá los dos teléfonos UNA vez en los ajustes de Bluetooth de Android. Conviene dejarle a Pizarra la batería «sin restricciones».", 13f, "#9AA0A6"))
+        raiz.addView(texto("Para que tus teléfonos con Timón se avisen y se hablen: en la casa por el mismo wi-fi y en el auto por Bluetooth, sin datos; lejos, por internet. Las que entraron con una cuenta de Tiempos (la tuya o la de Florencia) se reconocen solas: no hace falta ningún código. Para el auto, emparejá los dos teléfonos UNA vez en los ajustes de Bluetooth de Android. Conviene dejarle a Pizarra la batería «sin restricciones».", 13f, "#9AA0A6"))
         val dice = texto("", 14f, "#E8D3A2")
         fun estado() { dice.text = if (EnlaceAjustes.prendido(this)) "Estado: ${EnlaceServicio.estado}" else "Apagado." }
         // pizarra-75 (Mauro: «un nombre más distintivo de cada dispositivo y un color diferente»).
-        val nombre = texto("📱 Este teléfono se llama «${nombreDelTelefono(this)}» para las otras Pizarras.", 15f, "#F2F2F2")
+        val nombre = texto("📱 Este teléfono se llama «${nombreDelTelefono(this)}» para los otros teléfonos.", 15f, "#F2F2F2")
         raiz.addView(nombre)
         val nuevoNombre = campo("Nombre nuevo (ej.: Note 9 · Hilux)", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS)
         raiz.addView(nuevoNombre)
@@ -530,9 +530,9 @@ class MainActivity : Activity() {
             val n = aliasValido(nuevoNombre.text.toString())
             if (n == null) { dice.text = "Un nombre de 2 a 40 letras, sin «|»."; return@boton }
             ponerAlias(this, n); Bitacora.anotar(this, "teléfono: nombre nuevo")
-            nombre.text = "📱 Este teléfono se llama «$n» para las otras Pizarras."
+            nombre.text = "📱 Este teléfono se llama «$n» para los otros teléfonos."
             // pizarra-80: el nombre nuevo se publica y los demás lo ven en su próxima puesta al día.
-            dice.text = "Listo. Las otras Pizarras lo van a ver con este nombre, y lo que le manden al nombre viejo le llega igual."
+            dice.text = "Listo. Los otros teléfonos lo van a ver con este nombre, y lo que le manden al nombre viejo le llega igual."
             thread { try { Charla.ponerAlDia(applicationContext) } catch (e: Throwable) { Bitacora.anotar(applicationContext, "nombre: ${e.javaClass.simpleName}") } }
             if (EnlaceAjustes.prendido(this)) { EnlaceServicio.detener(this); EnlaceServicio.arrancar(this) }
         })
@@ -552,7 +552,7 @@ class MainActivity : Activity() {
         // pizarra-83: lo congelado del plan «Timón» (§ 5 de ARQUITECTURA.md de datos): las
         // llamadas y el lector de Facebook vienen APAGADOS; su interruptor vive acá, a la vista.
         raiz.addView(CheckBox(this).apply {
-            text = "📞 Llamadas entre Pizarras"
+            text = "📞 Llamadas entre teléfonos"
             textSize = 15f; setTextColor(Color.parseColor("#F2F2F2"))
             isChecked = Congelado.llamadas(this@MainActivity)
             setOnCheckedChangeListener { _, si ->
@@ -572,25 +572,25 @@ class MainActivity : Activity() {
         raiz.addView(texto("Las llamadas y el lector vienen apagados (plan Timón, 10-nov) hasta que lo central ande: se prenden acá cuando hagan falta.", 12f, "#6F757B"))
         // pizarra-75 (Mauro: «el código no creo que sea necesario dentro de aplicaciones que ya traen un usuario
         // y un logueo»): la llave sale de la cuenta. El código a mano queda para un teléfono sin cuenta de Tiempos.
-        val llave = texto(if (EnlaceAjustes.porCuenta(this) != null) "🔐 Se reconoce con tu cuenta de Tiempos: sin código." else "🔐 Todavía no trajo la llave de la cuenta.", 14f, "#A8D5A2")
+        val llave = texto(if (EnlaceAjustes.porCuenta(this) != null) "🔐 Se reconoce con tu cuenta de Timón: sin código." else "🔐 Todavía no trajo la llave de la cuenta.", 14f, "#A8D5A2")
         raiz.addView(llave)
         if (EnlaceAjustes.porCuenta(this) == null && !EnlaceAjustes.usaAMano(this)) thread {
             val r = EnlaceAjustes.traerDeLaCuenta(this)
-            runOnUiThread { llave.text = if (r == null) "🔐 Se reconoce con tu cuenta de Tiempos: sin código." else "🔐 $r" }
+            runOnUiThread { llave.text = if (r == null) "🔐 Se reconoce con tu cuenta de Timón: sin código." else "🔐 $r" }
         }
         val avanzado = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
-        raiz.addView(boton("Avanzado: un teléfono sin cuenta de Tiempos") { avanzado.visibility = if (avanzado.visibility == View.GONE) View.VISIBLE else View.GONE })
-        avanzado.addView(texto("Sólo si una de las Pizarras no tiene cuenta de Tiempos: las dos tienen que usar el MISMO código a mano.", 13f, "#E8D3A2"))
+        raiz.addView(boton("Avanzado: un teléfono sin cuenta de Timón") { avanzado.visibility = if (avanzado.visibility == View.GONE) View.VISIBLE else View.GONE })
+        avanzado.addView(texto("Sólo si uno de los teléfonos no tiene cuenta de Timón: las dos tienen que usar el MISMO código a mano.", 13f, "#E8D3A2"))
         avanzado.addView(CheckBox(this).apply {
             text = "Usar el código a mano en este teléfono"; textSize = 14f; setTextColor(Color.parseColor("#F2F2F2"))
             isChecked = EnlaceAjustes.usaAMano(this@MainActivity)
             setOnCheckedChangeListener { _, si -> EnlaceAjustes.usarAMano(this@MainActivity, si); if (EnlaceAjustes.prendido(this@MainActivity)) { EnlaceServicio.detener(this@MainActivity); EnlaceServicio.arrancar(this@MainActivity) } }
         })
         avanzado.addView(texto("El código del enlace en este teléfono: ${codigoParaLeer(EnlaceAjustes.aMano(this))}", 15f, "#F2F2F2"))
-        val otro = campo("Código de la otra Pizarra", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
+        val otro = campo("Código del otro teléfono", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
         avanzado.addView(otro)
         avanzado.addView(boton("Usar ese código") {
-            if (!EnlaceAjustes.usarCodigo(this, otro.text.toString())) { dice.text = "Eso no es un código: son 10 letras y números, como el que muestra la otra Pizarra."; return@boton }
+            if (!EnlaceAjustes.usarCodigo(this, otro.text.toString())) { dice.text = "Eso no es un código: son 10 letras y números, como el que muestra el otro teléfono."; return@boton }
             Bitacora.anotar(this, "enlace: usa el código de otra Pizarra")
             if (EnlaceAjustes.prendido(this)) { EnlaceServicio.detener(this); EnlaceServicio.arrancar(this) }
             pintar()
@@ -601,12 +601,12 @@ class MainActivity : Activity() {
             if (!EnlaceAjustes.prendido(this)) { dice.text = "Primero prendé el enlace."; return@boton }
             EnlaceServicio.enviar(this, org.json.JSONObject().put("v", VERSION_ENLACE).put("app", "pizarra").put("tipo", "prueba")
                 .put("texto", "Prueba del enlace").put("t", System.currentTimeMillis()).put("de", nombreDelTelefono(this)))
-            dice.text = "Mandé una prueba. En la otra Pizarra tiene que aparecer un aviso. Estado: ${EnlaceServicio.estado}"
+            dice.text = "Mandé una prueba. En el otro teléfono tiene que aparecer un aviso. Estado: ${EnlaceServicio.estado}"
             // pizarra-72: la otra contesta; si en 6 s no contestó, se dice por qué puede ser.
             val desde = System.currentTimeMillis()
             dice.postDelayed({
                 dice.text = if (EnlaceServicio.ultimoAcuseEn >= desde) EnlaceServicio.ultimoAcuse
-                else "La otra Pizarra no contestó. Estado: ${EnlaceServicio.estado}. Mirá que las dos tengan el enlace prendido y estén en el mismo wi-fi (o emparejadas por Bluetooth)."
+                else "El otro teléfono no contestó. Estado: ${EnlaceServicio.estado}. Mirá que las dos tengan el enlace prendido y estén en el mismo wi-fi (o emparejadas por Bluetooth)."
             }, 6_000)
         })
         raiz.addView(fila)
@@ -726,7 +726,7 @@ class MainActivity : Activity() {
                 "\nEncendido, mientras recorrés un grupo guarda en silencio cada búsqueda de alojamiento que pasa, con sus fechas y cuántos son. Cuando tocás «Comentar», un cartel corto dice si hay lugar y la respuesta queda copiada: el teclado te la ofrece arriba y la pegás. Sólo lee y sólo dentro de Facebook: no toca nada.", 13f, "#9AA0A6"))
             if (!Pantalla.encendido(this)) raiz.addView(boton("Encender el lector de Facebook") {
                 try { startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (e: Exception) { }
-                mostrar("En Accesibilidad: «Apps descargadas» → Pizarra · lector de Facebook → encender. Si sale «Ajuste restringido»: Ajustes → Apps → Pizarra → ⋮ → «Permitir ajustes restringidos», y volvé a probar.")
+                mostrar("En Accesibilidad: «Apps descargadas» → Timón · lector de Facebook → encender. Si sale «Ajuste restringido»: Ajustes → Apps → Timón → ⋮ → «Permitir ajustes restringidos», y volvé a probar.")
             })
             raiz.addView(boton("Abrir Pedidos de alquiler") { abrir(URL_PEDIDOS_CV) })
             raiz.addView(boton("Salir de Casa Verde") { cv.salir(); pintar() })
@@ -774,7 +774,7 @@ class MainActivity : Activity() {
         val b = Bodega(this)
         val acceso = Bodega.tieneAcceso(this)
         bodegaVista?.text = listOf(
-            if (acceso) "✔ Puede leer las notificaciones." else "✖ Todavía no puede leer las notificaciones. Si el interruptor sale gris: Ajustes → Aplicaciones → Pizarra → ⋮ → «Permitir ajustes restringidos», y volvé a tocar el botón.",
+            if (acceso) "✔ Puede leer las notificaciones." else "✖ Todavía no puede leer las notificaciones. Si el interruptor sale gris: Ajustes → Aplicaciones → Timón → ⋮ → «Permitir ajustes restringidos», y volvé a tocar el botón.",
             if (b.conToken) "✔ Token de la bodega guardado." else "✖ Falta el token de la bodega (en Termux: cat ~/.config/bodega/token).",
             Bodega.escucha(this).let { e -> if (!acceso) "" else if (e.ultima == 0L) "✖ Android todavía no conectó el lector: tocá «Subir ahora» (lo apaga y lo prende para destrabarlo)." else "✔ Escucha: última notificación ${horaCorta(isoUtc(e.ultima))}, ${e.hoy} hoy." },
             "Último envío: " + b.ultimaSubida.ifEmpty { "todavía nada" },
@@ -790,7 +790,7 @@ class MainActivity : Activity() {
         for (i in listOfNotNull(directo, Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))) {
             try { startActivity(i); return } catch (e: Exception) { }
         }
-        decir("Buscá «acceso a notificaciones» en Ajustes y prendé Pizarra.")
+        decir("Buscá «acceso a notificaciones» en Ajustes y prendé Timón.")
     }
 
     private fun guardarToken(campo: EditText) {
@@ -849,8 +849,8 @@ class MainActivity : Activity() {
         enSegundo({ nube.tareas() }) { t ->
             tareas = t
             pintarLista()
-            decir(if (t.isEmpty()) "No hay tareas en Tiempos." else "")
-            PizarraWidget.actualizarDesdeLaRed(this, null); AgendaWidget.actualizar(this, null)
+            decir(if (t.isEmpty()) "No hay tareas en Timón." else "")
+            PizarraWidget.actualizarDesdeLaRed(this, null); AgendaWidget.actualizar(this, null); HoyWidget.actualizar(this, null)
         }
     }
 
@@ -882,7 +882,7 @@ class MainActivity : Activity() {
                         caja.isEnabled = true
                         tareas = tareas.map { if (it.id == t.id) it.copy(enMiPizarra = marcada) else it }
                         pintarPliegue()
-                        PizarraWidget.actualizarDesdeLaRed(this@MainActivity, null); AgendaWidget.actualizar(this@MainActivity, null)
+                        PizarraWidget.actualizarDesdeLaRed(this@MainActivity, null); AgendaWidget.actualizar(this@MainActivity, null); HoyWidget.actualizar(this@MainActivity, null)
                     }
                 }
             })
@@ -902,7 +902,7 @@ class MainActivity : Activity() {
         if (m != null && m.isRequestPinAppWidgetSupported) {
             m.requestPinAppWidget(ComponentName(this, PizarraWidget::class.java), null, null)
         } else {
-            decir("Mantené apretada la pantalla de inicio → Widgets → Pizarra.")
+            decir("Mantené apretada la pantalla de inicio → Widgets → Timón.")
         }
     }
 

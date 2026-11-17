@@ -110,7 +110,7 @@ object EnlaceAjustes {
     /** Trae el código de la cuenta y lo guarda. En un hilo; devuelve null si salió bien o el motivo. */
     fun traerDeLaCuenta(c: Context): String? = try {
         val n = Nube(c)
-        if (!n.conSesion || !n.esTiempos) "Sin cuenta de Tiempos: queda el código a mano."
+        if (!n.conSesion || !n.esTiempos) "Sin cuenta de Timón: queda el código a mano."
         else { prefs(c).edit().putString("codigoCuenta", n.llaveFamilia()).apply(); null }
     } catch (e: Throwable) { e.message ?: "No se pudo traer la llave del enlace." }
     /** Usar el código de la otra Pizarra. `false` si no es un código. */
@@ -348,7 +348,7 @@ class EnlaceServicio : Service() {
                     // pizarra-72: conectados pero con distinto código no se entienden; ahora se dice.
                     if (esDeOtroCodigo(llave, renglon) && !estado.contains("OTRO código")) {
                         Salud.contar(this, "enlace.otroCodigo")
-                        estado = "conectado con ${c.quien}, pero con OTRO código: las dos Pizarras tienen que mostrar el mismo"
+                        estado = "conectado con ${c.quien}, pero con OTRO código: los dos teléfonos tienen que mostrar el mismo"
                         Bitacora.anotar(this, "enlace: la otra Pizarra tiene otro código")
                     }
                     continue
@@ -550,6 +550,6 @@ fun crearCanales(c: Context) {
     val nm = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     nm.createNotificationChannel(NotificationChannel(CANAL_ENLACE, "Enlace cerca (en vivo)", NotificationManager.IMPORTANCE_LOW))
     nm.createNotificationChannel(NotificationChannel(CANAL_ENLACE_EVENTOS, "Enlace cerca · lo que pasa", NotificationManager.IMPORTANCE_HIGH).apply {
-        description = "Lo que manda la otra Pizarra cerca: un viaje que terminó, algo raro en la camioneta. Suena aunque no haya internet."
+        description = "Lo que manda el otro teléfono cerca: un viaje que terminó, algo raro en la camioneta. Suena aunque no haya internet."
     })
 }

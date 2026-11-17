@@ -77,7 +77,7 @@ object Alarmas {
                 val nube = Nube(ctx)
                 if (nube.conSesion) try { Buzon.ponerAlDia(ctx, nube) } catch (e: Throwable) {
                     Bitacora.anotar(ctx, "avisos: " + (e.message ?: e.toString()).take(200)) }
-                if (!nube.conSesion) "sin sesión" else if (!nube.esTiempos) "sin alertas: no es una cuenta de Tiempos" else {
+                if (!nube.conSesion) "sin sesión" else if (!nube.esTiempos) "sin alertas: no es una cuenta de Timón" else {
                     val a = nube.alertas()
                     ctx.alertasGuardadas = a
                     "${programar(ctx, a)} programada(s)"
@@ -159,7 +159,7 @@ object Alarmas {
         val nm = c.getSystemService(NotificationManager::class.java) ?: return
         val sonido = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        nm.createNotificationChannel(NotificationChannel(CANAL_ALARMA, "Alarmas de Tiempos", NotificationManager.IMPORTANCE_HIGH).apply {
+        nm.createNotificationChannel(NotificationChannel(CANAL_ALARMA, "Alarmas de Timón", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "Suenan como un despertador hasta que las apagás."
             setSound(sonido, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
@@ -167,7 +167,7 @@ object Alarmas {
             vibrationPattern = longArrayOf(0, 600, 400, 600, 400, 600)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         })
-        nm.createNotificationChannel(NotificationChannel(CANAL_RECORDATORIO, "Recordatorios de Tiempos", NotificationManager.IMPORTANCE_DEFAULT).apply {
+        nm.createNotificationChannel(NotificationChannel(CANAL_RECORDATORIO, "Recordatorios de Timón", NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = "Un aviso a la hora que dijiste."
         })
     }
@@ -191,7 +191,7 @@ object Alarmas {
         val b = Notification.Builder(c, if (alarma) CANAL_ALARMA else CANAL_RECORDATORIO)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(if (alarma) "⏰ $hora · $texto" else "🔔 $texto")
-            .setContentText(if (alarma) "Tocá para apagar" else "Recordatorio de Tiempos · $hora")
+            .setContentText(if (alarma) "Tocá para apagar" else "Recordatorio de Timón · $hora")
             .setCategory(if (alarma) Notification.CATEGORY_ALARM else Notification.CATEGORY_REMINDER)
             .setContentIntent(if (alarma) pantalla else abrirApp(c))
             .setAutoCancel(true)

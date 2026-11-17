@@ -364,7 +364,7 @@ object Pantalla {
 
     /** Para la pantalla de la app y el diagnóstico. Sin un solo texto leído. */
     fun estado(c: Context): String {
-        if (!encendido(c)) return "apagado (Ajustes → Accesibilidad → Pizarra)"
+        if (!encendido(c)) return "apagado (Ajustes → Accesibilidad → Timón)"
         val pr = p(c); val hoy = isoUtc(System.currentTimeMillis()).take(10)
         if (pr.getString("dia", "") != hoy) return "encendido · hoy todavía no elegiste ningún pedido"
         return "encendido · hoy: ${pr.getInt("pedidos", 0)} pedidos elegidos para responder · último ${pr.getString("ultima", "")} UTC"

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pizarra-84: un renglón de «Hoy» (Hoy.kt): el ○ tilda, el texto abre Timón
+     en ese ítem; la barra dice de qué espacio es (dorado mío, terracota de la
+     familia, como en Timón). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hoy_fila"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="34dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp">
+    <!-- Un TextView vacío y no un View: un widget sólo admite algunas vistas. -->
+    <TextView
+        android:id="@+id/hoy_punto"
+        android:layout_width="4dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="6dp"
+        android:background="#D8A657" />
+    <TextView
+        android:id="@+id/hoy_marca"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:gravity="center"
+        android:textColor="#F2F2F2"
+        android:textSize="18sp"
+        android:contentDescription="Tildar" />
+    <TextView
+        android:id="@+id/hoy_texto"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="14sp"
+        android:maxLines="2"
+        android:ellipsize="end" />
+    <TextView
+        android:id="@+id/hoy_hora"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:textColor="#8A8F98"
+        android:textSize="12sp"
+        android:maxLines="1" />
+</LinearLayout>

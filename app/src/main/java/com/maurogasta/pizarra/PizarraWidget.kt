@@ -91,8 +91,8 @@ class PizarraWidget : AppWidgetProvider() {
                 v.setEmptyView(R.id.lista, R.id.vacia)
                 v.setTextViewText(R.id.vacia,
                     if (Nube(contexto).conSesion) "Nada en la pizarra.\nTocá ✎ para elegir tareas."
-                    else "Tocá ✎ y entrá con tu cuenta de Tiempos.")
-                v.setTextViewText(R.id.estado, "Pizarra · " + cache.estado)
+                    else "Tocá ✎ y entrá con tu cuenta de Timón.")
+                v.setTextViewText(R.id.estado, "Timón · Pizarra · " + cache.estado)
                 // pizarra-24: las luces, con el color de cómo estaban la última vez.
                 val luces = Luces(contexto)
                 for ((i, par) in LUCES_WIDGET.withIndex()) {

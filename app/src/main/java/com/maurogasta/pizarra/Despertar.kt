@@ -36,6 +36,8 @@ import android.os.Looper
 // teléfonos: ~9.000, más ~1.700 por cada tarea que cambia (20 por día:
 // ~34.000). Unas 43.000: entra, justo. Hoy son 4 teléfonos (~17.000). Si se
 // acerca, lo que sigue es traer sólo las tareas cambiadas (anotado en tiempos:A42).
+// pizarra-84: el widget «Hoy» suma UNA lectura (`hoy/{uid}`) por aviso de
+// tareas y cada 10 minutos: 4 teléfonos × 90 = 360 por día; con 10, 900.
 // Las LUCES no: preguntarle a Tuya cada 10 minutos gastaría su cupo de
 // consultas (ver Tibio.kt).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,14 +46,15 @@ const val ESPACIO_MS = 20_000L
 const val TODO_CADA_MS = 6 * 3600_000L
 
 /** Las partes que se pueden poner al día por separado. */
-val PARTES = listOf("llamadas", "mensajes", "tareas", "agenda", "alarmas", "enlace")
-private val BARATAS = setOf("llamadas", "mensajes", "enlace")
+val PARTES = listOf("llamadas", "mensajes", "tareas", "agenda", "alarmas", "enlace", "hoy")
+// pizarra-84: «hoy» es UNA lectura (el documento que arma Timón): va con lo barato.
+private val BARATAS = setOf("llamadas", "mensajes", "enlace", "hoy")
 
 /** Qué partes trae un aviso, según lo que cambió (`que` de despertar.mjs). Lo desconocido trae todo. */
 fun partesDe(que: String?): Set<String> = when (que) {
     "llamadas" -> setOf("llamadas")
     "mensajes" -> setOf("mensajes")
-    "tareas" -> setOf("tareas", "agenda")
+    "tareas" -> setOf("tareas", "agenda", "hoy")          // pizarra-84: Timón despierta por hoy/ con «tareas»
     "agenda" -> setOf("agenda")
     "alertas" -> setOf("alarmas", "agenda")
     "avisos", "plata" -> setOf("alarmas", "mensajes")     // los avisos de Claude viven en el buzón (Alarmas) y en las novedades
@@ -114,6 +117,7 @@ object Despertar {
             if ("agenda" in ya) try { AgendaWidget.actualizar(app, null) } catch (e: Throwable) { }
         }
         if ("alarmas" in ya) try { Alarmas.sincronizar(app) } catch (e: Throwable) { }
+        if ("hoy" in ya) try { HoyWidget.actualizar(app, null) } catch (e: Throwable) { }   // pizarra-84: el widget «Hoy»
         if ("enlace" in ya) try { EnlaceLejos.ponerAlDia(app) } catch (e: Throwable) { }   // pizarra-71: lo que dejó la otra Pizarra por internet
     }
 

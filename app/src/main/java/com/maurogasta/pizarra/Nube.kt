@@ -130,8 +130,8 @@ class Nube(contexto: Context) {
 
     /** Lo de Tiempos sólo con una cuenta de Tiempos (pizarra-14). */
     private fun deTiempos(): String {
-        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta de Tiempos.", true)
-        if (!esTiempos) throw ErrorNube("La pizarra de tareas es de Tiempos: entraste con ${sitio.nombre}.")
+        val yo = uid ?: throw ErrorNube("Entrá con tu cuenta de Timón.", true)
+        if (!esTiempos) throw ErrorNube("Esto es de Timón: entraste con ${sitio.nombre}.")
         return yo
     }
 
@@ -250,7 +250,7 @@ class Nube(contexto: Context) {
         val leer = { codigoDeLlave(JSONArray(pedir(url, JSONObject().put("documents", JSONArray().put("$BASE_DOCS/$COLECCION_LLAVE/familia")).toString(), "application/json", token()))) }
         leer()?.let { return it }
         try { commit(cuerpoLlaveFamilia(BASE_DOCS, yo, codigoNuevo())) } catch (e: ErrorNube) { }
-        return leer() ?: throw ErrorNube("No se pudo traer la llave del enlace: ¿están publicadas las reglas v22 de Tiempos?")
+        return leer() ?: throw ErrorNube("No se pudo traer la llave del enlace: ¿están publicadas las reglas v22 de Timón?")
     }
 
     fun enlaceLeer(par: String, id: String): JSONObject? {
@@ -372,6 +372,19 @@ class Nube(contexto: Context) {
         // de la app llegan a Claude sólo desde una cuenta de Tiempos.
         val yo = deTiempos()
         commit(cuerpoFalla(idNuevo(), yo, mail.orEmpty(), texto, gravedad))
+    }
+
+    /** pizarra-84 (etapa 5): `hoy/{uid}` tal cual vino (la respuesta de batchGet), para el widget «Hoy». Una lectura. */
+    fun hoyCrudo(): String {
+        val yo = deTiempos()
+        return pedir("https://firestore.googleapis.com/v1/$BASE_DOCS:batchGet",
+            JSONObject().put("documents", JSONArray().put("$BASE_DOCS/hoy/$yo")).toString(), "application/json", token())
+    }
+
+    /** pizarra-84: la acción del renglón (o su deshacer) y el renglón fuera/dentro de `hoy/`, en un commit. */
+    fun tildarHoy(r: RenglonHoy, hecho: Boolean) {
+        val cuerpo = cuerpoTildar(r, hecho, deTiempos()) ?: throw ErrorNube("Ese renglón no trae qué escribir: abrí Timón.")
+        commit(cuerpo); avisarCambio("tareas")
     }
 
     fun tachar(id: String, hecho: Boolean) { commit(cuerpoTachar(id, hecho, deTiempos())); avisarCambio("tareas") }

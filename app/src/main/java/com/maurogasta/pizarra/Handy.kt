@@ -151,7 +151,7 @@ object Handy {
                 Bitacora.anotar(app, "handy: no salió: " + (e.message ?: e.javaClass.simpleName))
                 Salud.contar(app, "audio.noSalieron")
                 val m = e.message ?: "no se pudo"
-                if (m.startsWith("La base no deja")) (if (handy) "Para el handy por internet hay que publicar las reglas v22 de Tiempos." else "Para mandar audios hay que publicar las reglas v18 de Tiempos.") else m
+                if (m.startsWith("La base no deja")) (if (handy) "Para el handy por internet hay que publicar las reglas v22 de Timón." else "Para mandar audios hay que publicar las reglas v18 de Tiempos.") else m
             }
             listo(error)
         }

@@ -129,7 +129,7 @@ fun acuse(de: String, que: String, como: String): JSONObject =
 
 /** Lo que dice la pantalla de quien mandó, al llegar el acuse. */
 fun textoDeAcuse(o: JSONObject): String {
-    val quien = o.optString("quien").ifBlank { o.optString("de") }.ifBlank { "la otra Pizarra" }
+    val quien = o.optString("quien").ifBlank { o.optString("de") }.ifBlank { "el otro teléfono" }
     return when (o.optString("que")) {
         "prueba" -> "✔ $quien recibió la prueba"
         "voz" -> "📻 $quien: ${o.optString("como").ifBlank { "llegó" }}"
