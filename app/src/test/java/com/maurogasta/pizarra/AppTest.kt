@@ -263,7 +263,7 @@ class AppTest {
             is ViewGroup -> (0 until v.childCount).flatMap { radios(v.getChildAt(it)) }
             else -> emptyList()
         }
-        assertEquals(listOf("Tiempos (Mauro y Florencia)", "Casa Verde", "CasaYourte", "remateTaller"), radios(m.window.decorView).map { it.text.toString() })
+        assertEquals(listOf("Timón (Mauro y Florencia)", "Casa Verde", "CasaYourte", "remateTaller"), radios(m.window.decorView).map { it.text.toString() })
     }
 
     @Test fun conCuentaDeOtroSitio_hayAvisosYNadaDeTiempos() {
