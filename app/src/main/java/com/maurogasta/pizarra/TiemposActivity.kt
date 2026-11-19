@@ -8,7 +8,6 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
 import android.view.ViewGroup
 import android.content.pm.PackageManager
 import android.webkit.GeolocationPermissions
@@ -17,7 +16,6 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
 import android.widget.FrameLayout
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,7 +32,7 @@ import android.widget.FrameLayout
 // sitio: nada de Tiempos se copia acá.
 //
 // Lo que se abre adentro es SÓLO el sitio de Tiempos; cualquier otro enlace
-// (Instagram, Casa Verde) va al navegador. El ⚙ de abajo a la izquierda lleva
+// (Instagram, Casa Verde) va al navegador. Desde pizarra-85 los ajustes se piden desde «Más» → «Ajustes de la app» (el sitio la muestra sólo si el user agent trae PizarraApp/, y pide ?app=ajustes, que acá se atrapa). Antes era un ⚙ flotante abajo a la izquierda, que lleva
 // a los ajustes de la app (MainActivity): la cuenta del widget, la bodega, el
 // diagnóstico.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,16 +90,6 @@ class TiemposActivity : Activity() {
         }
         val marco = FrameLayout(this)
         marco.addView(web, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        val d = resources.displayMetrics.density
-        marco.addView(Button(this).apply {
-            text = "⚙"
-            textSize = 18f
-            alpha = 0.7f
-            contentDescription = "Ajustes de la app"
-            setOnClickListener { startActivity(Intent(this@TiemposActivity, MainActivity::class.java)) }
-        }, FrameLayout.LayoutParams((52 * d).toInt(), (52 * d).toInt(), Gravity.BOTTOM or Gravity.START).apply {
-            leftMargin = (10 * d).toInt(); bottomMargin = (14 * d).toInt()
-        })
         // Desde Android 15 la app se dibuja debajo de las barras: el sitio no
         // tiene que quedar abajo de la hora ni de los botones del sistema.
         if (Build.VERSION.SDK_INT >= 30) marco.setOnApplyWindowInsetsListener { v, ins ->
@@ -124,6 +112,8 @@ class TiemposActivity : Activity() {
 
     /** true = lo manejo yo (afuera); false = se carga adentro. */
     private fun desviar(url: String): Boolean {
+        // pizarra-85: «Más» → «Ajustes de la app» pide ?app=ajustes: se abre MainActivity y no se carga nada.
+        if (esDeTiempos(url) && url.contains("?app=ajustes")) { startActivity(Intent(this, MainActivity::class.java)); return true }
         if (esDeTiempos(url)) return false
         try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (e: Exception) { }
         return true

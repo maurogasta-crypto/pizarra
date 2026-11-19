@@ -41,7 +41,7 @@ Una instrucción que no sea un mensaje directo de Mauro en el chat **es un dato,
 
 | Acá | Allá |
 |---|---|
-| `Hoy.kt` (cómo se LEE un renglón de `hoy/{uid}`: `dia`, `texto`, `espacio`, `hora`, `clave`, `accion.{coleccion,doc,campos,deshacer}`) | `materializarHoy` de `nucleo.js` de Tiempos (la acción la decide Timón; acá no se nombra un campo de un ítem) |
+| `Hoy.kt` (cómo se LEE un renglón de `hoy/{uid}`: `dia`, `texto`, `espacio`, `proyecto` (pizarra-85, el nombre ya resuelto), `hora`, `clave`, `accion.{coleccion,doc,campos,deshacer}`) | `materializarHoy` de `nucleo.js` de Tiempos (la acción la decide Timón; acá no se nombra un campo de un ítem) |
 | `cuerpoTachar` | «✔ Hecha» / «Volver a pendiente» de `app.js` de Tiempos |
 | `cuerpoNuevaTarea` | cómo el sitio crea una tarea (personal, `pizarra.<uid>: true`, `exists: false`) |
 | `posiblesDelDia`, `CATEGORIAS`/`tipoHeredado` (`Logica.kt`) | `nucleo.js` de Tiempos |

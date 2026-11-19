@@ -12,6 +12,8 @@ cada uno está en § 1 de `protocolos/ARQUITECTURA.md` de `datos`.
 
 ## El widget «Hoy» (pizarra-84, plan «Timón», etapa 5)
 
+> **pizarra-85 (19-nov-2026):** el renglón puede traer `proyecto` (el nombre de la cuenta, ya resuelto por `materializarHoy` de Tiempos, nucleo-48) y el widget lo pinta junto a la hora («Casa Verde · 17:00»); el orden sigue siendo el de Timón. Y el ⚙ flotante de la pantalla de Timón sale (tapaba la barra de abajo): los ajustes se abren desde «Más» → «Ajustes de la app» del sitio. **Publicar primero el sitio y después la app.**
+
 `Hoy.kt`. Pinta **sólo** `hoy/{uid}` de la base de Timón, el documento que arma
 la app web de la persona (`materializarHoy` de `nucleo.js` de `tiempos`): una
 lectura por puesta al día, en el orden de Timón, sin calcular ni ordenar nada
@@ -51,8 +53,8 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-84` (el `versionName`; en cada archivo de `app/src/main/java/…`) |
-| Pruebas | `./gradlew test` — 280 casos al 17-nov (pizarra-84; 10 del widget «Hoy», `HoyTest`), que ABREN la app con Robolectric y tocan sus botones, sin red; + uno opcional contra una respuesta real |
+| Sello | `pizarra-85` (el `versionName`; en cada archivo de `app/src/main/java/…`) |
+| Pruebas | `./gradlew test` — 281 casos al 19-nov (pizarra-85; 11 del widget «Hoy», `HoyTest`; 1 opcional omitido), que ABREN la app con Robolectric y tocan sus botones, sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa
 

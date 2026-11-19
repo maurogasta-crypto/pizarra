@@ -65,12 +65,14 @@ data class RenglonHoy(
     val dia: String, val texto: String, val espacio: String, val hora: String, val clave: String,
     val coleccion: String, val doc: String, val campos: JSONObject?, val deshacer: JSONObject?,
     val crudo: JSONObject,
+    /** pizarra-85: el NOMBRE del proyecto, ya resuelto por Timón (nucleo-48); vacío si no tiene. */
+    val proyecto: String = "",
 )
 
 data class DocHoy(val desde: String, val hasta: String, val armado: String, val renglones: List<RenglonHoy>)
 
 /** Lo que el widget dibuja: un renglón y si está tildado en este teléfono. */
-data class FilaHoy(val clave: String, val texto: String, val hora: String, val espacio: String, val hecho: Boolean)
+data class FilaHoy(val clave: String, val texto: String, val hora: String, val espacio: String, val hecho: Boolean, val proyecto: String = "")
 
 private fun texto(f: JSONObject?, k: String): String = f?.optJSONObject(k)?.optString("stringValue").orEmpty()
 private fun mapa(f: JSONObject?, k: String): JSONObject? = f?.optJSONObject(k)?.optJSONObject("mapValue")?.optJSONObject("fields")
@@ -85,7 +87,7 @@ fun renglonDeValor(v: JSONObject): RenglonHoy? {
     val a = mapa(f, "accion")
     val r = RenglonHoy(
         dia = texto(f, "dia"), texto = texto(f, "texto"), espacio = texto(f, "espacio"),
-        hora = texto(f, "hora"), clave = texto(f, "clave"),
+        hora = texto(f, "hora"), clave = texto(f, "clave"), proyecto = texto(f, "proyecto"),
         coleccion = texto(a, "coleccion"), doc = texto(a, "doc"),
         campos = mapa(a, "campos"), deshacer = mapa(a, "deshacer"), crudo = v,
     )
@@ -109,10 +111,10 @@ fun hoyDeRespuesta(r: JSONArray): DocHoy? {
  */
 fun filasDeHoy(doc: DocHoy?, tildados: Map<String, RenglonHoy>, hoy: String): List<FilaHoy> {
     val delDia = (doc?.renglones ?: emptyList()).filter { it.dia.isNotEmpty() && it.dia <= hoy }
-    val filas = delDia.map { FilaHoy(it.clave, it.texto, it.hora, it.espacio, it.clave in tildados) }
+    val filas = delDia.map { FilaHoy(it.clave, it.texto, it.hora, it.espacio, it.clave in tildados, it.proyecto) }
     val enLista = delDia.map { it.clave }.toSet()
     return filas + tildados.values.filter { it.clave !in enLista }
-        .map { FilaHoy(it.clave, it.texto, it.hora, it.espacio, true) }
+        .map { FilaHoy(it.clave, it.texto, it.hora, it.espacio, true, it.proyecto) }
 }
 
 /**
@@ -310,7 +312,8 @@ class FilasHoy(private val contexto: Context) : RemoteViewsService.RemoteViewsFa
         v.setTextViewText(R.id.hoy_marca, if (f.hecho) "✓" else "○")
         v.setTextViewText(R.id.hoy_texto, t)
         v.setTextColor(R.id.hoy_texto, Color.parseColor(if (f.hecho) "#8A8F98" else "#F2F2F2"))
-        v.setTextViewText(R.id.hoy_hora, f.hora)
+        // pizarra-85: «Casa Verde · 17:00». El color sigue mandándolo la hora («vencido» en rojo).
+        v.setTextViewText(R.id.hoy_hora, listOf(f.proyecto, f.hora).filter { it.isNotEmpty() }.joinToString(" · "))
         v.setTextColor(R.id.hoy_hora, Color.parseColor(if (f.hora == "vencido") "#E08B8B" else "#8A8F98"))
         // Los mismos colores que «Hoy» de Timón: dorado es mío, terracota de la familia.
         v.setInt(R.id.hoy_punto, "setBackgroundColor", Color.parseColor(if (f.espacio == "fam") "#C87F5A" else "#D8A657"))

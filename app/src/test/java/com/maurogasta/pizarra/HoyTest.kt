@@ -16,6 +16,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 // pizarra-84, plan «Timón» etapa 5: el widget «Hoy» pinta `hoy/{uid}` y nada más.
+// pizarra-85: y el renglón puede traer el NOMBRE de su proyecto (nucleo-48), que sólo se pinta.
 // Lo que cuida es lo que NO tiene que pasar: que el widget calcule, ordene o
 // invente una escritura que Timón no le dio (regla 3 de ARQUITECTURA.md).
 @RunWith(RobolectricTestRunner::class)
@@ -53,6 +54,26 @@ class HoyTest {
         assertFalse("lo de mañana no va hoy", f.any { it.clave == "it:c" })
         // Un documento de ayer que Timón todavía no rearmó: lo de ayer sigue (está pendiente) y lo de hoy aparece.
         assertEquals(listOf("it:b", "it:a", "it:c"), filasDeHoy(doc, emptyMap(), "2026-11-18").map { it.clave })
+    }
+
+    private fun conProyecto(r: JSONObject, nombre: String?): JSONObject {
+        r.getJSONObject("mapValue").getJSONObject("fields")
+            .put("proyecto", if (nombre == null) JSONObject().put("nullValue", JSONObject.NULL) else s(nombre))
+        return r
+    }
+
+    @Test fun elProyectoDelRenglon_viajaTalCual_yNoMueveElOrden() {
+        val doc = hoyDeRespuesta(respuesta("2026-11-17",
+            conProyecto(renglon("b", "2026-11-17", hora = "10:00"), "Casa Verde"),
+            conProyecto(renglon("a", "2026-11-17"), null),
+            renglon("c", "2026-11-17")))!!
+        val f = filasDeHoy(doc, emptyMap(), "2026-11-17")
+        assertEquals("el orden sigue siendo el de Timón", listOf("it:b", "it:a", "it:c"), f.map { it.clave })
+        assertEquals("Casa Verde", f[0].proyecto)
+        assertEquals("un nullValue es «sin proyecto»", "", f[1].proyecto)
+        assertEquals("un renglón de un Timón viejo, sin el campo, también", "", f[2].proyecto)
+        assertEquals("lo tildado acá conserva su proyecto", "Casa Verde",
+            filasDeHoy(doc, mapOf("it:b" to doc.renglones[0]), "2026-11-17")[0].proyecto)
     }
 
     @Test fun sinDocumento_nadaYLoDice() {
