@@ -653,3 +653,4 @@ crear una tarea que alguien borró.
 | `Radio.kt` | el handy cerca en vivo, y las pantallas «📻 Handy cerca» y «🚙 En vivo» |
 | `Alarmas.kt` | traer `alertas/`, programarlas, la notificación, la pantalla de «Apagar», el trabajo de cada hora |
 | `.github/workflows/apk.yml` | banco + APK + release `ultimo` |
+| `CONTEXTO.md` | **para una sesión nueva sin conocimiento del ecosistema**: qué es, cómo funciona, mapa de archivos, flujos, datos, reglas con su porqué, cómo se verifica y despliega, estado y glosario |
