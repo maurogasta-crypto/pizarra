@@ -35,6 +35,8 @@ import java.time.LocalDate
 data class EventoChicos(
     val id: String, val titulo: String, val fecha: String, val hora: String, val horaFin: String,
     val semanal: Boolean, val hasta: String, val excepto: List<String>, val lugar: String,
+    /** pizarra-86: los días de la semana de una semanal (0 = domingo); vacío = el de su fecha (`diasDeEvento`). */
+    val dias: List<Int> = emptyList(),
 )
 
 /** Un renglón del widget: el encabezado de un día, o una cosa de ese día. */
@@ -77,15 +79,33 @@ fun eventosDeConsulta(r: JSONArray): List<EventoChicos> = (0 until r.length()).m
         fecha = fecha, hora = txt(f, "hora"), horaFin = txt(f, "horaFin"), semanal = bool(f, "semanal"),
         hasta = txt(f, "hasta"), lugar = txt(f, "lugar"),
         excepto = if (exc == null) emptyList() else (0 until exc.length()).map { exc.optJSONObject(it)?.optString("stringValue").orEmpty() },
+        dias = diasDe(f),
     )
 }
 
-/** Lo mismo que `eventosDelDia` de nucleo.js. */
+/** `dias` de un evento: los números 0…6 (como `leerDias` de nucleo.js, que también acepta nombres). */
+private fun diasDe(f: JSONObject): List<Int> {
+    val v = f.optJSONObject("dias")?.optJSONObject("arrayValue")?.optJSONArray("values") ?: return emptyList()
+    return (0 until v.length()).mapNotNull { i ->
+        val x = v.optJSONObject(i) ?: return@mapNotNull null
+        when {
+            x.has("integerValue") -> x.optString("integerValue").toIntOrNull()
+            x.has("doubleValue") -> x.optDouble("doubleValue").toInt()
+            x.has("stringValue") -> NUMERO_DIA[x.optString("stringValue").lowercase().replace("á", "a").replace("é", "e").removeSuffix("s")]
+            else -> null
+        }
+    }.filter { it in 0..6 }.distinct().sorted()
+}
+private val NUMERO_DIA = mapOf("domingo" to 0, "lune" to 1, "lunes" to 1, "marte" to 2, "martes" to 2, "miercole" to 3, "jueve" to 4,
+    "vierne" to 5, "sabado" to 6)
+
+/** Lo mismo que `eventosDelDia` / `diasDeEvento` de nucleo.js. */
 fun eventoEnDia(e: EventoChicos, iso: String): Boolean {
     if (iso in e.excepto) return false
     if (!e.semanal) return e.fecha == iso
     if (iso < e.fecha || (ISO.matches(e.hasta) && iso > e.hasta)) return false
-    return diaSemanaIso(iso) == diaSemanaIso(e.fecha)
+    val dias = e.dias.ifEmpty { listOf(diaSemanaIso(e.fecha)) }
+    return diaSemanaIso(iso) in dias
 }
 
 private fun hhmm(t: String): String = if (t.length >= 16) t.substring(11, 16) else ""

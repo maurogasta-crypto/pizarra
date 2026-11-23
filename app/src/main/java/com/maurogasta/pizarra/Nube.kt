@@ -387,7 +387,8 @@ class Nube(contexto: Context) {
         commit(cuerpo); avisarCambio("tareas")
     }
 
-    fun tachar(id: String, hecho: Boolean) { commit(cuerpoTachar(id, hecho, deTiempos())); avisarCambio("tareas") }
+    /** pizarra-86: se mira primero si la tarea se repite (dos lecturas más: el widget las vuelve a pedir igual después). */
+    fun tachar(id: String, hecho: Boolean) { val r = tareas().firstOrNull { it.id == id }?.repite; commit(cuerpoTachar(id, hecho, deTiempos(), r, java.time.LocalDate.now().toString())); avisarCambio("tareas") }
 
     /** pizarra-30: una tarea nueva, mía y en mi pizarra. Devuelve su id. */
     fun agregar(titulo: String): String {

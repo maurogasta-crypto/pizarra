@@ -78,6 +78,61 @@ class LogicaTest {
         assertEquals("actualizadoEn", w.getJSONArray("updateTransforms").getJSONObject(0).getString("fieldPath"))
     }
 
+    // pizarra-86: las que se repiten (nucleo-51 de Tiempos: cuerpoHecha / cuerpoPendiente / proximaVez).
+    private fun conRepite(d: JSONObject, cada: Long, unidad: String, limite: String? = null, ultima: String? = null): JSONObject {
+        val f = d.getJSONObject("fields")
+        f.put("repite", JSONObject().put("mapValue", JSONObject().put("fields", JSONObject()
+            .put("cada", JSONObject().put("integerValue", cada.toString()))
+            .put("unidad", JSONObject().put("stringValue", unidad)))))
+        if (limite != null) f.put("limite", JSONObject().put("stringValue", limite))
+        if (ultima != null) f.put("ultimaVez", JSONObject().put("stringValue", ultima))
+        return d
+    }
+
+    @Test fun proximaVez_lasMismasCuentasQueTiempos() {
+        assertEquals("2027-01-01", proximaVez(Repite(1, "dias"), "2026-12-31"))
+        assertEquals("2026-12-07", proximaVez(Repite(2, "semanas"), "2026-11-23"))
+        assertEquals("2026-02-28", proximaVez(Repite(1, "meses"), "2026-01-31"))
+        assertEquals("2028-02-29", proximaVez(Repite(1, "meses"), "2028-01-31"))
+        assertEquals("2027-02-28", proximaVez(Repite(3, "meses"), "2026-11-30"))
+        assertNull(proximaVez(null, "2026-11-23"))
+        assertNull(proximaVez(Repite(1, "meses"), ""))
+    }
+
+    @Test fun seLeeRepite_yLoQueNoCuadraEsNull() {
+        val t = tareaDe(conRepite(doc("m", "Filtro"), 3, "meses", "2026-12-01", "2026-09-01"), YO)!!
+        assertEquals(Repite(3, "meses"), t.repite)
+        assertEquals("2026-12-01", t.limite)
+        assertNull(tareaDe(conRepite(doc("x", "X"), 0, "dias"), YO)!!.repite)
+        assertNull(tareaDe(conRepite(doc("y", "Y"), 2, "años"), YO)!!.repite)
+        assertNull(tareaDe(doc("z", "Z"), YO)!!.repite)
+    }
+
+    @Test fun tacharLaQueSeRepite_noLaCierra_pasaALaPróximaVez() {
+        val w = cuerpoTachar("m", true, YO, Repite(1, "semanas"), "2026-11-23").getJSONArray("writes").getJSONObject(0)
+        val f = w.getJSONObject("update").getJSONObject("fields")
+        assertEquals(listOf("limite", "ultimaVez", "hechoPor"), lista(w.getJSONObject("updateMask").getJSONArray("fieldPaths")))
+        assertEquals("2026-11-30", f.getJSONObject("limite").getString("stringValue"))
+        assertEquals("2026-11-23", f.getJSONObject("ultimaVez").getString("stringValue"))
+        assertFalse("no se cierra", f.has("hecho"))
+        assertTrue(w.getJSONObject("currentDocument").getBoolean("exists"))
+        val v = cuerpoTachar("m", false, YO, Repite(1, "semanas"), "2026-11-23").getJSONArray("writes").getJSONObject(0)
+        assertEquals(listOf("limite"), lista(v.getJSONObject("updateMask").getJSONArray("fieldPaths")))
+        assertEquals("2026-11-23", v.getJSONObject("update").getJSONObject("fields").getJSONObject("limite").getString("stringValue"))
+        // Sin repetición, lo de siempre.
+        val n = cuerpoTachar("a", true, YO, null, "2026-11-23").getJSONArray("writes").getJSONObject(0)
+        assertEquals(listOf("hecho", "hechoPor"), lista(n.getJSONObject("updateMask").getJSONArray("fieldPaths")))
+    }
+
+    @Test fun laQueSeRepite_seVeTachadaHastaQueVuelve() {
+        val t = tareasDeConsulta(respuesta(
+            conRepite(doc("m", "Filtro", pizarra = mapOf(YO to true)), 1, "semanas", "2026-11-30", "2026-11-23"),
+            conRepite(doc("n", "Nunca hecha", pizarra = mapOf(YO to true)), 1, "semanas", "2026-11-30"),
+        ), YO)
+        assertEquals(mapOf("m" to true, "n" to false), paraLaPizarra(t, "2026-11-23").associate { it.id to it.hecho })
+        assertEquals(mapOf("m" to false, "n" to false), paraLaPizarra(t, "2026-11-30").associate { it.id to it.hecho })
+    }
+
     @Test fun destacharSóloTocaHecho_comoVolverAPendiente() {
         val w = cuerpoTachar("a", false, YO).getJSONArray("writes").getJSONObject(0)
         assertEquals(listOf("hecho"), lista(w.getJSONObject("updateMask").getJSONArray("fieldPaths")))

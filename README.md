@@ -12,6 +12,8 @@ cada uno está en § 1 de `protocolos/ARQUITECTURA.md` de `datos`.
 
 ## El widget «Hoy» (pizarra-84, plan «Timón», etapa 5)
 
+> **pizarra-86 (23-nov-2026):** las **tareas que se repiten** (`repite` de Tiempos, nucleo-51): tacharla en el widget de tareas fijadas no la cierra, «Para cuándo» pasa a la próxima vez (`cuerpoTachar` con `proximaVez`, la misma cuenta que `cuerpoHecha` de Tiempos) y se ve tachada hasta ese día (`hechaPorAhora`); destacharla la trae para hoy. Tachar lee antes la tarea (dos lecturas más por toque). Y la **agenda** entiende una actividad de los chicos en **varios días** de la semana (`dias`, `eventoEnDia`). El widget «Hoy» no cambió: escribe la acción del renglón tal cual. **Publicar primero el sitio y después la app.**
+>
 > **pizarra-85 (19-nov-2026):** el renglón puede traer `proyecto` (el nombre de la cuenta, ya resuelto por `materializarHoy` de Tiempos, nucleo-48) y el widget lo pinta junto a la hora («Casa Verde · 17:00»); el orden sigue siendo el de Timón. Y el ⚙ flotante de la pantalla de Timón sale (tapaba la barra de abajo): los ajustes se abren desde «Más» → «Ajustes de la app» del sitio. **Publicar primero el sitio y después la app.**
 
 `Hoy.kt`. Pinta **sólo** `hoy/{uid}` de la base de Timón, el documento que arma
@@ -53,7 +55,7 @@ Hecha» en Tiempos: lo ve todo el que comparte esa tarea.
 |---|---|
 | APK | release `ultimo` de este repositorio → `pizarra.apk` |
 | Base | Firebase `tiempos-71d42`, la de Tiempos, por REST; desde pizarra-14 también la de Casa Verde, CasaYourte o remate, para los avisos de quien no es de Tiempos |
-| Sello | `pizarra-85` (el `versionName`; en cada archivo de `app/src/main/java/…`) |
+| Sello | `pizarra-86` (el `versionName`; en cada archivo de `app/src/main/java/…`) |
 | Pruebas | `./gradlew test` — 281 casos al 19-nov (pizarra-85; 11 del widget «Hoy», `HoyTest`; 1 opcional omitido), que ABREN la app con Robolectric y tocan sus botones, sin red; + uno opcional contra una respuesta real |
 
 ## Cómo se usa

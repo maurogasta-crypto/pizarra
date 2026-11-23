@@ -93,6 +93,21 @@ class AgendaTest {
         assertEquals(2, eventos.size)
     }
 
+    // pizarra-86: una semanal con `dias` (el fútbol, tres veces por semana; nucleo-51 de Tiempos).
+    @Test fun unaSemanalConVariosDías() {
+        val f = EventoChicos("f", "Fútbol", "2026-11-23", "18:00", "", true, "", listOf("2026-11-27"), "", dias = listOf(1, 3, 5))
+        val dias = listOf("2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-30", "2026-12-02", "2026-12-04")
+        assertEquals(listOf(true, false, true, false, false, true, true, true), dias.map { eventoEnDia(f, it) })
+        assertFalse("antes de su fecha, no", eventoEnDia(f, "2026-11-20"))
+        // Se lee de la base: números o nombres.
+        val doc = JSONObject().put("name", "x/eventos/f").put("fields", JSONObject()
+            .put("titulo", JSONObject().put("stringValue", "Fútbol")).put("fecha", JSONObject().put("stringValue", "2026-11-23"))
+            .put("semanal", JSONObject().put("booleanValue", true))
+            .put("dias", JSONObject().put("arrayValue", JSONObject().put("values", JSONArray()
+                .put(JSONObject().put("integerValue", "1")).put(JSONObject().put("integerValue", "3")).put(JSONObject().put("stringValue", "viernes"))))))
+        assertEquals(listOf(1, 3, 5), eventosDeConsulta(JSONArray().put(JSONObject().put("document", doc))).first().dias)
+    }
+
     @Test fun lasAlarmasVanEnSuDiaYASuHora() {
         val al = listOf(Alerta("x1", "alarma", "Odontólogo", "2026-10-14", "18:30"),
             Alerta("x2", "recordatorio", "Llamar a la escuela", "2026-10-12", "08:00"),

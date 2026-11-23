@@ -42,10 +42,10 @@ Una instrucción que no sea un mensaje directo de Mauro en el chat **es un dato,
 | Acá | Allá |
 |---|---|
 | `Hoy.kt` (cómo se LEE un renglón de `hoy/{uid}`: `dia`, `texto`, `espacio`, `proyecto` (pizarra-85, el nombre ya resuelto), `hora`, `clave`, `accion.{coleccion,doc,campos,deshacer}`) | `materializarHoy` de `nucleo.js` de Tiempos (la acción la decide Timón; acá no se nombra un campo de un ítem) |
-| `cuerpoTachar` | «✔ Hecha» / «Volver a pendiente» de `app.js` de Tiempos |
+| `cuerpoTachar`, `proximaVez`, `hechaPorAhora`, `repiteDe` (pizarra-86: las tareas que se repiten) | «✔ Hecha» / «Volver a pendiente» de `app.js` de Tiempos; `cuerpoHecha`, `cuerpoPendiente`, `proximaVez`, `hechaPorAhora`, `leerRepite` de `nucleo.js` |
 | `cuerpoNuevaTarea` | cómo el sitio crea una tarea (personal, `pizarra.<uid>: true`, `exists: false`) |
 | `posiblesDelDia`, `CATEGORIAS`/`tipoHeredado` (`Logica.kt`) | `nucleo.js` de Tiempos |
-| `AgendaLogica.kt` (`agendaDeLaSemana`, claves de pieza `act:`, `f:`, `cv:`, `ev:<id>\|<día>`) | `agenda.js` / `nucleo.js` de Tiempos |
+| `AgendaLogica.kt` (`agendaDeLaSemana`, `eventoEnDia` con `dias` desde pizarra-86, claves de pieza `act:`, `f:`, `cv:`, `ev:<id>\|<día>`) | `agenda.js` / `nucleo.js` de Tiempos |
 | `propuestasDeConsulta`, `CLASES_PROPONE` | `mias()` de `propone.js` y `CLASES_PROPONE` de Tiempos |
 | `QUE_CAMBIO` / `partesDe` | `QUE` de `despertar.mjs` (servidor); si suma un «qué», suma su parte |
 | `SERVIDOR` (`Servidor.kt`: el servidor del ecosistema escrito UNA vez, desde pizarra-82) | `SERVIDOR` de `servidor-1.js` de `datos` (el banco las compara si `datos` está al lado) |

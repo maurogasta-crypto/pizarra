@@ -2,9 +2,10 @@ package com.maurogasta.pizarra
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.time.LocalDate
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-13
+// Logica.kt — Lo que se puede probar sin teléfono. Sello: pizarra-13 (y pizarra-86: las que se repiten)
 //
 // Traducir las tareas de Tiempos (Firestore REST) a la lista de la pizarra, y
 // armar lo que se le manda a la base al tachar o al fijar una tarea. No toca
@@ -19,6 +20,13 @@ import org.json.JSONObject
 // un mapa uid → true. Vive en la tarea y no en el teléfono para que reinstalar
 // la app no la vacíe, y es por persona para que la de Mauro no sea la de
 // Florencia. La regla de `tareas` ya lo permite: no hizo falta tocarla.
+//
+// pizarra-86 (23-nov-2026): una tarea que SE REPITE (`repite` {cada, unidad},
+// nucleo-51 de Tiempos) no se cierra al tacharla: «Para cuándo» (`limite`)
+// pasa a la próxima vez y queda `ultimaVez` y `hechoPor` —lo mismo que
+// `cuerpoHecha` de nucleo.js—; se ve tachada hasta ese día (`hechaPorAhora`)
+// y destacharla la trae para hoy (`cuerpoPendiente`). `proximaVez` hace la
+// misma cuenta que allá (un mes más del 31 de enero es el 28 de febrero).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const val PROYECTO = "tiempos-71d42"
@@ -34,7 +42,45 @@ data class Tarea(
     val enMiPizarra: Boolean,
     val color: String?,
     val tipo: String? = null,
+    /** pizarra-86: cada cuánto vuelve (null = la de siempre), su «Para cuándo» y cuándo se hizo la última vez. */
+    val repite: Repite? = null,
+    val limite: String? = null,
+    val ultimaVez: String? = null,
 )
+
+data class Repite(val cada: Int, val unidad: String)
+
+private val UNIDADES_REPITE = setOf("dias", "semanas", "meses")
+private val FECHA_ISO = Regex("^\\d{4}-\\d{2}-\\d{2}$")
+
+/** `repite` de una tarea en Firestore REST ({cada, unidad} como mapa); lo que no cuadra, null (como `leerRepite`). */
+fun repiteDe(f: JSONObject?): Repite? {
+    val m = f?.optJSONObject("repite")?.optJSONObject("mapValue")?.optJSONObject("fields") ?: return null
+    val c = m.optJSONObject("cada") ?: return null
+    val cada = when {
+        c.has("integerValue") -> c.optString("integerValue").toIntOrNull()
+        c.has("doubleValue") -> c.optDouble("doubleValue").let { if (it % 1.0 == 0.0) it.toInt() else null }
+        else -> null
+    } ?: return null
+    val unidad = m.optJSONObject("unidad")?.optString("stringValue").orEmpty()
+    return if (cada in 1..365 && unidad in UNIDADES_REPITE) Repite(cada, unidad) else null
+}
+
+/** La próxima vez desde `desde` (lo mismo que `proximaVez` de nucleo.js). */
+fun proximaVez(r: Repite?, desde: String): String? {
+    if (r == null || !FECHA_ISO.matches(desde)) return null
+    val d = LocalDate.parse(desde)
+    return when (r.unidad) {
+        "dias" -> d.plusDays(r.cada.toLong())
+        "semanas" -> d.plusWeeks(r.cada.toLong())
+        else -> d.plusMonths(r.cada.toLong())      // plusMonths ya recorta al último día del mes
+    }.toString()
+}
+
+/** La que se repite y ya se hizo, tachada hasta que vuelve (`hechaPorAhora` de nucleo.js). */
+fun hechaPorAhora(t: Tarea, hoy: String): Boolean =
+    t.hecho || (t.repite != null && t.ultimaVez != null && FECHA_ISO.matches(t.ultimaVez) &&
+        t.limite != null && FECHA_ISO.matches(t.limite) && t.limite > hoy)
 
 /** Lee una tarea del formato de Firestore REST. Lo que no entiende, null. */
 fun tareaDe(doc: JSONObject, uid: String): Tarea? {
@@ -56,6 +102,9 @@ fun tareaDe(doc: JSONObject, uid: String): Tarea? {
         enMiPizarra = mia,
         color = texto(f, "color"),
         tipo = texto(f, "tipo"),
+        repite = repiteDe(f),
+        limite = texto(f, "limite"),
+        ultimaVez = texto(f, "ultimaVez"),
     )
 }
 
@@ -73,13 +122,13 @@ fun tareasDeConsulta(respuesta: JSONArray, uid: String): List<Tarea> =
  * primero y tachadas al final. Una subtarea lleva el nombre de su proyecto
  * adelante, porque «Comprar tornillos» sola no dice de qué.
  */
-fun paraLaPizarra(todas: List<Tarea>): List<Fila> {
+fun paraLaPizarra(todas: List<Tarea>, hoy: String = LocalDate.now().toString()): List<Fila> {
     val porId = todas.associateBy { it.id }
     return todas.filter { it.enMiPizarra }
-        .sortedWith(compareBy<Tarea>({ it.hecho }, { it.titulo.lowercase() }))
+        .sortedWith(compareBy<Tarea>({ hechaPorAhora(it, hoy) }, { it.titulo.lowercase() }))
         .map { t ->
             val padre = t.parentId?.let { porId[it]?.titulo }
-            Fila(t.id, if (padre != null) "$padre › ${t.titulo}" else t.titulo, t.hecho)
+            Fila(t.id, if (padre != null) "$padre › ${t.titulo}" else t.titulo, hechaPorAhora(t, hoy))
         }
 }
 
@@ -154,7 +203,21 @@ fun cuerpoNuevaTarea(id: String, titulo: String, uid: String): JSONObject {
 fun tituloNuevo(t: String): String = t.trim().replace(Regex("""\s+"""), " ").take(120)
 
 /** Tachar (hecho) o destachar (pendiente). Igual que los botones del sitio. */
-fun cuerpoTachar(id: String, hecho: Boolean, uid: String): JSONObject {
+fun cuerpoTachar(id: String, hecho: Boolean, uid: String, repite: Repite? = null, hoy: String = ""): JSONObject {
+    // pizarra-86: la que se repite vuelve sola (`cuerpoHecha` / `cuerpoPendiente` de nucleo.js).
+    val prox = proximaVez(repite, hoy)
+    if (prox != null) {
+        val c = JSONObject()
+        val m = if (hecho) {
+            c.put("limite", JSONObject().put("stringValue", prox))
+            c.put("ultimaVez", JSONObject().put("stringValue", hoy))
+            c.put("hechoPor", JSONObject().put("stringValue", uid))
+            listOf("limite", "ultimaVez", "hechoPor")
+        } else {
+            c.put("limite", JSONObject().put("stringValue", hoy)); listOf("limite")
+        }
+        return JSONObject().put("writes", JSONArray().put(escritura(id, c, m)))
+    }
     val campos = JSONObject().put("hecho", JSONObject().put("booleanValue", hecho))
     val mascara = mutableListOf("hecho")
     if (hecho) {
